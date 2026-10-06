@@ -790,6 +790,7 @@ const PROD=[
   ["Sarco Appliances","Sales & service","https://sarco-appliances.vercel.app/","M4 4h16v7H4zM4 11v9h16v-9M8 15h.01M8 7h.01"],
   ["AppointEase","Booking platform","https://appointease-psi.vercel.app/","M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM16 2v4M8 2v4M3 10h18"],
   ["Smart Appliances","Home-service booking","https://project-i8icw-ebon.vercel.app/","M3 12h4l3 8 4-16 3 8h4"],
+  ["Romeah","Quiet-luxury fashion","https://romeah.vercel.app/","M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01"],
 ];
 /* COUNTERS — [ number to count up to, suffix, label ]  — "5. PROOF / SCALE" */
 const COUNTERS=[
@@ -853,7 +854,7 @@ document.getElementById("megaInd").innerHTML=megaBuild([
 const PI=i=>[PROD[i][0],PROD[i][1],PROD[i][3],PROD[i][2]];
 document.getElementById("megaProd").innerHTML=megaBuild([
   ["AI products",[PI(1),PI(2),PI(4),PI(5)]],
-  ["Commerce & retail",[PI(3),PI(6),PI(7),PI(9)]],
+  ["Commerce & retail",[PI(6),PI(10),PI(3),PI(7),PI(9)]],
   ["Platforms",[PI(0),PI(8)]],
 ],{img:"img/ai.jpg",label:"Built by Consult America",title:"10 live products",desc:"Real, deployed apps across AI, commerce, healthcare, and booking.",href:"#contact"});
 
@@ -875,7 +876,7 @@ indRows.forEach(r=>{const i=+r.dataset.i;r.addEventListener("mouseenter",()=>ind
 indSel(0);
 
 // clients marquee (real customers) — duplicated for seamless loop
-const CLIENTS=[["gdit","General Dynamics IT"],["gtn","Global Tax Network"],["photon","Photon"],["csra","CSRA"],["carlyle","The Carlyle Group"],["xfinity","Xfinity"],["kforce","Kforce"],["expedia","Expedia Group"]];
+const CLIENTS=[["gdit","General Dynamics IT"],["gtn","Global Tax Network"],["photon","Photon"],["carlyle","The Carlyle Group"],["xfinity","Xfinity"],["kforce","Kforce"],["expedia","Expedia Group"]];
 const clientHTML=CLIENTS.map(c=>`<img class="client-logo" src="img/clients/${c[0]}.png" alt="${c[1]}">`).join("");
 document.getElementById("clientTrack").innerHTML=clientHTML+clientHTML;
 
