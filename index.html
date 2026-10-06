@@ -1,5 +1,43 @@
 <!doctype html>
 <html lang="en">
+<!--
+  ============================================================================
+  CONSULT AMERICA — enterprise website  (one self-contained file)
+  ============================================================================
+  No build step, no dependencies. Run locally with:  python3 -m http.server 4200
+
+  HOW THIS FILE IS ORGANIZED
+  --------------------------
+  1. <head><style> .... ALL styling, in labelled sections you can search for:
+       :root ............ design tokens: colors, fonts, spacing  (EDIT COLORS HERE)
+       /* NAV */ ........ top navigation + the Stripe-style mega-menus
+       /* HERO */ ....... full-screen video hero
+       /* SECTION SCAFFOLD */ .. shared section + typography styles
+       /* FOOTER */ ..... footer
+       /* mobile refinements */ responsive overrides (<=1040px and <=600px)
+
+  2. <body> .......... 13 sections, each tagged with an  <!-- N. NAME -->  comment:
+       NAV + mega menus -> 1.HERO -> 2.BRAND THESIS -> 2.5 CLIENTS ->
+       3.CAPABILITIES -> 4.AI -> 5.PROOF -> 6.CLIENT IMPACT -> 7.INDUSTRIES ->
+       8.TALENT -> 9.ECOSYSTEM -> 10.INSIGHTS -> 11.CAREERS -> 12.CTA -> 13.FOOTER
+       (plus the Ask-AI command-palette overlay near the end)
+
+  3. <script> ........ two halves (see the banner comments inside):
+       DATA  = the words + images on the page  (edit to change content)
+       LOGIC = renders the data + runs animations  (rarely needs touching)
+
+  WHERE DO I CHANGE...?   (full map in README.md)
+     brand colors ...... :root tokens, top of <style>
+     nav links ......... <nav class="nav-mid"> in <body>
+     mega-menu items ... megaCap / megaInd blocks in <script>
+     hero video ........ swap img/consult-america-hero.mp4 + .webm (and the poster)
+     client logos ...... CLIENTS array in <script>  +  img/clients/*.png
+     capabilities ...... CAPS array in <script>
+     industries ........ INDUSTRIES array in <script>
+     Ask-AI answers .... ANSWERS array in <script>
+     contact / offices . the "13. FOOTER" section in <body>
+  ============================================================================
+-->
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,10 +47,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet" />
 <style>
+/* ============ DESIGN TOKENS ============
+   Every color/spacing value on the site comes from here. Change a brand color
+   once and it updates everywhere. Used as var(--name) throughout the CSS. */
 :root{
+  /* dark backgrounds + text shades (dark = navy, body text = ink, muted = ink-2/3) */
   --navy:#070c18; --navy-2:#0b1324; --ink:#0a1322; --ink-2:#44536b; --ink-3:#8493ad;
+  /* light surfaces: hairline borders, page background, subtle hover fill */
   --line:#e4e7ec; --surface:#f1f2f4; --tint:#e9ebf0;
+  /* brand accents: primary blue, darker blue, cyan, and the blue->cyan gradient */
   --blue:#1d6fe0; --blue-d:#1555b0; --cyan:#22c7e6; --grad:linear-gradient(100deg,#22c7e6,#1d6fe0);
+  /* layout: max content width + default side gutter */
   --maxw:1240px; --gut:36px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -698,6 +743,14 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 
 
 <script>
+/* ============================================================================
+   PART 1 — DATA  (this is the content of the page; edit these to change words)
+   Each array below feeds a section. The LOGIC half (further down) turns these
+   into HTML, so to re-word a service or add an industry you ONLY edit here.
+   ============================================================================ */
+
+/* CAPABILITIES — [ title, description, background image ]
+   Powers both the Capabilities mega-menu AND the "3. CAPABILITIES" switcher. */
 const CAPS=[
   ["Engineering","Senior engineers who ship production systems, cloud-native builds, integrations, and the platforms your business runs on.","img/dev.jpg"],
   ["AI & Data","Forecasting, assistants, and automation, operationalized with the data foundations and guardrails to run in production.","img/ai.jpg"],
@@ -705,6 +758,8 @@ const CAPS=[
   ["Enterprise Transformation","Reshape finance, procurement, and supply-chain operations around a connected, modern digital core.","img/meeting.jpg"],
   ["Managed Services","We run and evolve what we build, SLAs, monitoring, and continuous improvement after go-live.","img/cloud.jpg"],
 ];
+/* INDUSTRIES — [ name, short tagline, longer caption, background image ]
+   Powers the Industries mega-menu AND the "7. INDUSTRIES" switcher. */
 const INDUSTRIES=[
   ["Financial Services","Modern core + AI risk and close","Faster financial close and real-time risk on a modern Oracle core.","img/finance.jpg"],
   ["Supply Chain","Forecasting that holds up","AI forecasting and connected logistics that cut stockouts and cost.","img/logistics.jpg"],
@@ -712,12 +767,14 @@ const INDUSTRIES=[
   ["Public Sector","Secure modernization","Legacy modernization with the security and auditability the sector demands.","img/city.jpg"],
   ["Retail","Unified commerce + data","A single data core powering merchandising, demand, and customer AI.","img/team.jpg"],
 ];
+/* COUNTERS — [ number to count up to, suffix, label ]  — "5. PROOF / SCALE" */
 const COUNTERS=[
   ["6","–10 wks","to first production workload"],
   ["40","%","faster financial close, representative"],
   ["99.9","%","platform uptime target, managed"],
   ["100","%","built and run in-house, end-to-end"],
 ];
+/* ECO — technology ecosystem cards: [ title, sub-line, (legacy icon path, now uses img/eco1..6.png) ] — "9. ECOSYSTEM" */
 const ECO=[
   ["Oracle digital core","ERP · HCM · SCM · OCI","M12 2a10 10 0 1 0 10 10"],
   ["Cloud & infrastructure","IaC · CI/CD · observability","M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3"],
@@ -726,17 +783,33 @@ const ECO=[
   ["DevOps & SRE","Reliability · automation","M3 12h4l3 8 4-16 3 8h4"],
   ["Security & governance","Controls · auditability","M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6z"],
 ];
+/* ANSWERS — scripted replies for the Ask-AI command palette: { question: answer }.
+   Keys must match the SUGGEST questions below exactly. Anything else gets the
+   generic "a specialist will follow up" fallback (see cmdkAsk). */
 const ANSWERS={
   "How do we modernize our Oracle ERP?":"We'd start with a 2-week estate assessment, map customizations and data quality, then stage a right-sized Oracle Cloud roadmap with phased cutovers, no big-bang risk. A specialist can walk you through it.",
   "Where can AI cut cost in our operations?":"Usually the financial close, procurement triage, and supply-chain forecasting. We find the highest-ROI workflow, prove it in weeks, then scale what works into production.",
   "Can you provide specialized engineering talent?":"Yes, that's a core part of what we do. We place vetted engineers, data scientists, and Oracle specialists, embedded in your teams or as direct hires. Tell us the roles and a specialist will follow up.",
 };
+/* ============================================================================
+   PART 2 — LOGIC  (renders the data above into HTML + wires up interactions)
+   Most content edits do NOT require touching anything below this line.
+   ============================================================================ */
+
+/* Icon helpers. The long strings in CAP_ICONS / IND_ICONS are SVG path data
+   (the "d" attribute of a <path>) — ico() wraps one into a line-style icon. */
 const ico=d=>`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
 const arr='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>';
 const CAP_ICONS=["M16 18l6-6-6-6M8 6l-6 6 6 6M14 4l-4 16","M12 3l1.8 5.2 5.2 1.8-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z","M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z","M21 2v6h-6M3 22v-6h6M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16","M22 12h-4l-3 9L9 3l-3 9H2"];
 const IND_ICONS=["M3 21h18M5 21V8l7-5 7 5v13M10 21v-6h4v6","M1 3h15v13H1zM16 8h4l3 3v5h-7M5.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm13 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z","M2 20h20M4 20V8l5 3V8l5 3V8l6 3v9","M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6","M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4M3 6h18M16 10a4 4 0 0 1-8 0"];
 
-// mega menus
+/* ---- NAV MEGA-MENUS (Stripe-style full-width dropdowns) ----
+   Built from 3 small builders:
+     megaItem(title, desc, iconPath, href)  -> one link row (icon + title + desc)
+     megaFeature({img,label,title,desc,href}) -> the image card on the right
+     megaBuild([ [groupHeader, [items...]], ... ], feature) -> the whole panel
+   megaCap/megaInd below just pick which CAPS/INDUSTRIES go in which column group.
+   To add a column, add another [header, [items]] pair. */
 const megaItem=(title,desc,iconPath,href)=>`<a class="mitem" href="${href}"><span class="mi">${ico(iconPath)}</span><span class="mtx"><span class="mt">${title}</span><span class="md">${desc}</span></span></a>`;
 const megaFeature=f=>`<a class="mega-feature" href="${f.href}"><span class="mf-img" style="background-image:url('${f.img}')"></span><span class="mf-body"><span class="mf-label">${f.label}</span><span class="mf-title">${f.title} ${arr}</span><span class="mf-desc">${f.desc}</span></span></a>`;
 const megaBuild=(groups,feature)=>`<div class="mega-inner">${groups.map(g=>`<div class="mega-col"><div class="mega-h">${g[0]}</div>${g[1].map(x=>megaItem(x[0],x[1],x[2],x[3])).join("")}</div>`).join("")}${megaFeature(feature)}</div>`;
@@ -786,7 +859,6 @@ nav.classList.add("solid");
 const mm=document.getElementById("mobileMenu");
 document.getElementById("navToggle").onclick=()=>mm.classList.toggle("open");
 mm.querySelectorAll("a").forEach(a=>a.onclick=()=>mm.classList.remove("open"));
-// back to top
 
 // hero brand film — play unless reduced-motion (then poster only, no video download)
 const heroVideo=document.getElementById("heroVideo");
