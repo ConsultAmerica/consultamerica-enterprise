@@ -782,7 +782,6 @@ const INDUSTRIES=[
 /* PRODUCTS — live apps built by Consult America, shown in the Products mega-menu.
    [ name, one-line tag, live URL (opens in a new tab), icon path ] */
 const PROD=[
-  ["ConsultAmerica","Enterprise platform","https://consultamerica-nu.vercel.app/","img/products/consultamerica.png"],
   ["Data Agent","Contract intelligence","https://data-agent-ca.vercel.app/","img/products/data-agent.png"],
   ["MediGuide AI","Healthcare AI","https://mediguide-ai-woad.vercel.app/","img/products/mediguide.png"],
   ["ImportNest","AI shopping","https://importnest.vercel.app/","img/products/importnest.png"],
@@ -855,9 +854,9 @@ document.getElementById("megaInd").innerHTML=megaBuild([
 /* Products mega-menu: our 10 live apps, grouped, each opens its live site in a new tab. */
 const PI=i=>[PROD[i][0],PROD[i][1],PROD[i][3],PROD[i][2]];
 document.getElementById("megaProd").innerHTML=megaBuild([
-  ["AI products",[PI(1),PI(2),PI(4),PI(5)]],
-  ["Commerce & retail",[PI(6),PI(10),PI(3),PI(7),PI(9)]],
-  ["Platforms",[PI(0),PI(8)]],
+  ["AI products",[PI(0),PI(1),PI(3),PI(4)]],
+  ["Commerce & retail",[PI(5),PI(9),PI(2),PI(6),PI(8)]],
+  ["Platforms",[PI(7)]],
 ],{img:"img/ai.jpg",label:"Built by Consult America",title:"10 live products",desc:"Real, deployed apps across AI, commerce, healthcare, and booking.",href:"#contact"});
 
 // capabilities switcher
