@@ -1,0 +1,1054 @@
+"use client";
+
+import Link from "next/link";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+
+import {
+  ANSWERS,
+  CAP_ICONS,
+  CAPS,
+  CLIENTS,
+  COUNTERS,
+  ECO,
+  IND_ICONS,
+  INDUSTRIES,
+  PROD,
+  SUGGEST,
+} from "@/data/marketing";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+function getReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function runCountersOnce(done: { current: boolean }) {
+  if (done.current) return;
+  done.current = true;
+  document.querySelectorAll<HTMLElement>(".cv").forEach((el) => {
+    const raw = el.dataset.to ?? "0";
+    const to = parseFloat(raw);
+    const dec = raw.includes(".") ? 1 : 0;
+    let start: number | null = null;
+    const step = (t: number) => {
+      if (start === null) start = t;
+      const p = Math.min((t - start) / 1100, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (to * e).toFixed(dec);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+const EXT_ICON = (
+  <svg className="ext" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M7 17 17 7M8 7h9v9" />
+  </svg>
+);
+
+const ARR_ICON = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M7 17 17 7M8 7h9v9" />
+  </svg>
+);
+
+const CHEV = (
+  <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+const ARROW_BTN = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+
+const SEARCH_ICO = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m21 21-4.3-4.3" />
+  </svg>
+);
+
+const SARR = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+);
+
+function PathIcon({ d, size = 20 }: { d: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={d} />
+    </svg>
+  );
+}
+
+function MegaItem({
+  title,
+  desc,
+  icon,
+  href,
+}: {
+  title: string;
+  desc: string;
+  icon: string;
+  href: string;
+}) {
+  const ext = /^https?:/.test(href);
+  const isImg = /^\/?img\//.test(icon) || /\.(png|jpe?g|svg|webp)$/i.test(icon);
+  const src = icon.startsWith("/") ? icon : `/${icon}`;
+
+  return (
+    <a className="mitem" href={href} {...(ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+      <span className={`mi${isImg ? " mi-img" : ""}`}>
+        {isImg ? <img src={src} alt="" width={36} height={36} /> : <PathIcon d={icon} />}
+      </span>
+      <span className="mtx">
+        <span className="mt">
+          {title}
+          {ext ? <> {EXT_ICON}</> : null}
+        </span>
+        <span className="md">{desc}</span>
+      </span>
+    </a>
+  );
+}
+
+function MegaFeature({
+  img,
+  label,
+  title,
+  desc,
+  href,
+}: {
+  img: string;
+  label: string;
+  title: string;
+  desc: string;
+  href: string;
+}) {
+  return (
+    <a className="mega-feature" href={href}>
+      <span className="mf-img" style={{ backgroundImage: `url('${img}')` }} />
+      <span className="mf-body">
+        <span className="mf-label">{label}</span>
+        <span className="mf-title">
+          {title} {ARR_ICON}
+        </span>
+        <span className="mf-desc">{desc}</span>
+      </span>
+    </a>
+  );
+}
+
+function MegaPanel({
+  groups,
+  feature,
+}: {
+  groups: [string, [string, string, string, string][]][];
+  feature: { img: string; label: string; title: string; desc: string; href: string };
+}) {
+  return (
+    <div className="mega-inner">
+      {groups.map(([header, items]) => (
+        <div className="mega-col" key={header}>
+          <div className="mega-h">{header}</div>
+          {items.map(([title, desc, icon, href]) => (
+            <MegaItem key={title} title={title} desc={desc} icon={icon} href={href} />
+          ))}
+        </div>
+      ))}
+      <MegaFeature {...feature} />
+    </div>
+  );
+}
+
+type CmdkView =
+  | { mode: "suggest" }
+  | { mode: "answer"; question: string; answer: string };
+
+export function EnterpriseHome() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [cmdkOpen, setCmdkOpen] = useState(false);
+  const [cmdkView, setCmdkView] = useState<CmdkView>({ mode: "suggest" });
+  const [cmdkInput, setCmdkInput] = useState("");
+  const [capSel, setCapSel] = useState(0);
+  const [indSel, setIndSel] = useState(0);
+  const cmdkInputRef = useRef<HTMLInputElement>(null);
+  const countersRun = useRef(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => true);
+  const heroSources = !reducedMotion;
+
+  const openCmdk = () => {
+    setCmdkOpen(true);
+    setCmdkView({ mode: "suggest" });
+    setCmdkInput("");
+    setTimeout(() => cmdkInputRef.current?.focus(), 120);
+  };
+
+  const closeCmdk = () => {
+    setCmdkOpen(false);
+    setCmdkInput("");
+    setCmdkView({ mode: "suggest" });
+  };
+
+  const cmdkAsk = (q: string) => {
+    const question = q.trim();
+    if (!question) return;
+    const answer =
+      ANSWERS[question] ??
+      "Great question. A Consult America specialist will map this to your estate and follow up within one business day with a concrete next step.";
+    setCmdkView({ mode: "answer", question, answer });
+    setCmdkInput("");
+    setTimeout(() => cmdkInputRef.current?.focus(), 0);
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.overflow = cmdkOpen ? "hidden" : "";
+    return () => {
+      root.style.overflow = "";
+    };
+  }, [cmdkOpen]);
+
+  useEffect(() => {
+    if (!heroSources || !videoRef.current) return;
+    const v = videoRef.current;
+    v.load();
+    const play = v.play();
+    if (play && typeof play.catch === "function") play.catch(() => {});
+  }, [heroSources]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (cmdkOpen) closeCmdk();
+        else openCmdk();
+      } else if (e.key === "Escape" && cmdkOpen) {
+        closeCmdk();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cmdkOpen]);
+
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("in");
+          io.unobserve(entry.target);
+          if (entry.target.id === "counters") runCountersOnce(countersRun);
+        });
+      },
+      { threshold: 0.14, rootMargin: "0px 0px -6% 0px" },
+    );
+    document.querySelectorAll(".reveal, #counters").forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const pxs = [...document.querySelectorAll<HTMLElement>("[data-parallax]")];
+    let ticking = false;
+    const px = () => {
+      ticking = false;
+      const vh = window.innerHeight;
+      pxs.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < -200 || r.top > vh + 200) return;
+        const prog = (r.top + r.height / 2 - vh / 2) / vh;
+        const sp = parseFloat(el.dataset.parallax ?? "0");
+        el.style.transform = `translate3d(0,${(prog * sp).toFixed(1)}px,0)`;
+      });
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(px);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", px, { passive: true });
+    px();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", px);
+    };
+  }, [reducedMotion]);
+
+  const ci = (i: number, d: string): [string, string, string, string] => [
+    CAPS[i][0],
+    d,
+    CAP_ICONS[i],
+    "#capabilities",
+  ];
+  const ii = (i: number): [string, string, string, string] => [
+    INDUSTRIES[i][0],
+    INDUSTRIES[i][1],
+    IND_ICONS[i],
+    "#industries",
+  ];
+  const pi = (i: number): [string, string, string, string] => [
+    PROD[i][0],
+    PROD[i][1],
+    PROD[i][3],
+    PROD[i][2],
+  ];
+
+  const suggestList = (label: string) => (
+    <>
+      <div className="cmdk-label">{label}</div>
+      {SUGGEST.map(([q, labelText]) => (
+        <div
+          key={q}
+          className="cmdk-item"
+          role="button"
+          tabIndex={0}
+          onClick={() => cmdkAsk(q)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              cmdkAsk(q);
+            }
+          }}
+        >
+          <span className="ico">{SEARCH_ICO}</span>
+          {labelText}
+          <span className="arr">{SARR}</span>
+        </div>
+      ))}
+      <div
+        className="cmdk-item"
+        role="button"
+        tabIndex={0}
+        onClick={() => {
+          closeCmdk();
+          window.location.hash = "#contact";
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            closeCmdk();
+            window.location.hash = "#contact";
+          }
+        }}
+      >
+        <span className="ico">{ARROW_BTN}</span>
+        Talk to a specialist
+        <span className="arr">{SARR}</span>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <header className="nav solid" id="nav">
+        <div className="wrap nav-inner">
+          <a href="#top" className="brand">
+            <img className="logo" src="/logo-word.png?v=ca10" alt="Consult America" />
+          </a>
+          <nav className="nav-mid" aria-label="Primary">
+            <div className="nav-item has-mega">
+              <a href="#capabilities">
+                Capabilities {CHEV}
+              </a>
+              <div className="mega" id="megaCap">
+                <MegaPanel
+                  groups={[
+                    [
+                      "Engineering & AI",
+                      [
+                        ci(0, "Cloud-native builds, platforms, integrations"),
+                        ci(1, "GenAI, assistants, and automation in production"),
+                      ],
+                    ],
+                    [
+                      "Cloud & Transformation",
+                      [
+                        ci(2, "Migrate and modernize ERP, HCM, SCM on OCI"),
+                        ci(3, "Reshape operations around a modern digital core"),
+                      ],
+                    ],
+                    ["Operate & Run", [ci(4, "SLAs, monitoring, and continuous improvement")]],
+                  ]}
+                  feature={{
+                    img: "/img/meeting.jpg",
+                    label: "How we work",
+                    title: "Design, build, run",
+                    desc: "One team from assessment through production and managed operations.",
+                    href: "#why",
+                  }}
+                />
+              </div>
+            </div>
+            <div className="nav-item has-mega">
+              <a href="#industries">
+                Industries {CHEV}
+              </a>
+              <div className="mega" id="megaInd">
+                <MegaPanel
+                  groups={[
+                    ["Regulated", [ii(0), ii(3)]],
+                    ["Operations", [ii(1), ii(2)]],
+                    ["Commerce", [ii(4)]],
+                  ]}
+                  feature={{
+                    img: "/img/finance.jpg",
+                    label: "Client impact",
+                    title: "Proof in production",
+                    desc: "Outcomes delivered across regulated, high-stakes industries.",
+                    href: "#why",
+                  }}
+                />
+              </div>
+            </div>
+            <div className="nav-item has-mega">
+              <a href="#contact">
+                Products {CHEV}
+              </a>
+              <div className="mega" id="megaProd">
+                <MegaPanel
+                  groups={[
+                    ["AI products", [pi(1), pi(2), pi(4), pi(5)]],
+                    ["Commerce & retail", [pi(6), pi(10), pi(3), pi(7), pi(9)]],
+                    ["Platforms", [pi(0), pi(8)]],
+                  ]}
+                  feature={{
+                    img: "/img/ai.jpg",
+                    label: "Built by Consult America",
+                    title: "10 live products",
+                    desc: "Real, deployed apps across AI, commerce, healthcare, and booking.",
+                    href: "#contact",
+                  }}
+                />
+              </div>
+            </div>
+            <div className="nav-item">
+              <a href="#ai">AI</a>
+            </div>
+            <div className="nav-item">
+              <a href="#talent">Talent</a>
+            </div>
+            <div className="nav-item">
+              <a href="#insights">Insights</a>
+            </div>
+            <div className="nav-item">
+              <a href="#careers">Careers</a>
+            </div>
+            <div className="nav-item">
+              <Link href="/jobs">Jobs</Link>
+            </div>
+          </nav>
+          <div className="nav-right">
+            <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={openCmdk}>
+              <span className="spk">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
+                </svg>
+              </span>
+              Ask AI
+            </button>
+            <a href="#contact" className="btn btn-primary btn-sm">
+              Talk to an expert {ARROW_BTN}
+            </a>
+            <button
+              type="button"
+              className="nav-toggle"
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className={`mobile-menu${menuOpen ? " open" : ""}`} id="mobileMenu">
+          <a href="#capabilities" onClick={() => setMenuOpen(false)}>
+            Capabilities
+          </a>
+          <a href="#industries" onClick={() => setMenuOpen(false)}>
+            Industries
+          </a>
+          <a href="#contact" onClick={() => setMenuOpen(false)}>
+            Products
+          </a>
+          <a href="#ai" onClick={() => setMenuOpen(false)}>
+            AI
+          </a>
+          <a href="#talent" onClick={() => setMenuOpen(false)}>
+            Talent
+          </a>
+          <a href="#insights" onClick={() => setMenuOpen(false)}>
+            Insights
+          </a>
+          <a href="#careers" onClick={() => setMenuOpen(false)}>
+            Careers
+          </a>
+          <Link href="/jobs" onClick={() => setMenuOpen(false)}>
+            Jobs
+          </Link>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setMenuOpen(false);
+              openCmdk();
+            }}
+          >
+            Ask Consult America AI
+          </a>
+          <a href="#contact" className="btn btn-primary" onClick={() => setMenuOpen(false)}>
+            Talk to an expert
+          </a>
+        </div>
+      </header>
+
+      <a id="top" />
+
+      {/* 1. HERO */}
+      <section className="hero">
+        <div className="hero-media" data-parallax="90">
+          <video
+            ref={videoRef}
+            id="heroVideo"
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="/img/hero-poster.jpg"
+            aria-hidden
+          >
+            {heroSources ? (
+              <>
+                <source src="/img/consult-america-hero.webm" type="video/webm" />
+                <source src="/img/consult-america-hero.mp4" type="video/mp4" />
+              </>
+            ) : null}
+          </video>
+        </div>
+        <div className="wrap hero-inner">
+          <h1>
+            Modernize the <span className="g">digital core.</span>
+            <span className="l2">Build what comes next.</span>
+          </h1>
+          <p className="sub">
+            Consult America unites engineering, AI, and enterprise consulting, with the specialized technology talent to
+            design it, build it, and run it in production.
+          </p>
+          <div className="hero-actions">
+            <a href="#contact" className="btn btn-primary">
+              Talk to an expert{" "}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </a>
+            <a href="#capabilities" className="btn btn-ghost">
+              Explore capabilities{" "}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* 2. BRAND THESIS */}
+      <section className="band" id="about">
+        <div className="wrap thesis">
+          <div className="reveal">
+            <span className="eyebrow">Who we are</span>
+            <p className="big serif" style={{ marginTop: 22 }}>
+              Built where <span className="hl">engineering, AI, and enterprise consulting</span> meet, and backed by the
+              specialized talent most firms can only <em>recommend</em>.
+            </p>
+          </div>
+          <div className="thesis-side reveal d1">
+            <div className="pill-row">
+              <div className="pr">
+                <span className="ic">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M12 3 3 7.5l9 4.5 9-4.5z" />
+                    <path d="M3 12l9 4.5 9-4.5" />
+                    <path d="M3 16.5 12 21l9-4.5" />
+                  </svg>
+                </span>
+                <div>
+                  <b>We engineer, not just advise</b>
+                  <span>Production systems, not slideware.</span>
+                </div>
+              </div>
+              <div className="pr">
+                <span className="ic">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M10.5 2.5 12.5 8.5 18.5 10.5 12.5 12.5 10.5 18.5 8.5 12.5 2.5 10.5 8.5 8.5Z" />
+                    <path d="M19 3 19.7 4.3 21 5 19.7 5.7 19 7 18.3 5.7 17 5 18.3 4.3Z" />
+                    <path d="M5 16.3 5.6 17.4 6.7 18 5.6 18.6 5 19.7 4.4 18.6 3.3 18 4.4 17.4Z" />
+                  </svg>
+                </span>
+                <div>
+                  <b>AI-first, operationalized</b>
+                  <span>Models that run, monitored and governed.</span>
+                </div>
+              </div>
+              <div className="pr">
+                <span className="ic">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <circle cx="12" cy="7" r="3" />
+                    <path d="M6.5 20a5.5 5.5 0 0 1 11 0" />
+                    <circle cx="4.5" cy="9.5" r="2" />
+                    <path d="M2.3 18.4a3.1 3.1 0 0 1 4.4-2.8" />
+                    <circle cx="19.5" cy="9.5" r="2" />
+                    <path d="M21.7 18.4a3.1 3.1 0 0 0-4.4-2.8" />
+                  </svg>
+                </span>
+                <div>
+                  <b>Talent on tap</b>
+                  <span>Elite engineers and Oracle specialists.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 2.5 CLIENTS */}
+      <section className="clients" id="clients">
+        <p className="clients-kick reveal">Trusted by enterprise &amp; public-sector organizations</p>
+        <div className="marquee reveal">
+          <div className="marquee-track" id="clientTrack">
+            {[0, 1].flatMap((copy) =>
+              CLIENTS.map(([id, name]) => (
+                <img
+                  key={`${copy}-${id}`}
+                  className="client-logo"
+                  src={`/img/clients/${id}.png`}
+                  alt={name}
+                />
+              )),
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. CAPABILITIES */}
+      <section className="band darkbg" id="capabilities">
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <span className="eyebrow">Capabilities</span>
+            <h2>One partner across the transformation.</h2>
+            <p>From the first line of code to the systems your teams operate every day.</p>
+          </div>
+          <div className="cap-feat reveal">
+            <div className="cap-stage" id="capStage">
+              {CAPS.map(([title, , img], i) => (
+                <img key={title} src={img} alt={title} className={i === capSel ? "on" : ""} data-i={i} />
+              ))}
+            </div>
+            <div className="cap-list" id="capList">
+              {CAPS.map(([title, desc], i) => (
+                <button
+                  key={title}
+                  type="button"
+                  className={`cap-row${i === capSel ? " active" : ""}`}
+                  data-i={i}
+                  onMouseEnter={() => setCapSel(i)}
+                  onFocus={() => setCapSel(i)}
+                  onClick={() => setCapSel(i)}
+                >
+                  <div className="st">
+                    <h3>{title}</h3>
+                    <span className="nub">0{i + 1}</span>
+                  </div>
+                  <div className="sd">{desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. IMMERSIVE AI */}
+      <section className="aimoment" id="ai">
+        <div className="aimoment-media" data-parallax="80">
+          <img src="/img/ai.jpg" alt="Connected intelligence network" />
+        </div>
+        <div className="wrap aimoment-inner reveal">
+          <span className="eyebrow" style={{ color: "var(--cyan)" }}>
+            Artificial Intelligence
+          </span>
+          <h2 style={{ marginTop: 20 }}>
+            Where data becomes <span className="g">decisions</span>, and decisions become systems that run themselves.
+          </h2>
+          <p>
+            We connect the enterprise core to AI that forecasts, triages, and automates, then wrap it in the monitoring
+            and guardrails that let it hold up in production.
+          </p>
+          <div className="aimoment-actions">
+            <button type="button" className="btn btn-primary" id="aiAsk" onClick={openCmdk}>
+              Ask our AI how {ARROW_BTN}
+            </button>
+            <a href="#capabilities" className="btn btn-ghost">
+              Explore AI &amp; Data
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. PROOF / SCALE */}
+      <section className="band tintbg" id="why">
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <span className="eyebrow">Proof &amp; scale</span>
+            <h2>Outcomes you can measure, delivered end-to-end.</h2>
+          </div>
+          <div className="counters reveal" id="counters">
+            {COUNTERS.map(([n, suffix, label]) => (
+              <div className="counter" key={label}>
+                <div className="n">
+                  <span className="cv" data-to={n}>
+                    0
+                  </span>
+                  {suffix}
+                </div>
+                <div className="l">{label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="scale-note reveal">
+            <span className="demotag">Demo</span>
+            Figures are illustrative placeholders for this showcase, not verified client results.
+          </div>
+        </div>
+      </section>
+
+      {/* 6. CLIENT IMPACT */}
+      <section className="impact">
+        <div className="impact-media" data-parallax="70">
+          <img src="/img/meeting.jpg" alt="Consulting team at work" />
+        </div>
+        <div className="wrap impact-inner reveal">
+          <div className="tagrow">
+            <span className="eyebrow" style={{ color: "var(--cyan)" }}>
+              Client impact
+            </span>
+            <span className="demotag">Illustrative scenario</span>
+          </div>
+          <h2>
+            How a global financial-services firm went from a brittle legacy core to{" "}
+            <span style={{ color: "var(--cyan)" }}>AI-assisted close</span>, in two quarters.
+          </h2>
+          <div className="imp-stat">
+            <div>
+              <div className="n">6-10 wks</div>
+              <div className="l">to first production workload</div>
+            </div>
+            <div>
+              <div className="n">40%</div>
+              <div className="l">faster financial close</div>
+            </div>
+            <div>
+              <div className="n">24/7</div>
+              <div className="l">monitored, in managed service</div>
+            </div>
+          </div>
+          <a href="#" className="arrowlink rm" style={{ color: "#fff" }}>
+            Read the scenario {ARR_ICON}
+          </a>
+        </div>
+      </section>
+
+      {/* 7. INDUSTRIES */}
+      <section className="band darkbg" id="industries">
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <span className="eyebrow">Industries</span>
+            <h2>Context that shortens the distance to value.</h2>
+            <p>Hover an industry to see where modernization moves the needle most.</p>
+          </div>
+          <div className="ind reveal">
+            <div className="ind-list" id="indList">
+              {INDUSTRIES.map(([name, tagline], i) => (
+                <div
+                  key={name}
+                  className={`ind-row${i === indSel ? " active" : ""}`}
+                  data-i={i}
+                  tabIndex={0}
+                  onMouseEnter={() => setIndSel(i)}
+                  onFocus={() => setIndSel(i)}
+                  onClick={() => setIndSel(i)}
+                >
+                  <div>
+                    <h3>{name}</h3>
+                  </div>
+                  <span className="io">{tagline}</span>
+                </div>
+              ))}
+            </div>
+            <div className="ind-stage" id="indStage">
+              {INDUSTRIES.map(([name, , , img], i) => (
+                <img key={name} src={img} alt={name} className={i === indSel ? "on" : ""} data-i={i} />
+              ))}
+              <div className="ind-cap" id="indCap">
+                <div className="ct">{INDUSTRIES[indSel][0]}</div>
+                <div className="cd">{INDUSTRIES[indSel][2]}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. TALENT */}
+      <section className="band" id="talent">
+        <div className="wrap talent">
+          <div className="talent-copy reveal">
+            <span className="eyebrow">Talent</span>
+            <h3 className="big">Beyond projects, we build and place the teams that run them.</h3>
+            <p>
+              Consulting and engineering are human businesses. We bring specialized technology talent, embedded in your
+              teams or hired direct, so capability outlasts the engagement.
+            </p>
+            <ul className="talent-points">
+              <TalentPoint>Engineers, data scientists, and Oracle specialists</TalentPoint>
+              <TalentPoint>Embedded squads or direct-hire placement</TalentPoint>
+              <TalentPoint>Vetted for the modern enterprise stack</TalentPoint>
+            </ul>
+            <div className="talent-actions">
+              <a href="#contact" className="btn btn-dark">
+                Hire through Consult America {ARROW_BTN}
+              </a>
+              <a href="#careers" className="btn btn-outline" style={{ background: "#fff", borderColor: "var(--line)", color: "var(--ink)" }}>
+                Join our team
+              </a>
+            </div>
+          </div>
+          <div className="talent-gallery reveal d1">
+            <div className="g g1">
+              <img src="/img/team2.jpg" alt="Team collaborating" />
+            </div>
+            <div className="g">
+              <img src="/img/dev.jpg" alt="Engineering" />
+            </div>
+            <div className="g">
+              <img src="/img/careers.jpg" alt="Our people" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 9. TECHNOLOGY ECOSYSTEM */}
+      <section className="band darkbg" id="ecosystem">
+        <div className="wrap eco">
+          <div className="reveal">
+            <span className="eyebrow">Technology ecosystem</span>
+            <h2 style={{ fontSize: "clamp(30px,3.8vw,46px)", fontWeight: 600, margin: "16px 0 14px" }}>
+              We engineer across the modern enterprise stack.
+            </h2>
+            <p style={{ color: "rgba(255,255,255,.72)", fontSize: 17, maxWidth: "46ch" }}>
+              Deep in the Oracle digital core, fluent across cloud, data, and AI, and disciplined about the engineering
+              practice that keeps it all running.
+            </p>
+            <div className="eco-domains" id="ecoDomains">
+              {ECO.map(([title, sub], i) => (
+                <div className="eco-dom" key={title}>
+                  <img className="eco-ill" src={`/img/eco${i + 1}.png`} alt={title} />
+                  <b>{title}</b>
+                  <span>{sub}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="eco-visual reveal d1">
+            <img src="/img/engineer.jpg" alt="Hands-on engineering" />
+          </div>
+        </div>
+      </section>
+
+      {/* 10. INSIGHTS */}
+      <section className="band tintbg" id="insights">
+        <div className="wrap">
+          <div className="sec-head reveal">
+            <span className="eyebrow">Insights</span>
+            <h2>Research &amp; perspectives.</h2>
+            <p>How enterprises are rebuilding the digital core for an AI-native decade.</p>
+          </div>
+          <div className="ins reveal">
+            <a className="ins-feat" href="#">
+              <img src="/img/data.jpg" alt="" />
+              <div className="ins-body">
+                <div className="ins-meta">
+                  <span>Point of view</span>
+                  <span className="dot" />
+                  <span className="mut">Oct 2026</span>
+                  <span className="dot" />
+                  <span className="mut">9 min read</span>
+                </div>
+                <h3>Modernizing Oracle ERP without the big-bang risk</h3>
+                <span className="arrowlink rm" style={{ color: "#fff" }}>
+                  Read more {ARR_ICON}
+                </span>
+              </div>
+            </a>
+            <div className="ins-col">
+              <a className="ins-small" href="#">
+                <img src="/img/ai.jpg" alt="" />
+                <div className="ins-body">
+                  <div className="ins-meta">
+                    <span>Research</span>
+                    <span className="dot" />
+                    <span className="mut">6 min</span>
+                  </div>
+                  <h3>Agentic AI in the enterprise: pilots to production</h3>
+                </div>
+              </a>
+              <a className="ins-small" href="#">
+                <img src="/img/team2.jpg" alt="" />
+                <div className="ins-body">
+                  <div className="ins-meta">
+                    <span>Field note</span>
+                    <span className="dot" />
+                    <span className="mut">4 min</span>
+                  </div>
+                  <h3>Building engineering teams that outlast the project</h3>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 11. CAREERS */}
+      <section className="careers" id="careers">
+        <div className="careers-media" data-parallax="70">
+          <img src="/img/careers.jpg" alt="Consult America people" />
+        </div>
+        <div className="wrap careers-inner reveal">
+          <span className="eyebrow" style={{ color: "var(--cyan)" }}>
+            Careers
+          </span>
+          <h2 style={{ marginTop: 18 }}>Build what comes next, with us.</h2>
+          <p>
+            We hire engineers, data scientists, and consultants who want to ship real systems for real enterprises, and
+            to keep growing while they do it.
+          </p>
+          <div className="careers-actions">
+            <Link href="/jobs" className="btn btn-primary">
+              View open roles {ARROW_BTN}
+            </Link>
+            <a href="#talent" className="btn btn-ghost">
+              Life at Consult America
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* 12. CTA */}
+      <section className="band cta" id="contact">
+        <div className="wrap cta-inner reveal">
+          <span className="eyebrow" style={{ color: "var(--cyan)", justifyContent: "center" }}>
+            Start the conversation
+          </span>
+          <h2 style={{ marginTop: 18 }}>Ready to modernize the core?</h2>
+          <p>
+            Tell us where you are. A specialist will map the fastest path from your legacy systems to AI in production,
+            and the team to get you there.
+          </p>
+          <div className="cta-actions">
+            <a href="#" className="btn btn-primary">
+              Talk to an expert {ARROW_BTN}
+            </a>
+            <a href="#" className="btn btn-ghost">
+              Book a 30-min call
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <MarketingFooter />
+
+      {/* Ask AI command palette */}
+      <div
+        className={`cmdk${cmdkOpen ? " open" : ""}`}
+        id="cmdk"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ask Consult America AI"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeCmdk();
+        }}
+      >
+        <div className="cmdk-panel">
+          <div className="cmdk-input-row">
+            <span className="spk">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 2l1.9 5.4 5.4 1.9-5.4 1.9L12 16l-1.9-5.4L4.7 9l5.4-1.9z" />
+              </svg>
+            </span>
+            <input
+              ref={cmdkInputRef}
+              id="cmdkInput"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="Ask Consult America AI about your transformation…"
+              value={cmdkInput}
+              onChange={(e) => setCmdkInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") cmdkAsk(cmdkInput);
+              }}
+            />
+            <kbd>Esc</kbd>
+          </div>
+          <div className="cmdk-body" id="cmdkBody">
+            {cmdkView.mode === "answer" ? (
+              <>
+                <div className="cmdk-user">{cmdkView.question}</div>
+                <div className="cmdk-answer">{cmdkView.answer}</div>
+                {suggestList("Keep exploring")}
+              </>
+            ) : (
+              suggestList("Suggested")
+            )}
+          </div>
+          <div className="cmdk-foot">
+            <span>AI-assisted · a specialist follows up within one business day</span>
+            <span className="mono">Consult America AI</span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function TalentPoint({ children }: { children: ReactNode }) {
+  return (
+    <li>
+      <span className="ck">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+      {children}
+    </li>
+  );
+}

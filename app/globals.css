@@ -1,0 +1,362 @@
+@import "tailwindcss";
+@import "../styles/enterprise.css";
+
+/* Jobs portal additions — enterprise tokens only (no teal marketing). */
+.jobs-shell {
+  min-height: 100vh;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.jobs-hero {
+  background: var(--navy);
+  color: #fff;
+  padding: 120px 0 56px;
+}
+
+.jobs-hero h1 {
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  max-width: 14ch;
+}
+
+.jobs-hero h1 .g {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.jobs-hero p {
+  margin-top: 18px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 52ch;
+}
+
+.jobs-search {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto;
+  gap: 12px;
+  margin-top: 32px;
+  max-width: 920px;
+}
+
+.jobs-search input {
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+}
+
+.jobs-search input::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.jobs-search input:focus {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.jobs-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 1.05fr;
+  gap: 0;
+  max-width: 1360px;
+  margin: 0 auto;
+  min-height: 70vh;
+}
+
+.jobs-cats,
+.jobs-list,
+.jobs-detail {
+  border-right: 1px solid var(--line);
+  padding: 28px 24px;
+}
+
+.jobs-detail {
+  border-right: 0;
+  position: sticky;
+  top: 84px;
+  align-self: start;
+  max-height: calc(100vh - 84px);
+  overflow-y: auto;
+}
+
+.jobs-cat {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 12px 4px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.jobs-cat:hover,
+.jobs-cat.active {
+  color: var(--blue);
+}
+
+.jobs-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 22px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.jobs-row:hover,
+.jobs-row.active {
+  background: rgba(29, 111, 224, 0.04);
+}
+
+.jobs-row .new {
+  font-family: "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--blue);
+  margin-bottom: 8px;
+}
+
+.jobs-row h3 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.jobs-row .meta {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.jobs-row .skills {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.jobs-empty,
+.jobs-error {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.jobs-empty h2,
+.jobs-error h2 {
+  font-size: 22px;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.job-detail-title {
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.job-detail-meta {
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.job-detail-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.job-section {
+  margin-top: 28px;
+}
+
+.job-section h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+
+.job-section p,
+.job-section li {
+  font-size: 15px;
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+
+.job-section ul {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.apply-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 120px 24px 80px;
+}
+
+.apply-steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 24px 0 32px;
+  font-family: "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.apply-steps .on {
+  color: var(--blue);
+}
+
+.apply-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.apply-field label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.apply-field input,
+.apply-field textarea,
+.apply-field select {
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 15px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.apply-field textarea {
+  height: auto;
+  min-height: 120px;
+  padding: 12px 14px;
+}
+
+.apply-field input:focus,
+.apply-field textarea:focus,
+.apply-field select:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.apply-error {
+  color: #b42318;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--tint), #fff, var(--tint));
+  background-size: 200% 100%;
+  animation: sk 1.2s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes sk {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 1040px) {
+  .jobs-layout {
+    grid-template-columns: 1fr;
+  }
+  .jobs-cats,
+  .jobs-list,
+  .jobs-detail {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .jobs-detail {
+    position: static;
+    max-height: none;
+  }
+  .jobs-search {
+    grid-template-columns: 1fr;
+  }
+}
+
+.jobs-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 0 8px;
+}
+
+.jobs-filters select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.jobs-sticky-apply {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .jobs-sticky-apply {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+  }
+  .jobs-sticky-apply .btn {
+    flex: 1;
+  }
+}
