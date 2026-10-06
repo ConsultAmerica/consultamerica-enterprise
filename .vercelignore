@@ -1,0 +1,6 @@
+vid
+work
+_*.html
+img/_*.html
+*.md
+.DS_Store

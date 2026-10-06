@@ -1,0 +1,8 @@
+vid/
+work/
+_*.html
+img/_*.html
+.vercel/
+.DS_Store
+node_modules/
+*.log
