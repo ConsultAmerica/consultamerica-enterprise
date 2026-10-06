@@ -23,7 +23,7 @@ export function MarketingFooter() {
           </div>
           <div className="foot-col">
             <h4>Company</h4>
-            <Link href="/#about">Who we are</Link>
+            <Link href="/about">Who we are</Link>
             <Link href="/#talent">Talent</Link>
             <Link href="/#insights">Insights</Link>
             <Link href="/#careers">Careers</Link>

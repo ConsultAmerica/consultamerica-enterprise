@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 
 import type { Job } from "@/lib/jobs";
 import {
@@ -9,20 +16,8 @@ import {
   type SubmitJobApplicationInput,
 } from "@/lib/recruiting/actions";
 
-const STEPS = [
-  { id: 1, label: "01 Your information" },
-  { id: 2, label: "02 Resume" },
-  { id: 3, label: "03 Questions" },
-  { id: 4, label: "04 Review" },
-  { id: 5, label: "05 Confirmation" },
-] as const;
-
-const WORK_AUTH_OPTIONS = [
-  "Authorized to work in the U.S.",
-  "Requires sponsorship now",
-  "Will require sponsorship in the future",
-  "Not applicable / Other",
-] as const;
+const ACCEPT =
+  ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 type EasyApplyFormProps = {
   job: Job;
@@ -35,9 +30,6 @@ type FormState = {
   phone: string;
   location: string;
   linkedinUrl: string;
-  yearsOfExperience: string;
-  workAuthorization: string;
-  coverLetter: string;
 };
 
 const INITIAL: FormState = {
@@ -47,385 +39,429 @@ const INITIAL: FormState = {
   phone: "",
   location: "",
   linkedinUrl: "",
-  yearsOfExperience: "",
-  workAuthorization: "",
-  coverLetter: "",
 };
 
-function splitName(fullName: string): { firstName: string; lastName: string } {
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { firstName: "", lastName: "" };
-  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
-  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+function formatBytes(size: number): string {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fileKind(file: File): string {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".pdf") || file.type === "application/pdf") return "PDF";
+  if (name.endsWith(".docx")) return "DOCX";
+  if (name.endsWith(".doc")) return "DOC";
+  return "Document";
+}
+
+function isAllowedResume(file: File): boolean {
+  const name = file.name.toLowerCase();
+  return (
+    name.endsWith(".pdf") ||
+    name.endsWith(".doc") ||
+    name.endsWith(".docx") ||
+    file.type === "application/pdf" ||
+    file.type === "application/msword" ||
+    file.type ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  );
 }
 
 export function EasyApplyForm({ job }: EasyApplyFormProps) {
-  const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>(INITIAL);
-  const [fullName, setFullName] = useState("");
   const [resume, setResume] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [jobSummaryOpen, setJobSummaryOpen] = useState(false);
   const [confirmation, setConfirmation] = useState<{
     applicationNumber: string;
   } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const resumeHelpId = useId();
+  const resumeErrorId = useId();
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const reviewRows = useMemo(
-    () => [
-      ["Name", `${form.firstName} ${form.lastName}`.trim()],
-      ["Email", form.email],
-      ["Phone", form.phone || "—"],
-      ["Location", form.location || "—"],
-      ["LinkedIn", form.linkedinUrl || "—"],
-      ["Resume", resume?.name ?? "—"],
-      ["Work authorization", form.workAuthorization || "—"],
-      ["Years of experience", form.yearsOfExperience || "—"],
-      ["Cover letter", form.coverLetter.trim() ? "Included" : "—"],
-    ],
-    [form, resume],
-  );
-
-  const validateStep = (current: number): string | null => {
-    if (current === 1) {
-      const { firstName, lastName } = form.firstName
-        ? { firstName: form.firstName, lastName: form.lastName }
-        : splitName(fullName);
-      if (!firstName.trim() || !lastName.trim()) {
-        return "Please enter your first and last name.";
-      }
-      if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-        return "Please enter a valid email address.";
-      }
-      if (!form.phone.trim()) return "Please enter a phone number.";
-      if (!form.location.trim()) return "Please enter your location.";
-      return null;
-    }
-    if (current === 2) {
-      if (!resume) return "Please upload your resume (PDF, DOC, or DOCX).";
-      const name = resume.name.toLowerCase();
-      const ok =
-        name.endsWith(".pdf") ||
-        name.endsWith(".doc") ||
-        name.endsWith(".docx") ||
-        resume.type === "application/pdf" ||
-        resume.type === "application/msword" ||
-        resume.type ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-      if (!ok) return "Resume must be a PDF, DOC, or DOCX file.";
-      if (resume.size > 10 * 1024 * 1024) return "Resume must be 10 MB or smaller.";
-      return null;
-    }
-    if (current === 3) {
-      if (!form.workAuthorization) return "Please select your work authorization status.";
-      if (!form.yearsOfExperience.trim()) return "Please enter your years of experience.";
-      return null;
-    }
+  const validateResumeFile = (file: File | null): string | null => {
+    if (!file) return "Please upload your resume (PDF, DOC, or DOCX).";
+    if (!isAllowedResume(file)) return "Resume must be a PDF, DOC, or DOCX file.";
+    if (file.size > 10 * 1024 * 1024) return "Resume must be 10 MB or smaller.";
     return null;
   };
 
-  const goNext = () => {
-    setError(null);
-    if (step === 1) {
-      const split = splitName(fullName);
-      setForm((prev) => ({ ...prev, ...split }));
-      if (!split.firstName.trim() || !split.lastName.trim()) {
-        setError("Please enter your first and last name.");
-        return;
-      }
-      if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-        setError("Please enter a valid email address.");
-        return;
-      }
-      if (!form.phone.trim()) {
-        setError("Please enter a phone number.");
-        return;
-      }
-      if (!form.location.trim()) {
-        setError("Please enter your location.");
-        return;
-      }
-    } else {
-      const message = validateStep(step);
-      if (message) {
-        setError(message);
-        return;
-      }
+  const assignResume = (file: File | null) => {
+    if (!file) {
+      setResume(null);
+      return;
     }
-    setStep((prev) => Math.min(prev + 1, 5));
+    const message = validateResumeFile(file);
+    if (message) {
+      setError(message);
+      setResume(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    setError(null);
+    setResume(file);
   };
 
-  const goBack = () => {
-    setError(null);
-    setStep((prev) => Math.max(prev - 1, 1));
+  const validate = (): string | null => {
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      return "Please enter your first and last name.";
+    }
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      return "Please enter a valid email address.";
+    }
+    if (!form.phone.trim()) return "Please enter a phone number.";
+    return validateResumeFile(resume);
   };
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (submitting) return;
     setError(null);
-    const message = validateStep(3);
-    if (message) {
-      setError(message);
-      setStep(3);
-      return;
-    }
-    if (!resume) {
-      setError("Please upload your resume (PDF, DOC, or DOCX).");
-      setStep(2);
+    const message = validate();
+    if (message || !resume) {
+      setError(message ?? "Please upload your resume (PDF, DOC, or DOCX).");
       return;
     }
 
+    const ok = window.confirm(
+      `Submit your application for\n${job.title}?`,
+    );
+    if (!ok) return;
+
     setSubmitting(true);
     try {
-      const names = form.firstName ? form : { ...form, ...splitName(fullName) };
       const input: SubmitJobApplicationInput = {
         requisitionId: job.requisitionId || job.id,
         postingId: job.id,
-        firstName: names.firstName.trim(),
-        lastName: names.lastName.trim(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        location: form.location.trim(),
+        location: form.location.trim() || undefined,
         linkedinUrl: form.linkedinUrl.trim() || undefined,
-        yearsOfExperience: form.yearsOfExperience.trim(),
-        workAuthorization: form.workAuthorization,
-        coverLetter: form.coverLetter.trim() || undefined,
         resumeFileName: resume.name,
       };
       const resumeData = new FormData();
       resumeData.set("resume", resume);
       const result = await submitJobApplication(input, resumeData);
       setConfirmation({ applicationNumber: result.applicationNumber });
-      setStep(5);
     } catch (err) {
-      const text =
+      setError(
         err instanceof Error && err.message
           ? err.message
-          : "We could not submit your application. Please try again.";
-      setError(text);
+          : "We could not submit your application. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <div className="apply-shell">
-      <p style={{ fontSize: 13.5, color: "var(--ink-3)", marginBottom: 8 }}>
-        <Link href={`/jobs/${job.slug}`} style={{ color: "var(--blue)" }}>
-          ← {job.title}
-        </Link>
-      </p>
-      <h1 className="job-detail-title">Easy Apply</h1>
-      <p className="job-detail-meta">
-        {job.company} · {job.location} · {job.employmentType}
-      </p>
+  const onDrop = (event: DragEvent) => {
+    event.preventDefault();
+    setDragOver(false);
+    assignResume(event.dataTransfer.files?.[0] ?? null);
+  };
 
-      <div className="apply-steps" aria-label="Application steps">
-        {STEPS.map((item) => (
-          <span key={item.id} className={step === item.id ? "on" : undefined}>
-            {item.label}
-          </span>
-        ))}
-      </div>
+  const onZoneKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      fileInputRef.current?.click();
+    }
+  };
 
-      {step === 5 && confirmation ? (
-        <div>
-          <h2 style={{ fontSize: 22, marginBottom: 12 }}>Application received</h2>
-          <p style={{ color: "var(--ink-2)", lineHeight: 1.65 }}>
-            Thank you for applying to <strong>{job.title}</strong>. Your application
-            number is <strong>{confirmation.applicationNumber}</strong>. Our recruiting
-            team will follow up by email.
-          </p>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 28 }}>
-            <Link href="/jobs" className="btn btn-primary">
-              Browse more jobs
-            </Link>
-            <Link href={`/jobs/${job.slug}`} className="btn btn-dark">
-              Back to role
-            </Link>
+  if (confirmation) {
+    return (
+      <div className="apply-page">
+        <div className="wrap apply-page-inner">
+          <Link href={`/jobs/${job.slug}`} className="apply-back">
+            ← {job.title}
+          </Link>
+          <div className="apply-layout apply-layout-confirm">
+            <div className="apply-panel apply-confirm">
+              <p className="apply-eyebrow">Application received</p>
+              <h1>Thank you for applying.</h1>
+              <p className="apply-confirm-lead">
+                Your application for <strong>{job.title}</strong> has been received.
+              </p>
+              {confirmation.applicationNumber ? (
+                <dl className="apply-confirm-ref">
+                  <dt>Application reference</dt>
+                  <dd>{confirmation.applicationNumber}</dd>
+                </dl>
+              ) : null}
+              <div className="apply-confirm-next">
+                <h4>What happens next</h4>
+                <p>
+                  Our recruiting team will review your application. If your
+                  background aligns with the role, the team may contact you
+                  regarding next steps.
+                </p>
+              </div>
+              <div className="apply-actions apply-actions-end">
+                <Link href="/jobs" className="btn btn-primary">
+                  View more jobs
+                </Link>
+                <Link href="/#careers" className="btn btn-dark">
+                  Return to Careers
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
-      ) : (
-        <form onSubmit={step === 4 ? onSubmit : (event) => event.preventDefault()}>
-          {step === 1 ? (
-            <>
+      </div>
+    );
+  }
+
+  return (
+    <div className="apply-page">
+      <div className="wrap apply-page-inner">
+        <Link href={`/jobs/${job.slug}`} className="apply-back">
+          ← {job.title}
+        </Link>
+
+        <header className="apply-intro">
+          <p className="apply-eyebrow">Easy Apply</p>
+          <h1 className="apply-job-title" style={{ fontSize: "clamp(26px, 3.2vw, 36px)" }}>
+            {job.title}
+          </h1>
+          <p className="apply-job-meta">
+            {job.company}
+            <span aria-hidden> · </span>
+            {job.location}
+            <span aria-hidden> · </span>
+            {job.employmentType}
+            {job.workplaceType ? (
+              <>
+                <span aria-hidden> · </span>
+                {job.workplaceType}
+              </>
+            ) : null}
+          </p>
+        </header>
+
+        <div className="apply-mobile-summary">
+          <button
+            type="button"
+            className="apply-mobile-summary-toggle"
+            aria-expanded={jobSummaryOpen}
+            onClick={() => setJobSummaryOpen((open) => !open)}
+          >
+            <span>Job summary</span>
+            <span aria-hidden>{jobSummaryOpen ? "−" : "+"}</span>
+          </button>
+          {jobSummaryOpen ? <JobSummaryCard job={job} /> : null}
+        </div>
+
+        <div className="apply-layout">
+          <form className="apply-panel" onSubmit={onSubmit} noValidate>
+            <h2 className="apply-step-heading">Contact information</h2>
+            <div className="apply-grid-2">
               <div className="apply-field">
-                <label htmlFor="fullName">Full name</label>
+                <label htmlFor="firstName">First name *</label>
                 <input
-                  id="fullName"
-                  name="fullName"
-                  autoComplete="name"
-                  value={fullName}
-                  onChange={(event) => {
-                    setFullName(event.target.value);
-                    const split = splitName(event.target.value);
-                    setForm((prev) => ({ ...prev, ...split }));
-                  }}
+                  id="firstName"
+                  name="firstName"
+                  autoComplete="given-name"
+                  value={form.firstName}
+                  onChange={(e) => setField("firstName", e.target.value)}
                   required
                 />
               </div>
               <div className="apply-field">
-                <label htmlFor="email">Email</label>
+                <label htmlFor="lastName">Last name *</label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  autoComplete="family-name"
+                  value={form.lastName}
+                  onChange={(e) => setField("lastName", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="apply-grid-2">
+              <div className="apply-field">
+                <label htmlFor="email">Email *</label>
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   value={form.email}
-                  onChange={(event) => setField("email", event.target.value)}
+                  onChange={(e) => setField("email", e.target.value)}
                   required
                 />
               </div>
               <div className="apply-field">
-                <label htmlFor="phone">Phone</label>
+                <label htmlFor="phone">Phone *</label>
                 <input
                   id="phone"
                   name="phone"
                   type="tel"
                   autoComplete="tel"
                   value={form.phone}
-                  onChange={(event) => setField("phone", event.target.value)}
+                  onChange={(e) => setField("phone", e.target.value)}
                   required
                 />
               </div>
-              <div className="apply-field">
-                <label htmlFor="location">Location</label>
-                <input
-                  id="location"
-                  name="location"
-                  autoComplete="address-level2"
-                  placeholder="City, State"
-                  value={form.location}
-                  onChange={(event) => setField("location", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="apply-field">
-                <label htmlFor="linkedinUrl">LinkedIn (optional)</label>
-                <input
-                  id="linkedinUrl"
-                  name="linkedinUrl"
-                  type="url"
-                  placeholder="https://linkedin.com/in/…"
-                  value={form.linkedinUrl}
-                  onChange={(event) => setField("linkedinUrl", event.target.value)}
-                />
-              </div>
-            </>
-          ) : null}
+            </div>
 
-          {step === 2 ? (
+            <h2 className="apply-step-heading" style={{ marginTop: 8 }}>
+              Location
+            </h2>
             <div className="apply-field">
-              <label htmlFor="resume">Resume</label>
+              <label htmlFor="location">City / State</label>
               <input
-                id="resume"
-                name="resume"
-                type="file"
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setResume(file);
-                }}
+                id="location"
+                name="location"
+                autoComplete="address-level2"
+                placeholder="City, State"
+                value={form.location}
+                onChange={(e) => setField("location", e.target.value)}
               />
-              <p style={{ fontSize: 13, color: "var(--ink-3)" }}>
-                PDF, DOC, or DOCX · max 10 MB
-                {resume ? ` · Selected: ${resume.name}` : ""}
-              </p>
             </div>
-          ) : null}
+            <div className="apply-field">
+              <label htmlFor="linkedinUrl">LinkedIn (optional)</label>
+              <input
+                id="linkedinUrl"
+                name="linkedinUrl"
+                type="url"
+                placeholder="https://linkedin.com/in/…"
+                value={form.linkedinUrl}
+                onChange={(e) => setField("linkedinUrl", e.target.value)}
+              />
+            </div>
 
-          {step === 3 ? (
-            <>
-              <div className="apply-field">
-                <label htmlFor="workAuthorization">Work authorization</label>
-                <select
-                  id="workAuthorization"
-                  name="workAuthorization"
-                  value={form.workAuthorization}
-                  onChange={(event) => setField("workAuthorization", event.target.value)}
-                  required
-                >
-                  <option value="">Select…</option>
-                  {WORK_AUTH_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="apply-field">
-                <label htmlFor="yearsOfExperience">Years of experience</label>
-                <input
-                  id="yearsOfExperience"
-                  name="yearsOfExperience"
-                  inputMode="numeric"
-                  placeholder="e.g. 5"
-                  value={form.yearsOfExperience}
-                  onChange={(event) => setField("yearsOfExperience", event.target.value)}
-                  required
-                />
-              </div>
-              <div className="apply-field">
-                <label htmlFor="coverLetter">Cover letter (optional)</label>
-                <textarea
-                  id="coverLetter"
-                  name="coverLetter"
-                  rows={6}
-                  value={form.coverLetter}
-                  onChange={(event) => setField("coverLetter", event.target.value)}
-                />
-              </div>
-            </>
-          ) : null}
-
-          {step === 4 ? (
-            <div className="job-section" style={{ marginTop: 0 }}>
-              <h2>Review your application</h2>
-              <dl style={{ display: "grid", gap: 12, marginTop: 8 }}>
-                {reviewRows.map(([label, value]) => (
-                  <div key={label}>
-                    <dt style={{ fontSize: 12.5, color: "var(--ink-3)", letterSpacing: "0.04em" }}>
-                      {label}
-                    </dt>
-                    <dd style={{ fontSize: 15, color: "var(--ink)", marginTop: 4 }}>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-              {form.coverLetter.trim() ? (
-                <p style={{ marginTop: 16, whiteSpace: "pre-wrap", color: "var(--ink-2)" }}>
-                  {form.coverLetter}
+            <h2 className="apply-step-heading" style={{ marginTop: 8 }}>
+              Resume *
+            </h2>
+            <input
+              ref={fileInputRef}
+              id="resume"
+              name="resume"
+              type="file"
+              className="apply-file-native"
+              accept={ACCEPT}
+              aria-describedby={`${resumeHelpId}${error ? ` ${resumeErrorId}` : ""}`}
+              onChange={(e) => assignResume(e.target.files?.[0] ?? null)}
+            />
+            {!resume ? (
+              <div
+                className={`apply-upload${dragOver ? " is-drag" : ""}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={onZoneKeyDown}
+                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
+                aria-label="Upload your resume"
+              >
+                <span className="apply-upload-icon" aria-hidden>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M12 16V4M12 4l-4 4M12 4l4 4" />
+                    <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
+                  </svg>
+                </span>
+                <p className="apply-upload-title">Upload your resume</p>
+                <p className="apply-upload-hint">
+                  Drag and drop or <span className="apply-upload-browse">Browse files</span>
                 </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {error ? <p className="apply-error">{error}</p> : null}
-
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 28 }}>
-            {step > 1 ? (
-              <button type="button" className="btn btn-dark" onClick={goBack} disabled={submitting}>
-                Back
-              </button>
+                <p id={resumeHelpId} className="apply-upload-meta">
+                  PDF, DOC or DOCX · Maximum 10 MB
+                </p>
+              </div>
             ) : (
+              <div className="apply-file-selected">
+                <div className="apply-file-icon" aria-hidden>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6" />
+                  </svg>
+                </div>
+                <div className="apply-file-meta">
+                  <p className="apply-file-name">{resume.name}</p>
+                  <p className="apply-file-sub">
+                    {fileKind(resume)} · {formatBytes(resume.size)}
+                  </p>
+                  <p className="apply-file-status">Ready to submit</p>
+                </div>
+                <div className="apply-file-actions">
+                  <button type="button" className="apply-text-btn" onClick={() => fileInputRef.current?.click()}>
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    className="apply-text-btn"
+                    onClick={() => {
+                      setResume(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            )}
+            <p className="apply-trust">
+              Your resume supplies your professional history. Your application
+              information is securely submitted to Consult America.
+            </p>
+
+            {error ? (
+              <p id={resumeErrorId} className="apply-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="apply-actions">
               <Link href={`/jobs/${job.slug}`} className="btn btn-dark">
                 Cancel
               </Link>
-            )}
-            {step < 4 ? (
-              <button type="button" className="btn btn-primary" onClick={goNext}>
-                Continue
-              </button>
-            ) : (
               <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? "Submitting…" : "Submit application"}
+                {submitting ? "Submitting application…" : "Submit application →"}
               </button>
-            )}
-          </div>
-        </form>
-      )}
+            </div>
+          </form>
+
+          <aside className="apply-aside" aria-label="Job summary">
+            <JobSummaryCard job={job} sticky />
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JobSummaryCard({ job, sticky = false }: { job: Job; sticky?: boolean }) {
+  return (
+    <div className={`apply-job-card${sticky ? " is-sticky" : ""}`}>
+      <p className="apply-job-card-label">Job summary</p>
+      <h3>{job.title}</h3>
+      <ul className="apply-job-card-meta">
+        <li>{job.company}</li>
+        <li>{job.location}</li>
+        <li>{job.employmentType}</li>
+        {job.workplaceType ? <li>{job.workplaceType}</li> : null}
+        {job.requisitionId ? <li>Job ID · {job.requisitionId}</li> : null}
+      </ul>
+      <Link href={`/jobs/${job.slug}`} className="apply-job-card-link">
+        View full job description →
+      </Link>
     </div>
   );
 }

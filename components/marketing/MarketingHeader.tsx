@@ -29,6 +29,9 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
         </Link>
         <nav className="nav-mid" aria-label="Primary">
           <div className="nav-item">
+            <Link href="/about">About</Link>
+          </div>
+          <div className="nav-item">
             <Link href="/#capabilities">Capabilities</Link>
           </div>
           <div className="nav-item">
@@ -96,6 +99,9 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
       </div>
       {menuOpen ? (
         <div className="mobile-menu open" id="mobileMenu">
+          <Link href="/about" onClick={() => setMenuOpen(false)}>
+            About
+          </Link>
           <Link href="/#capabilities" onClick={() => setMenuOpen(false)}>
             Capabilities
           </Link>

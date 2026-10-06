@@ -221,18 +221,21 @@ export function JobsPortal({
     <div className="jobs-shell">
       <section className="jobs-hero">
         <div className="wrap">
+          <p className="jobs-hero-eyebrow">Careers</p>
           <h1>
-            Find your next <span className="g">role.</span>
+            Find work that
+            <br />
+            <span className="g">moves technology forward.</span>
           </h1>
           <p>
-            Search open positions across consulting, engineering, AI, and
-            enterprise delivery — then apply in minutes.
+            Explore opportunities across consulting, Oracle, AI, data,
+            engineering and enterprise transformation.
           </p>
           <form className="jobs-search" onSubmit={onSearchSubmit}>
             <input
               type="search"
               name="q"
-              placeholder="Job title, skill, or keyword"
+              placeholder="Search jobs…"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               aria-label="Keyword"
@@ -240,13 +243,13 @@ export function JobsPortal({
             <input
               type="search"
               name="location"
-              placeholder="City, state, or remote"
+              placeholder="Location"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
               aria-label="Location"
             />
             <button type="submit" className="btn btn-primary">
-              Search Jobs
+              Search
             </button>
           </form>
         </div>

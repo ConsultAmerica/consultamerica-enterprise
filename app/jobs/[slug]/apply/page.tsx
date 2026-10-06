@@ -31,17 +31,24 @@ export default async function JobApplyPage({ params }: ApplyPageProps) {
     return (
       <>
         <MarketingHeader />
-        <main className="jobs-shell">
-          <div className="apply-shell">
-            <h1 className="job-detail-title">Applications closed</h1>
-            <p className="job-detail-meta">
-              {job.title} is no longer accepting applications.
-            </p>
-            <p style={{ marginTop: 28 }}>
-              <Link href="/jobs" className="btn btn-primary">
-                View open roles
-              </Link>
-            </p>
+        <main>
+          <div className="apply-page">
+            <div className="wrap apply-page-inner">
+              <div className="apply-intro" style={{ marginBottom: 16 }}>
+                <p className="apply-eyebrow">Applications closed</p>
+                <h1 style={{ fontSize: "clamp(28px, 3.6vw, 40px)" }}>{job.title}</h1>
+              </div>
+              <div className="apply-panel">
+                <p className="apply-job-meta" style={{ marginTop: 0 }}>
+                  This position is no longer accepting applications.
+                </p>
+                <p style={{ marginTop: 28 }}>
+                  <Link href="/jobs" className="btn btn-primary">
+                    View current openings →
+                  </Link>
+                </p>
+              </div>
+            </div>
           </div>
         </main>
         <MarketingFooter />
@@ -58,7 +65,7 @@ export default async function JobApplyPage({ params }: ApplyPageProps) {
   return (
     <>
       <MarketingHeader />
-      <main className="jobs-shell">
+      <main>
         <EasyApplyForm job={job} />
       </main>
       <MarketingFooter />
