@@ -1,11 +1,11 @@
+import "server-only";
+
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import NodeWebSocket from "ws";
 
 /**
  * Server-only Supabase access using the service-role key.
- * Every caller must handle a `null` client — this project runs without a
- * configured Supabase project until one is provisioned, and nothing here
- * may throw or crash a page render when that's the case.
+ * Never import this module from Client Components.
  */
 
 let cachedClient: SupabaseClient | null | undefined;
@@ -19,7 +19,7 @@ export function isSupabaseConfigured(): boolean {
 
 /**
  * Production must never silently fall back to demo/in-memory data.
- * Call at app bootstrap / jobs routes when NODE_ENV === "production".
+ * Call from server routes/actions when NODE_ENV === "production".
  */
 export function assertProductionSupabaseConfigured(): void {
   if (process.env.NODE_ENV !== "production") return;
@@ -44,8 +44,7 @@ export function getSupabaseServiceClient(): SupabaseClient | null {
 
   // supabase-js always constructs a realtime client, which throws under a
   // Node runtime with no native WebSocket (Node <22 — matches scripts run
-  // via tsx, e.g. scripts/process-notification-deliveries.ts). Next.js's own
-  // server runtime has native WebSocket, so this only ever engages there.
+  // via tsx). Next.js's own server runtime has native WebSocket.
   const realtime =
     typeof globalThis.WebSocket === "undefined"
       ? { realtime: { transport: NodeWebSocket as unknown as typeof globalThis.WebSocket } }

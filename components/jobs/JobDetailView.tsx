@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import type { Job } from "@/lib/jobs";
-import { formatPostedDate } from "@/lib/jobs";
+import type { Job } from "@/lib/jobs/public-model";
+import { formatPostedDate } from "@/lib/jobs/public-model";
 import { safeExternalApplyUrl } from "@/lib/jobs/portal";
 
 type JobDetailViewProps = {

@@ -10,7 +10,7 @@ import {
   type KeyboardEvent,
 } from "react";
 
-import type { Job } from "@/lib/jobs";
+import type { Job } from "@/lib/jobs/public-model";
 import {
   submitJobApplication,
   type SubmitJobApplicationInput,

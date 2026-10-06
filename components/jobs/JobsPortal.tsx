@@ -14,7 +14,7 @@ import { JobDetailView } from "@/components/jobs/JobDetailView";
 import {
   formatPostedDate,
   type Job,
-} from "@/lib/jobs";
+} from "@/lib/jobs/public-model";
 import {
   DATE_WINDOWS,
   EXPERIENCE_LEVELS,

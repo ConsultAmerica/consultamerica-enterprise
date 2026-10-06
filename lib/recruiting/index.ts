@@ -1,3 +1,5 @@
+import "server-only";
+
 import { isSupabaseConfigured } from "@/app/lib/supabase/server";
 import { stagingPortalJobs } from "@/data/recruiting/staging-portal-jobs";
 import {

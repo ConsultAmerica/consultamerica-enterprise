@@ -2,13 +2,18 @@
  * Public careers Job view-model.
  * Backed by `Job` (types/recruiting.ts), aliased to `JobPosting` here since
  * this file's own `Job` view-model export would otherwise collide with it.
+ *
+ * Server-only: data access + recruiting repository. Client UI must import
+ * types/formatters from `@/lib/jobs/public-model` instead.
  */
+
+import "server-only";
 
 import {
   employmentTypeLabels,
   workplaceTypeLabels,
 } from "@/types/organization";
-import type { CareerArea, Job as JobPosting } from "@/types/recruiting";
+import type { Job as JobPosting } from "@/types/recruiting";
 import { careerAreaLabels as recruitingCareerLabels } from "@/data/jobs";
 import {
   getPostingBySlugAny,
@@ -23,48 +28,10 @@ import {
   skillsFor,
   type PortalSearch,
 } from "@/lib/jobs/portal";
+import type { Job, JobFilters } from "@/lib/jobs/public-model";
 
-export type Job = {
-  id: string;
-  slug: string;
-  title: string;
-  department: string;
-  careerArea: CareerArea;
-  location: string;
-  workplaceType: "Remote" | "Hybrid" | "On-site";
-  employmentType: "Full Time" | "Part Time" | "Contract" | "Temporary" | "Internship";
-  summary: string;
-  description: string;
-  responsibilities: string[];
-  qualifications: string[];
-  preferredQualifications?: string[];
-  postedAt: string;
-  status: "open" | "closed";
-  acceptingApplications: boolean;
-  isNew: boolean;
-  isDemo: boolean;
-  requisitionId: string;
-  company: string;
-  companySummary?: string;
-  experienceLevel?: string;
-  applicationType: "INTERNAL" | "EXTERNAL";
-  externalApplyUrl?: string;
-  salaryLabel?: string;
-  salaryMin?: number;
-  salaryMax?: number;
-  skills: string[];
-  categories: { id: string; label: string }[];
-  verified: boolean;
-};
-
-export type JobFilters = {
-  query?: string;
-  location?: string;
-  careerArea?: string;
-  workplaceType?: string;
-  employmentType?: string;
-};
-
+export type { Job, JobFilters } from "@/lib/jobs/public-model";
+export { formatPostedDate } from "@/lib/jobs/public-model";
 export { careerAreaLabels } from "@/data/jobs";
 
 function toPublicJob(posting: JobPosting): Job {
@@ -242,12 +209,4 @@ export function getJobFilterOptions(allJobs: Job[]) {
     workplaceTypes: [...new Set(allJobs.map((job) => job.workplaceType))],
     employmentTypes: [...new Set(allJobs.map((job) => job.employmentType))],
   };
-}
-
-export function formatPostedDate(date: string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
 }
