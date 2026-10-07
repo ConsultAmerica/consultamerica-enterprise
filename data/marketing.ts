@@ -44,6 +44,8 @@ export const ECO = [
   ["Security & governance", "Controls · auditability"],
 ] as const;
 
+// Real clients only. CSRA is deliberately excluded (the artwork exists at
+// public/img/clients/csra.png but must not be shown) — do not re-add it.
 export const CLIENTS = [
   ["gdit", "General Dynamics IT"],
   ["gtn", "Global Tax Network"],
@@ -52,6 +54,13 @@ export const CLIENTS = [
   ["xfinity", "Xfinity"],
   ["kforce", "Kforce"],
   ["expedia", "Expedia Group"],
+  ["navitas", "Navitas"],
+  ["ampcus", "Ampcus"],
+  ["pnkconnections", "PNK Connections"],
+  ["caci", "CACI"],
+  ["cgi", "CGI Federal"],
+  ["trinamix", "Trinamix"],
+  ["kyndryl", "Kyndryl"],
 ] as const;
 
 export const ANSWERS: Record<string, string> = {
@@ -69,18 +78,21 @@ export const SUGGEST = [
   ["Can you provide specialized engineering talent?", "Hire specialized tech talent"],
 ] as const;
 
+// Semi-realistic sector pictograms (public/img/sectors). Order must track
+// CAPS and INDUSTRIES above. These replaced generic line icons: the old flat
+// glyphs gave Financial Services and Public Sector the same building shape.
 export const CAP_ICONS = [
-  "M16 18l6-6-6-6M8 6l-6 6 6 6M14 4l-4 16",
-  "M12 3l1.8 5.2 5.2 1.8-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z",
-  "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z",
-  "M21 2v6h-6M3 22v-6h6M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16",
-  "M22 12h-4l-3 9L9 3l-3 9H2",
+  "/img/sectors/engineering.png",
+  "/img/sectors/aidata.png",
+  "/img/sectors/oraclecloud.png",
+  "/img/sectors/transformation.png",
+  "/img/sectors/managed.png",
 ];
 
 export const IND_ICONS = [
-  "M3 21h18M5 21V8l7-5 7 5v13M10 21v-6h4v6",
-  "M1 3h15v13H1zM16 8h4l3 3v5h-7M5.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm13 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
-  "M2 20h20M4 20V8l5 3V8l5 3V8l6 3v9",
-  "M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6",
-  "M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4M3 6h18M16 10a4 4 0 0 1-8 0",
+  "/img/sectors/financial.png",
+  "/img/sectors/supplychain.png",
+  "/img/sectors/manufacturing.png",
+  "/img/sectors/publicsector.png",
+  "/img/sectors/retail.png",
 ];

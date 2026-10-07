@@ -229,10 +229,15 @@ section{position:relative}
 .clients{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:clamp(56px,7vh,84px) 0}
 .clients-kick{text-align:center;font-family:"Geist Mono",monospace;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:42px}
 .marquee{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
-.marquee-track{display:flex;align-items:center;gap:64px;width:max-content;animation:marq 42s linear infinite}
+/* Each copy of the logo list is its own flex group with a trailing gap, so the
+   two groups are exactly equal and translateX(-50%) loops seamlessly. Putting
+   the gap on .marquee-track instead leaves the loop short by half a gap, which
+   shows up as a visible jump/tear every cycle. */
+.marquee-track{display:flex;align-items:center;width:max-content;animation:marq 42s linear infinite}
+.marquee-group{display:flex;align-items:center;gap:64px;padding-right:64px;flex:none}
 .client-logo{height:34px;width:auto;object-fit:contain;flex-shrink:0}
 @keyframes marq{to{transform:translateX(-50%)}}
-@media(prefers-reduced-motion:reduce){.marquee-track{animation:none;flex-wrap:wrap;justify-content:center;gap:24px 44px;width:auto}}
+@media(prefers-reduced-motion:reduce){.marquee-track{animation:none;flex-wrap:wrap;justify-content:center;width:auto}.marquee-group{flex-wrap:wrap;justify-content:center;gap:24px 44px;padding-right:0}.marquee-group+.marquee-group{display:none}}
 
 /* capabilities editorial switcher */
 .cap-feat{display:grid;grid-template-columns:1.05fr .95fr;gap:0;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.02);min-height:500px}

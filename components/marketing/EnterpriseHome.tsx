@@ -109,13 +109,22 @@ function MegaItem({
   href: string;
 }) {
   const ext = /^https?:/.test(href);
+  // sector pictograms render bare (no tinted chip) at 34px; product/feature
+  // artwork keeps the rounded 36px chip; anything else is an inline SVG path
+  const isPict = /^\/?img\/sectors\//.test(icon);
   const isImg = /^\/?img\//.test(icon) || /\.(png|jpe?g|svg|webp)$/i.test(icon);
   const src = icon.startsWith("/") ? icon : `/${icon}`;
 
   return (
     <a className="mitem" href={href} {...(ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-      <span className={`mi${isImg ? " mi-img" : ""}`}>
-        {isImg ? <img src={src} alt="" width={36} height={36} /> : <PathIcon d={icon} />}
+      <span className={`mi${isPict ? " mi-pict" : isImg ? " mi-img" : ""}`}>
+        {isPict ? (
+          <img src={src} alt="" />
+        ) : isImg ? (
+          <img src={src} alt="" width={36} height={36} />
+        ) : (
+          <PathIcon d={icon} />
+        )}
       </span>
       <span className="mtx">
         <span className="mt">
@@ -680,16 +689,18 @@ export function EnterpriseHome() {
         <p className="clients-kick reveal">Trusted by enterprise &amp; public-sector organizations</p>
         <div className="marquee reveal">
           <div className="marquee-track" id="clientTrack">
-            {[0, 1].flatMap((copy) =>
-              CLIENTS.map(([id, name]) => (
-                <img
-                  key={`${copy}-${id}`}
-                  className="client-logo"
-                  src={`/img/clients/${id}.png`}
-                  alt={name}
-                />
-              )),
-            )}
+            {[0, 1].map((copy) => (
+              <div className="marquee-group" key={copy} aria-hidden={copy === 1}>
+                {CLIENTS.map(([id, name]) => (
+                  <img
+                    key={`${copy}-${id}`}
+                    className="client-logo"
+                    src={`/img/clients/${id}.png`}
+                    alt={copy === 0 ? name : ""}
+                  />
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </section>
