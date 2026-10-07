@@ -98,9 +98,10 @@ img{max-width:100%;display:block}
 .demotag{display:inline-block;font-family:"Geist Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);border:1px solid rgba(34,199,230,.4);border-radius:5px;padding:4px 9px}
 
 /* ============ NAV ============ */
-header.nav{position:fixed;inset:0 0 auto 0;z-index:60;transition:background .35s,border-color .35s,backdrop-filter .35s;background:rgba(7,12,24,.16);backdrop-filter:blur(8px) saturate(1.1);border-bottom:1px solid rgba(255,255,255,.07)}
-header.nav.solid{background:rgba(255,255,255,.92);backdrop-filter:blur(18px) saturate(1.3);border-bottom-color:var(--line);box-shadow:0 1px 0 rgba(10,19,34,.03)}
-.nav-inner{display:flex;align-items:center;justify-content:space-between;height:84px}
+/* Floating-islands nav (Infosys-style): the header itself is invisible; the
+   three clusters (brand / link pill / CTA pill) float over the hero media. */
+header.nav{position:fixed;inset:0 0 auto 0;z-index:60;background:transparent;backdrop-filter:none;border-bottom:none;box-shadow:none}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;height:92px;gap:20px}
 header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:40px;padding-right:40px}
 @media(max-width:600px){header.nav>.wrap{padding-left:20px;padding-right:20px}}
 .brand{display:flex;align-items:center;gap:12px;z-index:2}
@@ -108,22 +109,29 @@ header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:40px;padding-right:
 .brand:hover .mark{transform:scale(1.03)}
 .brand .bt{display:flex;flex-direction:column;line-height:1.02}
 .brand .bw{font-size:22px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
-.brand .bw b{font-weight:700;color:#0f2d4a}
-.brand .bw em{font-style:normal;font-weight:600;color:#0f2d4a}
-.brand .btag{font-size:11px;font-weight:600;color:#64727f;letter-spacing:.09em;white-space:nowrap;margin-top:4px;text-transform:uppercase}
+/* brand sits directly on the hero media, so it starts white and goes dark once
+   the nav passes the hero (header.nav.scrolled) */
+.brand .bw b{font-weight:700;color:#fff;transition:color .35s}
+.brand .bw em{font-style:normal;font-weight:600;color:#fff;transition:color .35s}
+.brand .btag{font-size:11px;font-weight:600;color:rgba(255,255,255,.66);letter-spacing:.09em;white-space:nowrap;margin-top:4px;text-transform:uppercase;transition:color .35s}
+.brand .bt{text-shadow:0 2px 14px rgba(5,8,15,.45);transition:text-shadow .35s}
+header.nav.scrolled .brand .bw b,header.nav.scrolled .brand .bw em{color:#0f2d4a}
+header.nav.scrolled .brand .btag{color:#64727f}
+header.nav.scrolled .brand .bt{text-shadow:none}
 @media(max-width:600px){.brand{gap:9px}.brand .mark{height:40px}.brand .bw{font-size:22px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
-.nav-mid{display:flex;gap:2px}
+/* island 2: the frosted link capsule */
+.nav-mid{display:flex;gap:1px;padding:6px 8px;border-radius:999px;
+  background:rgba(255,255,255,.6);backdrop-filter:blur(16px) saturate(1.5);
+  border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 32px -16px rgba(7,12,24,.55);
+  transition:background .35s,border-color .35s,box-shadow .35s}
+header.nav.scrolled .nav-mid{background:rgba(255,255,255,.94);border-color:var(--line);box-shadow:0 12px 34px -18px rgba(10,19,34,.42)}
 .nav-item{position:relative}
-.nav-item>a{display:flex;align-items:center;gap:5px;padding:9px 11px;font-size:14px;font-weight:500;white-space:nowrap;color:rgba(255,255,255,.82);transition:color .2s;position:relative}
-header.nav.solid .nav-item>a{color:var(--ink-2)}
-.nav-item>a::after{content:"";position:absolute;left:11px;right:11px;bottom:4px;height:2px;background:var(--grad);border-radius:2px;transform:scaleX(0);transform-origin:center;transition:transform .28s cubic-bezier(.2,.8,.3,1)}
-header.nav.solid .nav-item>a::after{background:var(--grad)}
-.nav-item:hover>a::after{transform:scaleX(1)}
-.nav-item>a:hover{color:#fff}
-header.nav.solid .nav-item>a:hover{color:var(--ink)}
+.nav-item>a{display:flex;align-items:center;gap:5px;padding:9px 15px;border-radius:999px;font-size:14px;font-weight:500;white-space:nowrap;color:#13263f;transition:background .2s,color .2s;position:relative}
+.nav-item>a:hover{background:rgba(10,19,34,.07);color:var(--ink)}
+.nav-item:hover>a{background:rgba(10,19,34,.07)}
 .nav-item>a .chev{width:13px;height:13px;opacity:.6;transition:transform .25s}
 .nav-item:hover>a .chev{transform:rotate(180deg)}
-.mega{position:fixed;left:0;right:0;top:84px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 30px 64px -34px rgba(10,19,34,.3);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .2s,transform .3s cubic-bezier(.2,.9,.3,1);z-index:55}
+.mega{position:fixed;left:0;right:0;top:92px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 30px 64px -34px rgba(10,19,34,.3);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .2s,transform .3s cubic-bezier(.2,.9,.3,1);z-index:55}
 .nav-item:hover .mega{opacity:1;visibility:visible;transform:translateY(0)}
 .has-mega::after{content:"";position:absolute;left:-8px;right:-8px;top:100%;height:40px}
 .mega-inner{max-width:1200px;margin:0 auto;padding:34px 40px 38px;display:grid;grid-template-columns:1fr 1fr 1fr 312px;gap:26px 40px;align-items:start}
@@ -151,9 +159,10 @@ header.nav.solid .nav-item>a:hover{color:var(--ink)}
 .mf-title{display:inline-flex;align-items:center;gap:7px;font-size:15px;font-weight:650;color:var(--ink);margin-bottom:5px;letter-spacing:-.01em}
 .mega-feature:hover .mf-title{color:var(--blue)}
 .mf-desc{font-size:12.5px;color:var(--ink-3);line-height:1.45}
-.nav-right{display:flex;align-items:center;gap:14px;z-index:2}
-.nav-right::before{content:"";width:1px;height:24px;background:var(--line);margin-right:3px}
-@media(max-width:1040px){.nav-right::before{display:none}}
+/* island 3: CTA pills, no divider (islands shouldn't be joined) */
+.nav-right{display:flex;align-items:center;gap:10px;z-index:2}
+.nav-right .btn-sm{border-radius:999px;height:44px;padding:0 22px;box-shadow:0 10px 30px -14px rgba(29,111,224,.9)}
+.hero-actions .btn{border-radius:999px;height:54px;padding:0 28px}
 .nav-toggle{display:none;width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;place-items:center;cursor:pointer}
 header.nav.solid .nav-toggle{color:var(--ink);border-color:var(--line)}
 .mobile-menu{display:none;flex-direction:column;padding:12px 24px 24px;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1)}
@@ -164,7 +173,7 @@ header.nav.solid .nav-toggle{color:var(--ink);border-color:var(--line)}
 @media(max-width:1040px){.nav-mid,.nav-right .btn,.ask-nav{display:none}.nav-toggle{display:grid}}
 
 /* Ask AI — nav entry */
-.ask-nav{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 15px 0 10px;border-radius:8px;white-space:nowrap;background:#fff;border:1px solid var(--line);color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;letter-spacing:-.005em;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s}
+.ask-nav{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px 0 11px;border-radius:999px;white-space:nowrap;background:#0b1324;border:1px solid rgba(255,255,255,.14);color:#fff;font-family:inherit;font-size:14px;font-weight:600;letter-spacing:-.005em;cursor:pointer;box-shadow:0 10px 30px -14px rgba(0,0,0,.7);transition:border-color .2s,box-shadow .2s,transform .2s}
 .ask-nav:hover{border-color:rgba(29,111,224,.45);box-shadow:0 8px 18px -12px rgba(29,111,224,.6);transform:translateY(-1px)}
 .ask-nav .spk{width:23px;height:23px;border-radius:6px;background:var(--grad);color:#fff;display:grid;place-items:center;box-shadow:0 2px 7px -2px rgba(29,111,224,.55)}
 
@@ -203,7 +212,15 @@ header.nav.solid .nav-toggle{color:var(--ink);border-color:var(--line)}
 .hero-inner{position:relative;z-index:2;width:100%;padding:104px 0 48px}
 .hero h1{font-size:clamp(42px,6.1vw,84px);font-weight:600;letter-spacing:-.04em;line-height:1.02;max-width:15ch}
 .hero h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero h1 .l2{display:block}
+.hero h1 .l1,.hero h1 .l2{display:block}
+/* Staggered hero entrance: headline lines rise in first, then the subcopy,
+   then the buttons last. Matches the "text before button" sequencing. */
+.h-rise{opacity:0;transform:translateY(30px);animation:heroRise .9s cubic-bezier(.2,.75,.3,1) forwards}
+@keyframes heroRise{to{opacity:1;transform:none}}
+.hero h1 .l1{animation-delay:.18s}
+.hero h1 .l2{animation-delay:.34s}
+.hero .sub.h-rise{animation-delay:.54s}
+.hero-actions.h-rise{animation-delay:.74s}
 .hero .sub{font-size:clamp(17px,1.5vw,21px);color:rgba(255,255,255,.78);max-width:58ch;margin:26px 0 0;font-weight:400}
 .hero-actions{display:flex;align-items:center;gap:16px;margin-top:38px;flex-wrap:wrap}
 .ask-pill{display:inline-flex;align-items:center;gap:12px;height:52px;padding:0 10px 0 18px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.9);cursor:pointer;font-size:15px;backdrop-filter:blur(8px);transition:border-color .2s,background .2s,transform .2s}
@@ -464,7 +481,7 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 .reveal.in{opacity:1;transform:none}
 .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto}.reveal{opacity:1!important;transform:none!important}.hero-media,.aimoment-media,.impact-media,.careers-media{transform:none!important}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto}.reveal,.h-rise{opacity:1!important;transform:none!important}.hero-media,.aimoment-media,.impact-media,.careers-media{transform:none!important}}
 
 /* ===== mobile refinements ===== */
 @media(max-width:1040px){.ask-nav{display:none!important}.brand .bt{white-space:nowrap}}
@@ -504,8 +521,8 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 </head>
 <body>
 
-<header class="nav solid" id="nav"><div class="wrap nav-inner">
-  <a href="#top" class="brand"><img class="mark" src="logo-mark3.png?v=m1" alt="Consult America" /><span class="bt"><span class="bw"><b>Consult</b> <em>America</em></span><span class="btag">Innovative Technology Services</span></span></a>
+<header class="nav" id="nav"><div class="wrap nav-inner">
+  <a href="#top" class="brand"><img class="mark" src="logo-mark3.png?v=m1" alt="Consult America" /><span class="bt"><span class="bw"><b>Consult</b> <em>America</em></span></span></a>
   <nav class="nav-mid">
     <div class="nav-item has-mega">
       <a href="#capabilities">Capabilities <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></a>
@@ -539,9 +556,9 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 <section class="hero">
   <div class="hero-media" data-parallax="90"><video id="heroVideo" muted loop playsinline preload="metadata" poster="img/hero-poster.jpg" aria-hidden="true"></video></div>
   <div class="wrap hero-inner">
-    <h1>Modernize the <span class="g">digital core.</span><span class="l2">Build what comes next.</span></h1>
-    <p class="sub">Consult America unites engineering, AI, and enterprise consulting, with the specialized technology talent to design it, build it, and run it in production.</p>
-    <div class="hero-actions">
+    <h1><span class="l1 h-rise">Modernize the <span class="g">digital core.</span></span><span class="l2 h-rise">Build what comes next.</span></h1>
+    <p class="sub h-rise">Consult America unites engineering, AI, and enterprise consulting, with the specialized technology talent to design it, build it, and run it in production.</p>
+    <div class="hero-actions h-rise">
       <a href="#contact" class="btn btn-primary">Talk to an expert <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       <a href="#capabilities" class="btn btn-ghost">Explore capabilities <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </div>
@@ -895,12 +912,25 @@ document.getElementById("clientTrack").innerHTML=clientHTML+clientHTML;
 document.getElementById("counters").innerHTML=COUNTERS.map(c=>`<div class="counter"><div class="n"><span class="cv" data-to="${c[0]}">0</span>${c[1]}</div><div class="l">${c[2]}</div></div>`).join("");
 document.getElementById("ecoDomains").innerHTML=ECO.map((e,i)=>`<div class="eco-dom"><img class="eco-ill" src="img/eco${i+1}.png" alt="${e[0]}"><b>${e[0]}</b><span>${e[1]}</span></div>`).join("");
 
-// nav solidify
+// nav (floating islands; scrolled-state is handled by the observer below)
 const nav=document.getElementById("nav");
-nav.classList.add("solid");
 // mobile menu
 const mm=document.getElementById("mobileMenu");
 document.getElementById("navToggle").onclick=()=>mm.classList.toggle("open");
+
+// Floating nav: once the islands clear the hero media, swap the brand to dark
+// and make the link capsule opaque so it stays readable over light sections.
+(function(){
+  var navEl=document.getElementById("nav"),heroEl=document.querySelector(".hero"),t=false;
+  function sync(){
+    var limit=(heroEl?heroEl.offsetHeight:600)-120;
+    navEl.classList.toggle("scrolled",(window.scrollY||0)>limit);
+    t=false;
+  }
+  addEventListener("scroll",function(){if(!t){t=true;requestAnimationFrame(sync);}},{passive:true});
+  addEventListener("resize",sync,{passive:true});
+  sync();
+})();
 mm.querySelectorAll("a").forEach(a=>a.onclick=()=>mm.classList.remove("open"));
 
 // hero brand film — play unless reduced-motion (then poster only, no video download)
