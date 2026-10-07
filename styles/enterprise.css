@@ -515,46 +515,92 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
   .counters{grid-template-columns:1fr 1fr}
 }
 
-/* ============ CONTACT FAB ============
-   Persistent bottom-right pill + popover (blue phone block, then the ways to
-   reach a human). */
-.cfab{position:fixed;right:24px;bottom:24px;z-index:70;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
-.cfab-btn{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 22px;border-radius:999px;
-  background:var(--blue);border:1.5px solid var(--blue);color:#fff;font-family:inherit;font-size:15px;font-weight:650;
-  cursor:pointer;box-shadow:0 14px 34px -12px rgba(29,111,224,.75);transition:background .2s,color .2s,transform .2s,box-shadow .2s}
-.cfab-btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px -12px rgba(29,111,224,.85)}
-.cfab-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-/* when the panel is open the trigger inverts */
-.cfab.open .cfab-btn{background:#fff;color:var(--blue);box-shadow:0 14px 34px -16px rgba(10,19,34,.5)}
+/* ============ CONTACT HUB ============
+   Persistent utility that routes; it does not re-sell. "Talk to an expert"
+   already sits in the nav and the hero, so this stays compact and quiet.
+   Surface is the same deep navy as the hero and nav islands, not a white card,
+   and it anchors to the trigger rather than the viewport edge. */
+.chub{position:fixed;right:28px;bottom:28px;z-index:70;display:flex;flex-direction:column;align-items:flex-end}
 
-.cfab-panel{width:min(340px,calc(100vw - 40px));border-radius:16px;overflow:hidden;background:#fff;
-  border:1px solid var(--line);box-shadow:0 34px 80px -28px rgba(10,19,34,.45);
-  transform-origin:bottom right;animation:cfabIn .22s cubic-bezier(.2,.8,.3,1)}
-@keyframes cfabIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
-.cfab-call{background:var(--blue);color:#fff;text-align:center;padding:22px 20px 20px}
-.cfab-call-k{display:block;font-size:19px;font-weight:650;letter-spacing:-.01em}
-.cfab-call-c{display:block;font-size:13px;color:rgba(255,255,255,.82);margin-top:9px}
-.cfab-call-n{display:block;font-size:26px;font-weight:700;letter-spacing:-.02em;color:#fff;margin-top:2px;font-variant-numeric:tabular-nums}
-.cfab-call-n:hover{text-decoration:underline}
-.cfab-call-h{display:block;font-size:12px;color:rgba(255,255,255,.75);margin-top:9px}
+/* ---- collapsed trigger (unchanged) ---- */
+.chub-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-width:138px;height:52px;padding:0 20px;border-radius:999px;
+  background:var(--blue);color:#fff;font-family:inherit;font-size:15px;font-weight:600;letter-spacing:-.01em;
+  border:1px solid rgba(255,255,255,.14);cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 10px 26px -12px rgba(10,19,34,.55),0 2px 6px -2px rgba(10,19,34,.25);
+  transition:transform .2s cubic-bezier(.2,.8,.3,1),box-shadow .22s,background .2s}
+.chub-btn:hover{transform:translateY(-2px);background:#2a7ce8;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 16px 34px -14px rgba(29,111,224,.62),0 0 0 5px rgba(34,199,230,.1)}
+.chub-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.chub-btn-ic{display:grid;place-items:center;width:18px;height:18px;transition:transform .26s cubic-bezier(.2,.8,.3,1)}
+/* the plus rotates into a close mark */
+.chub.open .chub-btn-ic{transform:rotate(45deg)}
+.chub.open .chub-btn{background:var(--navy-2);border-color:rgba(255,255,255,.18)}
 
-.cfab-rows{padding:6px}
-.cfab-row{display:flex;gap:13px;align-items:flex-start;width:100%;text-align:left;padding:13px 12px;border:0;border-radius:11px;
-  background:transparent;font-family:inherit;cursor:pointer;transition:background .16s}
-.cfab-row:hover{background:var(--tint)}
-.cfab-row:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
-.cfab-ic{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;color:var(--blue)}
-.cfab-tx{display:flex;flex-direction:column;gap:3px;min-width:0}
-.cfab-tx b{font-size:14.5px;font-weight:650;color:var(--blue);text-decoration:underline;text-underline-offset:2px}
-.cfab-row:hover .cfab-tx b{color:var(--blue-d)}
-.cfab-tx span{font-size:12.5px;line-height:1.45;color:var(--ink-2);overflow-wrap:anywhere}
+/* ---- expanded panel: anchored 18px above the trigger, right edges aligned ---- */
+.chub-panel{position:absolute;right:0;bottom:70px;width:372px;max-width:calc(100vw - 32px);
+  background:rgba(10,17,33,.84);backdrop-filter:blur(22px) saturate(1.45);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;overflow:hidden;
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 26px 60px -22px rgba(5,8,15,.78);
+  opacity:0;visibility:hidden;transform:translateY(8px) scale(.98);transform-origin:bottom right;
+  transition:opacity .2s ease,transform .2s cubic-bezier(.2,.85,.3,1),visibility .2s}
+.chub.open .chub-panel{opacity:1;visibility:visible;transform:none}
+.chub-grip{display:none}
 
+.chub-head{padding:16px 18px 11px}
+.chub-head h2{font-size:16.5px;font-weight:650;letter-spacing:-.022em;color:#fff;line-height:1.3}
+.chub-head p{font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.52);margin-top:3px}
+
+.chub-rows{padding:0 7px}
+.chub-row{display:grid;grid-template-columns:20px 1fr 14px;align-items:center;gap:12px;
+  width:100%;text-align:left;padding:11px 11px;border:0;border-radius:11px;background:transparent;
+  font-family:inherit;cursor:pointer;transition:background .16s}
+.chub-row + .chub-row{box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.chub-row:hover{background:rgba(45,124,232,.16);box-shadow:none}
+.chub-row:hover + .chub-row{box-shadow:none}
+.chub-row:focus-visible{outline:1.5px solid var(--cyan);outline-offset:-1.5px;background:rgba(45,124,232,.16)}
+.chub-ic{display:grid;place-items:center;color:rgba(255,255,255,.55);transition:color .16s}
+.chub-row:hover .chub-ic{color:var(--cyan)}
+.chub-tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.chub-t{font-size:13.8px;font-weight:600;letter-spacing:-.012em;color:#fff}
+.chub-d{font-size:11.8px;line-height:1.4;color:rgba(255,255,255,.46);overflow-wrap:anywhere}
+.chub-go{display:grid;place-items:center;color:rgba(255,255,255,.4);
+  transition:transform .2s cubic-bezier(.2,.8,.3,1),color .16s}
+.chub-row:hover .chub-go{color:var(--cyan);transform:translateX(3px)}
+
+.chub-foot{display:flex;align-items:center;gap:8px;background:transparent;padding:11px 18px 13px;margin-top:5px;
+  border-top:1px solid rgba(255,255,255,.08);font-size:12px;color:rgba(255,255,255,.44)}
+.chub-foot a{font-weight:600;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.chub-foot a:hover{color:var(--cyan)}
+.chub-foot a:focus-visible{outline:1.5px solid var(--cyan);outline-offset:2px;border-radius:4px}
+
+.chub-scrim{position:fixed;inset:0;background:rgba(5,8,15,.5);opacity:0;visibility:hidden;
+  transition:opacity .2s ease,visibility .2s;z-index:-1}
+
+/* ---- mobile: a real bottom sheet, same dark surface ---- */
 @media(max-width:600px){
-  .cfab{right:14px;bottom:14px;gap:10px}
-  .cfab-btn{height:48px;padding:0 18px;font-size:14.5px}
-  .cfab-call-n{font-size:23px}
+  .chub{right:14px;bottom:14px}
+  .chub-btn{min-width:0;height:48px;padding:0 18px;font-size:14.5px}
+  .chub.open .chub-scrim{opacity:1;visibility:visible}
+  .chub-panel{position:fixed;left:0;right:0;bottom:0;width:auto;max-width:none;
+    border-radius:20px 20px 0 0;border-left:0;border-right:0;border-bottom:0;
+    background:rgba(8,14,28,.94);
+    transform:translateY(100%);transform-origin:bottom center;
+    box-shadow:0 -18px 50px -18px rgba(5,8,15,.7)}
+  .chub.open .chub-panel{transform:none}
+  .chub-grip{display:block;width:38px;height:4px;border-radius:999px;
+    background:rgba(255,255,255,.22);margin:9px auto 0}
+  .chub-head{padding:13px 18px 10px}
+  .chub-row{padding:13px 11px}
+  .chub-foot{padding:12px 18px calc(14px + env(safe-area-inset-bottom))}
+  /* the sheet owns the bottom of the screen, so the trigger steps aside;
+     the scrim, Esc and picking a row all close it */
+  .chub.open .chub-btn{opacity:0;pointer-events:none;transform:translateY(10px)}
 }
-@media(prefers-reduced-motion:reduce){.cfab-panel{animation:none}}
+
+@media(prefers-reduced-motion:reduce){
+  .chub-panel,.chub-btn,.chub-btn-ic,.chub-go,.chub-scrim{transition-duration:.01ms}
+}
 
 /* ---- React-only additions (no equivalent in the static page) ---- */
 .btn-outline{background:#fff;border-color:var(--line);color:var(--ink)}
