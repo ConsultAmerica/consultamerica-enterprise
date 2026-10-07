@@ -15,7 +15,7 @@ export const INDUSTRIES = [
 ] as const;
 
 export const PROD = [
-  ["ConsultAmerica", "Enterprise platform", "https://consultamerica-nu.vercel.app/", "/img/products/consultamerica.png"],
+  ["ConsultHire", "AI interview hiring", "https://consulthire.vercel.app/", "/img/products/consulthire.svg"],
   ["Data Agent", "Contract intelligence", "https://data-agent-ca.vercel.app/", "/img/products/data-agent.png"],
   ["MediGuide AI", "Healthcare AI", "https://mediguide-ai-woad.vercel.app/", "/img/products/mediguide.png"],
   ["ImportNest", "AI shopping", "https://importnest.vercel.app/", "/img/products/importnest.png"],
@@ -26,6 +26,8 @@ export const PROD = [
   ["AppointEase", "Booking platform", "https://appointease-psi.vercel.app/", "/img/products/appointease.png"],
   ["Smart Appliances", "Home-service booking", "https://project-i8icw-ebon.vercel.app/", "/img/products/smart-appliances.png"],
   ["Romeah", "Quiet-luxury fashion", "https://romeah.vercel.app/", "/img/products/romeah.png"],
+  // Append only. The Products mega-menu picks entries by index (pi(n) in
+  // EnterpriseHome), so inserting mid-array silently repoints every column.
 ] as const;
 
 export const COUNTERS = [

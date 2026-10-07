@@ -233,10 +233,14 @@ section{position:relative}
    two groups are exactly equal and translateX(-50%) loops seamlessly. Putting
    the gap on .marquee-track instead leaves the loop short by half a gap, which
    shows up as a visible jump/tear every cycle. */
-.marquee-track{display:flex;align-items:center;width:max-content;animation:marq 42s linear infinite}
+/* will-change + translate3d promote the 5300px track to its own compositor
+   layer. Without it the browser repaints the strip each frame and tears it
+   mid-logo, which reads as wordmarks splitting apart ("CGI|Fed" + "deral"). */
+.marquee-track{display:flex;align-items:center;width:max-content;animation:marq 42s linear infinite;
+  will-change:transform;backface-visibility:hidden}
 .marquee-group{display:flex;align-items:center;gap:64px;padding-right:64px;flex:none}
-.client-logo{height:34px;width:auto;object-fit:contain;flex-shrink:0}
-@keyframes marq{to{transform:translateX(-50%)}}
+.client-logo{height:34px;width:auto;object-fit:contain;flex-shrink:0;transform:translateZ(0)}
+@keyframes marq{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
 @media(prefers-reduced-motion:reduce){.marquee-track{animation:none;flex-wrap:wrap;justify-content:center;width:auto}.marquee-group{flex-wrap:wrap;justify-content:center;gap:24px 44px;padding-right:0}.marquee-group+.marquee-group{display:none}}
 
 /* capabilities editorial switcher */
