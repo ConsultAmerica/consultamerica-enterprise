@@ -294,6 +294,41 @@ export function EnterpriseHome() {
     };
   }, [reducedMotion]);
 
+  // Floating nav: once the islands clear the hero media, swap the brand to dark
+  // and make the link capsule opaque so it stays readable over light sections.
+  useEffect(() => {
+    const navEl = document.getElementById("nav");
+    if (!navEl) return;
+    const heroEl = document.querySelector<HTMLElement>(".hero");
+    let ticking = false;
+    let lastY = window.scrollY;
+    const sync = () => {
+      ticking = false;
+      const y = window.scrollY;
+      const limit = (heroEl?.offsetHeight ?? 600) - 120;
+      navEl.classList.toggle("scrolled", y > limit);
+      // dissipate once we're past the hero and still heading down; bring it
+      // back the moment the user scrolls up or returns to the top
+      if (y <= limit) navEl.classList.remove("nav-gone");
+      else if (y > lastY + 4) navEl.classList.add("nav-gone");
+      else if (y < lastY - 4) navEl.classList.remove("nav-gone");
+      lastY = y;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(sync);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", sync, { passive: true });
+    sync();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", sync);
+    };
+  }, []);
+
   const ci = (i: number, d: string): [string, string, string, string] => [
     CAPS[i][0],
     d,
@@ -360,10 +395,15 @@ export function EnterpriseHome() {
 
   return (
     <>
-      <header className="nav solid" id="nav">
+      <header className="nav" id="nav">
         <div className="wrap nav-inner">
           <a href="#top" className="brand">
-            <img className="logo" src="/logo-word.png?v=ca10" alt="Consult America" />
+            <img className="mark" src="/logo-mark3.png?v=m1" alt="" aria-hidden />
+            <span className="bt">
+              <span className="bw">
+                <b>Consult</b> <em>America</em>
+              </span>
+            </span>
           </a>
           <nav className="nav-mid" aria-label="Primary">
             <div className="nav-item has-mega">
@@ -550,14 +590,16 @@ export function EnterpriseHome() {
         </div>
         <div className="wrap hero-inner">
           <h1>
-            Modernize the <span className="g">digital core.</span>
-            <span className="l2">Build what comes next.</span>
+            <span className="l1 h-rise">
+              Modernize the <span className="g">digital core.</span>
+            </span>
+            <span className="l2 h-rise">Build what comes next.</span>
           </h1>
-          <p className="sub">
+          <p className="sub h-rise">
             Consult America unites engineering, AI, and enterprise consulting, with the specialized technology talent to
             design it, build it, and run it in production.
           </p>
-          <div className="hero-actions">
+          <div className="hero-actions h-rise">
             <a href="#contact" className="btn btn-primary">
               Talk to an expert{" "}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

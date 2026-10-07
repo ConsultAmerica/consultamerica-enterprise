@@ -100,7 +100,10 @@ img{max-width:100%;display:block}
 /* ============ NAV ============ */
 /* Floating-islands nav (Infosys-style): the header itself is invisible; the
    three clusters (brand / link pill / CTA pill) float over the hero media. */
-header.nav{position:fixed;inset:0 0 auto 0;z-index:60;background:transparent;backdrop-filter:none;border-bottom:none;box-shadow:none}
+header.nav{position:fixed;inset:0 0 auto 0;z-index:60;background:transparent;backdrop-filter:none;border-bottom:none;box-shadow:none;
+  transition:opacity .4s ease,transform .45s cubic-bezier(.2,.8,.3,1)}
+/* dissipate on scroll-down, glide back on scroll-up (Infosys behaviour) */
+header.nav.nav-gone{opacity:0;transform:translateY(-22px);pointer-events:none}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;height:92px;gap:20px}
 header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:40px;padding-right:40px}
 @media(max-width:600px){header.nav>.wrap{padding-left:20px;padding-right:20px}}
@@ -170,7 +173,7 @@ header.nav.scrolled .nav-mid::before{background:rgba(255,255,255,.94)}
 .nav-right .btn-sm{border-radius:999px;height:44px;padding:0 22px;box-shadow:0 10px 30px -14px rgba(29,111,224,.9)}
 .hero-actions .btn{border-radius:999px;height:54px;padding:0 28px}
 .nav-toggle{display:none;width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;place-items:center;cursor:pointer}
-header.nav.solid .nav-toggle{color:var(--ink);border-color:var(--line)}
+header.nav.scrolled .nav-toggle{color:var(--ink);border-color:var(--line)}
 .mobile-menu{display:none;flex-direction:column;padding:12px 24px 24px;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1)}
 .mobile-menu a{padding:15px 4px;font-size:17px;color:rgba(255,255,255,.88);border-bottom:1px solid rgba(255,255,255,.08)}
 .mobile-menu .btn{margin-top:16px}
@@ -927,11 +930,16 @@ document.getElementById("navToggle").onclick=()=>mm.classList.toggle("open");
 // Floating nav: once the islands clear the hero media, swap the brand to dark
 // and make the link capsule opaque so it stays readable over light sections.
 (function(){
-  var navEl=document.getElementById("nav"),heroEl=document.querySelector(".hero"),t=false;
+  var navEl=document.getElementById("nav"),heroEl=document.querySelector(".hero"),t=false,lastY=window.scrollY||0;
   function sync(){
-    var limit=(heroEl?heroEl.offsetHeight:600)-120;
-    navEl.classList.toggle("scrolled",(window.scrollY||0)>limit);
     t=false;
+    var y=window.scrollY||0,limit=(heroEl?heroEl.offsetHeight:600)-120;
+    navEl.classList.toggle("scrolled",y>limit);
+    // dissipate once past the hero and still heading down; restore on scroll-up
+    if(y<=limit) navEl.classList.remove("nav-gone");
+    else if(y>lastY+4) navEl.classList.add("nav-gone");
+    else if(y<lastY-4) navEl.classList.remove("nav-gone");
+    lastY=y;
   }
   addEventListener("scroll",function(){if(!t){t=true;requestAnimationFrame(sync);}},{passive:true});
   addEventListener("resize",sync,{passive:true});

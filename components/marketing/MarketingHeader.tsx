@@ -12,20 +12,38 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const [hidden, setHidden] = useState(false);
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 24);
+      // same dissipate-on-scroll-down behaviour as the homepage nav
+      if (y <= 80) setHidden(false);
+      else if (y > lastY + 4) setHidden(true);
+      else if (y < lastY - 4) setHidden(false);
+      lastY = y;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const solidNav = solid || scrolled;
+  // /jobs pages sit on light backgrounds, so the islands start in their
+  // scrolled (dark-brand, opaque-capsule) state rather than over a hero.
+  const scrolledNav = solid || scrolled;
 
   return (
-    <header className={`nav${solidNav ? " solid" : ""}`} id="nav">
+    <header className={`nav${scrolledNav ? " scrolled" : ""}${hidden ? " nav-gone" : ""}`} id="nav">
       <div className="wrap nav-inner">
         <Link href="/" className="brand">
-          <img className="logo" src="/logo-word.png?v=ca10" alt="Consult America" />
+          <img className="mark" src="/logo-mark3.png?v=m1" alt="" aria-hidden />
+          <span className="bt">
+            <span className="bw">
+              <b>Consult</b> <em>America</em>
+            </span>
+          </span>
         </Link>
         <nav className="nav-mid" aria-label="Primary">
           <div className="nav-item">
