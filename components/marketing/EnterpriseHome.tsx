@@ -21,6 +21,7 @@ import {
   PROD,
   SUGGEST,
 } from "@/data/marketing";
+import { ContactFab } from "@/components/marketing/ContactFab";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
 function subscribeReducedMotion(onStoreChange: () => void) {
@@ -1089,6 +1090,8 @@ export function EnterpriseHome() {
           </div>
         </div>
       </div>
+
+      <ContactFab onAskAi={openCmdk} />
     </>
   );
 }
