@@ -71,11 +71,13 @@ header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:40px;padding-right:
 .brand .mark{height:38px;width:auto;object-fit:contain;transition:transform .3s}
 .brand:hover .mark{transform:scale(1.03)}
 .brand .bt{display:flex;flex-direction:column;line-height:1.02}
-.brand .bw{font-size:22px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+/* wordmark set the way Infosys sets theirs: one weight, one colour, lighter
+   than a logotype bold, slightly open tracking. No bold/semibold split. */
+.brand .bw{font-size:23px;font-weight:500;letter-spacing:-.005em;white-space:nowrap}
 /* brand sits directly on the hero media, so it starts white and goes dark once
    the nav passes the hero (header.nav.scrolled) */
-.brand .bw b{font-weight:700;color:#fff;transition:color .35s}
-.brand .bw em{font-style:normal;font-weight:600;color:#fff;transition:color .35s}
+.brand .bw b{font-weight:500;color:#fff;transition:color .35s}
+.brand .bw em{font-style:normal;font-weight:500;color:#fff;transition:color .35s}
 .brand .btag{font-size:11px;font-weight:600;color:rgba(255,255,255,.66);letter-spacing:.09em;white-space:nowrap;margin-top:4px;text-transform:uppercase;transition:color .35s}
 .brand .bt{text-shadow:0 2px 14px rgba(5,8,15,.45);transition:text-shadow .35s}
 header.nav.scrolled .brand .bw b,header.nav.scrolled .brand .bw em{color:#0f2d4a}
