@@ -47,9 +47,6 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
         </Link>
         <nav className="nav-mid" aria-label="Primary">
           <div className="nav-item">
-            <Link href="/about">About</Link>
-          </div>
-          <div className="nav-item">
             <Link href="/#capabilities">Capabilities</Link>
           </div>
           <div className="nav-item">
@@ -75,6 +72,14 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
           </div>
         </nav>
         <div className="nav-right">
+          <Link href="/?ask=1" className="ask-nav" aria-label="Ask Consult America AI">
+            <span className="spk">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
+              </svg>
+            </span>
+            Ask AI
+          </Link>
           <Link href="/#contact" className="btn btn-primary btn-sm">
             Talk to an expert{" "}
             <svg
@@ -117,9 +122,6 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
       </div>
       {menuOpen ? (
         <div className="mobile-menu open" id="mobileMenu">
-          <Link href="/about" onClick={() => setMenuOpen(false)}>
-            About
-          </Link>
           <Link href="/#capabilities" onClick={() => setMenuOpen(false)}>
             Capabilities
           </Link>

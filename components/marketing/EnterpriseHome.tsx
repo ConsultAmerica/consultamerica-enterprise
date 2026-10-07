@@ -228,6 +228,17 @@ export function EnterpriseHome() {
     setTimeout(() => cmdkInputRef.current?.focus(), 0);
   };
 
+  // The Ask AI pill on /jobs and /careers routes here with ?ask=1, since the
+  // palette itself only exists on this page.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("ask") !== "1") return;
+    openCmdk();
+    const url = new URL(window.location.href);
+    url.searchParams.delete("ask");
+    window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const root = document.documentElement;
     root.style.overflow = cmdkOpen ? "hidden" : "";
