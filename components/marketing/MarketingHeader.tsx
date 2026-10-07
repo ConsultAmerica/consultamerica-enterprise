@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { PrimaryNav } from "@/components/marketing/PrimaryNav";
 import { useEffect, useState } from "react";
 
 type MarketingHeaderProps = {
@@ -45,32 +47,7 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
             </span>
           </span>
         </Link>
-        <nav className="nav-mid" aria-label="Primary">
-          <div className="nav-item">
-            <Link href="/#capabilities">Capabilities</Link>
-          </div>
-          <div className="nav-item">
-            <Link href="/#industries">Industries</Link>
-          </div>
-          <div className="nav-item">
-            <Link href="/#contact">Products</Link>
-          </div>
-          <div className="nav-item">
-            <Link href="/#ai">AI</Link>
-          </div>
-          <div className="nav-item">
-            <Link href="/#talent">Talent</Link>
-          </div>
-          <div className="nav-item">
-            <Link href="/#insights">Insights</Link>
-          </div>
-          <div className="nav-item">
-            <Link href="/careers">Careers</Link>
-          </div>
-          <div className="nav-item">
-            <Link href="/jobs">Jobs</Link>
-          </div>
-        </nav>
+        <PrimaryNav base="/" />
         <div className="nav-right">
           <Link href="/?ask=1" className="ask-nav" aria-label="Ask Consult America AI">
             <span className="spk">
