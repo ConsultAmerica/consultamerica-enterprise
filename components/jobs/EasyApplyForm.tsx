@@ -151,13 +151,14 @@ export function EasyApplyForm({ job }: EasyApplyFormProps) {
       const resumeData = new FormData();
       resumeData.set("resume", resume);
       const result = await submitJobApplication(input, resumeData);
-      setConfirmation({ applicationNumber: result.applicationNumber });
-    } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : "We could not submit your application. Please try again.",
-      );
+      if (result.ok) {
+        setConfirmation({ applicationNumber: result.applicationNumber });
+      } else {
+        setError(result.error);
+      }
+    } catch {
+      // Network failure or an unexpected server fault: never echo raw details.
+      setError("We couldn't complete your application. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -208,7 +209,7 @@ export function EasyApplyForm({ job }: EasyApplyFormProps) {
                 <Link href="/jobs" className="btn btn-primary">
                   View more jobs
                 </Link>
-                <Link href="/#careers" className="btn btn-dark">
+                <Link href="/careers" className="btn btn-dark">
                   Return to Careers
                 </Link>
               </div>

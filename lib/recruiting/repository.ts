@@ -1,3 +1,4 @@
+import type { EasyApplyResume } from "@/lib/recruiting/easy-apply";
 import type { EmploymentType, WorkplaceType } from "@/types/organization";
 import type {
   Application,
@@ -268,6 +269,8 @@ export type SubmitApplicationInput = {
   coverLetter?: string;
   additionalInformation?: string;
   source?: string;
+  /** Required by the Supabase repository: Easy Apply persists it before success. */
+  resume?: EasyApplyResume;
 };
 
 export type SubmitApplicationResult = {

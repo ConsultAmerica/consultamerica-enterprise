@@ -298,12 +298,15 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
       const client = getSupabaseServiceClient();
       if (!client) return [];
 
-      const { data } = await client
+      let query = client
         .from("jobs")
         .select("*")
-        .in("status", ["PUBLISHED", "OPEN"])
-        .eq("is_demo", false)
-        .order("published_at", { ascending: false });
+        .in("status", ["PUBLISHED", "OPEN"]);
+      // Demo rows stay visible in development for design review; production
+      // excludes them here and again in includeOnPublicSite (lib/jobs.ts).
+      if (process.env.NODE_ENV === "production") query = query.eq("is_demo", false);
+
+      const { data } = await query.order("published_at", { ascending: false });
 
       return (data ?? [])
         .map(mapPosting)
@@ -1151,107 +1154,17 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
       if (!client) {
         throw new Error("Supabase is not configured");
       }
-
-      const now = new Date().toISOString();
-      const normalizedEmail = input.email.trim().toLowerCase();
-
-      const { data: liveJob } = await client
-        .from("jobs")
-        .select("id,status,published_at,publish_at,expires_at,application_deadline")
-        .eq("id", input.postingId)
-        .maybeSingle();
-      if (
-        !liveJob ||
-        !isPubliclyOpen({
-          status: liveJob.status as string,
-          publishedAt: (liveJob.published_at as string) ?? null,
-          publishAt: (liveJob.publish_at as string) ?? null,
-          expiresAt: (liveJob.expires_at as string) ?? null,
-          applicationDeadline: (liveJob.application_deadline as string) ?? null,
-        })
-      ) {
-        throw new Error("This position is no longer accepting applications.");
+      if (!input.resume) {
+        throw new Error("Easy Apply requires a resume");
       }
-
-      const { data: existingCandidateRow } = await client
-        .from("candidate_profiles")
-        .select("id")
-        .ilike("email", normalizedEmail)
-        .maybeSingle();
-
-      let candidateId = existingCandidateRow?.id as string | undefined;
-      if (!candidateId) {
-        candidateId = `cand-${crypto.randomUUID()}`;
-        await client.from("candidate_profiles").insert({
-          id: candidateId,
-          first_name: input.firstName,
-          last_name: input.lastName,
-          email: input.email,
-          phone: input.phone,
-          linkedin_url: input.linkedinUrl,
-          portfolio_url: input.portfolioUrl,
-          work_authorization: input.workAuthorization,
-          willing_to_relocate: input.willingToRelocate,
-          source: input.source,
-          created_at: now,
-          updated_at: now,
-        });
-      }
-
-      const { data: existingApplicationRow } = await client
-        .from("applications")
-        .select("id, application_number")
-        .eq("candidate_id", candidateId)
-        .eq("requisition_id", input.requisitionId)
-        .maybeSingle();
-
-      if (existingApplicationRow) {
-        return {
-          candidateId,
-          applicationId: existingApplicationRow.id as string,
-          applicationNumber: existingApplicationRow.application_number as string,
-        };
-      }
-
-      const applicationId = `app-${crypto.randomUUID()}`;
-      const applicationNumber = `APP-${new Date().getFullYear()}-${crypto
-        .randomUUID()
-        .slice(0, 4)
-        .toUpperCase()}`;
-
-      await client.from("applications").insert({
-        id: applicationId,
-        application_number: applicationNumber,
-        candidate_id: candidateId,
-        requisition_id: input.requisitionId,
-        job_id: input.postingId,
-        status: "APPLIED",
-        cover_letter: input.coverLetter,
-        additional_information: input.additionalInformation,
-        applied_at: now,
-        updated_at: now,
-      });
-
-      await client.from("recruiting_activities").insert({
-        id: `act-${crypto.randomUUID()}`,
-        candidate_id: candidateId,
-        application_id: applicationId,
-        requisition_id: input.requisitionId,
-        activity_type: "APPLICATION_SUBMITTED",
-        summary: "Application submitted",
-        created_at: now,
-      });
-
-      await client.from("application_status_history").insert({
-        id: `hist-${crypto.randomUUID()}`,
-        application_id: applicationId,
-        from_status: null,
-        to_status: "APPLIED",
-        note: "Application submitted",
-        created_at: now,
-      });
-
-      return { candidateId, applicationId, applicationNumber };
+      const { submitEasyApplication } = await import("@/lib/recruiting/easy-apply");
+      const { createSupabaseEasyApplyPorts } = await import(
+        "@/lib/recruiting/easy-apply-supabase"
+      );
+      return submitEasyApplication(
+        { ...input, resume: input.resume },
+        { ports: createSupabaseEasyApplyPorts(client) },
+      );
     },
 
     async updateApplicationStage(applicationId, status) {

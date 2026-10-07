@@ -50,6 +50,7 @@ import {
   type Offer,
   type RecruitingActivity,
 } from "@/types/recruiting";
+import { JobClosedError } from "@/lib/recruiting/errors";
 
 function slugify(title: string): string {
   return title
@@ -496,7 +497,7 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
     ): Promise<SubmitApplicationResult> {
       const posting = postings.find((item) => item.id === input.postingId);
       if (!posting || !isPubliclyOpen(posting)) {
-        throw new Error("This position is no longer accepting applications.");
+        throw new JobClosedError();
       }
       const now = new Date().toISOString();
       const normalizedEmail = input.email.trim().toLowerCase();
