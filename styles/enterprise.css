@@ -78,10 +78,9 @@ header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:20px;padding-right:
    still escape this bar correctly. */
 header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -16px rgba(10,19,34,.4)}
 @media(max-width:600px){header.nav{padding:12px 14px 0}header.nav>.wrap{padding-left:14px;padding-right:10px}}
-/* mark on top, "Consult America" on one line beneath it. min-width holds the
-   brand block at its old footprint so the links and CTAs do not shift. */
-.brand{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:196px}
-.brand .mark{height:50px;width:auto;object-fit:contain;transition:transform .3s}
+/* wordmark sits to the right of the mark, on one line */
+.brand{position:relative;z-index:1;display:flex;align-items:center;gap:11px}
+.brand .mark{height:46px;width:auto;object-fit:contain;transition:transform .3s}
 .brand:hover .mark{transform:scale(1.03)}
 .brand .bt{display:flex;flex-direction:column;line-height:1.02}
 /* wordmark set the way Infosys sets theirs: one weight, one colour, lighter
@@ -92,7 +91,7 @@ header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -
 .brand .bw b{display:block;font-weight:600;color:#000}
 .brand .bw em{display:block;font-style:normal;font-weight:500;color:#000}
 .brand .btag{font-size:11px;font-weight:600;color:#64727f;letter-spacing:.09em;white-space:nowrap;margin-top:4px;text-transform:uppercase}
-@media(max-width:600px){.brand{gap:2px;min-width:0}.brand .mark{height:36px}.brand .bw{font-size:14px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
+@media(max-width:600px){.brand{gap:8px}.brand .mark{height:34px}.brand .bw{font-size:15px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
 /* links sit directly in the one bar now — no separate capsule */
 .nav-mid{position:relative;z-index:1;display:flex;gap:2px}
 .nav-item{position:relative;z-index:1}
