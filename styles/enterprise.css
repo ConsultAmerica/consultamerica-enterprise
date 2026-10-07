@@ -58,51 +58,49 @@ img{max-width:100%;display:block}
 .demotag{display:inline-block;font-family:"Geist Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);border:1px solid rgba(34,199,230,.4);border-radius:5px;padding:4px 9px}
 
 /* ============ NAV ============ */
-/* Floating-islands nav (Infosys-style): the header itself is invisible; the
-   three clusters (brand / link pill / CTA pill) float over the hero media. */
+/* ONE floating bar: brand, links and CTAs share a single frosted container so
+   the lockup never sits naked on the hero video. The header itself stays
+   transparent and only provides the outer gutter. */
 header.nav{position:fixed;inset:0 0 auto 0;z-index:60;background:transparent;backdrop-filter:none;border-bottom:none;box-shadow:none;
+  padding:16px 24px 0;
   transition:opacity .4s ease,transform .45s cubic-bezier(.2,.8,.3,1)}
-/* dissipate on scroll-down, glide back on scroll-up (Infosys behaviour) */
+/* dissipate on scroll-down, glide back on scroll-up */
 header.nav.nav-gone{opacity:0;transform:translateY(-22px);pointer-events:none}
-.nav-inner{display:flex;align-items:center;justify-content:space-between;height:92px;gap:20px}
-header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:40px;padding-right:40px}
-@media(max-width:600px){header.nav>.wrap{padding-left:20px;padding-right:20px}}
-.brand{display:flex;align-items:center;gap:12px;z-index:2}
-.brand .mark{height:38px;width:auto;object-fit:contain;transition:transform .3s}
+header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:20px;padding-right:14px}
+.nav-inner{position:relative;display:flex;align-items:center;justify-content:space-between;
+  height:80px;gap:28px;border-radius:18px;
+  background:#fff;
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:0 10px 36px -14px rgba(7,12,24,.5);
+  transition:border-color .35s,box-shadow .35s}
+/* Solid white, no blur. A plain background (unlike backdrop-filter) does not
+   create a containing block, so the full-width position:fixed .mega panels
+   still escape this bar correctly. */
+header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -16px rgba(10,19,34,.4)}
+@media(max-width:600px){header.nav{padding:12px 14px 0}header.nav>.wrap{padding-left:14px;padding-right:10px}}
+.brand{position:relative;z-index:1;display:flex;align-items:center;gap:11px}
+.brand .mark{height:54px;width:auto;object-fit:contain;transition:transform .3s}
 .brand:hover .mark{transform:scale(1.03)}
 .brand .bt{display:flex;flex-direction:column;line-height:1.02}
 /* wordmark set the way Infosys sets theirs: one weight, one colour, lighter
    than a logotype bold, slightly open tracking. No bold/semibold split. */
-.brand .bw{font-size:23px;font-weight:500;letter-spacing:-.005em;white-space:nowrap}
-/* brand sits directly on the hero media, so it starts white and goes dark once
-   the nav passes the hero (header.nav.scrolled) */
-.brand .bw b{font-weight:500;color:#fff;transition:color .35s}
-.brand .bw em{font-style:normal;font-weight:500;color:#fff;transition:color .35s}
-.brand .btag{font-size:11px;font-weight:600;color:rgba(255,255,255,.66);letter-spacing:.09em;white-space:nowrap;margin-top:4px;text-transform:uppercase;transition:color .35s}
-.brand .bt{text-shadow:0 2px 14px rgba(5,8,15,.45);transition:text-shadow .35s}
-header.nav.scrolled .brand .bw b,header.nav.scrolled .brand .bw em{color:#0f2d4a}
-header.nav.scrolled .brand .btag{color:#64727f}
-header.nav.scrolled .brand .bt{text-shadow:none}
-@media(max-width:600px){.brand{gap:9px}.brand .mark{height:40px}.brand .bw{font-size:22px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
-/* island 2: the frosted link capsule.
-   NOTE: backdrop-filter must live on the ::before, never on .nav-mid itself.
-   A filtered element becomes the containing block for its position:fixed
-   descendants, which would clamp the full-width .mega panels to the pill. */
-.nav-mid{position:relative;display:flex;gap:1px;padding:6px 8px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.55);box-shadow:0 10px 32px -16px rgba(7,12,24,.55);
-  transition:border-color .35s,box-shadow .35s}
-.nav-mid::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:0;
-  background:rgba(255,255,255,.6);backdrop-filter:blur(16px) saturate(1.5);
-  transition:background .35s}
-header.nav.scrolled .nav-mid{border-color:var(--line);box-shadow:0 12px 34px -18px rgba(10,19,34,.42)}
-header.nav.scrolled .nav-mid::before{background:rgba(255,255,255,.94)}
+/* stacked wordmark: "Consult" on one line, "America" beneath it */
+.brand .bw{display:flex;flex-direction:column;line-height:1.0;font-size:22px;font-weight:500;letter-spacing:-.005em;white-space:nowrap}
+/* the bar is light at every scroll position, so the brand is always dark —
+   no white-on-video state to lose contrast in */
+.brand .bw b{display:block;font-weight:600;color:#000}
+.brand .bw em{display:block;font-style:normal;font-weight:500;color:#000}
+.brand .btag{font-size:11px;font-weight:600;color:#64727f;letter-spacing:.09em;white-space:nowrap;margin-top:4px;text-transform:uppercase}
+@media(max-width:600px){.brand{gap:9px}.brand .mark{height:40px}.brand .bw{font-size:17px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
+/* links sit directly in the one bar now — no separate capsule */
+.nav-mid{position:relative;z-index:1;display:flex;gap:2px}
 .nav-item{position:relative;z-index:1}
 .nav-item>a{display:flex;align-items:center;gap:5px;padding:9px 15px;border-radius:999px;font-size:14px;font-weight:500;white-space:nowrap;color:#13263f;transition:background .2s,color .2s;position:relative}
 .nav-item>a:hover{background:rgba(10,19,34,.07);color:var(--ink)}
 .nav-item:hover>a{background:rgba(10,19,34,.07)}
 .nav-item>a .chev{width:13px;height:13px;opacity:.6;transition:transform .25s}
 .nav-item:hover>a .chev{transform:rotate(180deg)}
-.mega{position:fixed;left:0;right:0;top:84px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 30px 64px -34px rgba(10,19,34,.3);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .2s,transform .3s cubic-bezier(.2,.9,.3,1);z-index:55}
+.mega{position:fixed;left:0;right:0;top:102px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 30px 64px -34px rgba(10,19,34,.3);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .2s,transform .3s cubic-bezier(.2,.9,.3,1);z-index:55}
 .nav-item:hover .mega{opacity:1;visibility:visible;transform:translateY(0)}
 .has-mega::after{content:"";position:absolute;left:-8px;right:-8px;top:100%;height:40px}
 .mega-inner{max-width:1200px;margin:0 auto;padding:34px 40px 38px;display:grid;grid-template-columns:1fr 1fr 1fr 312px;gap:26px 40px;align-items:start}
@@ -131,7 +129,7 @@ header.nav.scrolled .nav-mid::before{background:rgba(255,255,255,.94)}
 .mega-feature:hover .mf-title{color:var(--blue)}
 .mf-desc{font-size:12.5px;color:var(--ink-3);line-height:1.45}
 /* island 3: CTA pills, no divider (islands shouldn't be joined) */
-.nav-right{display:flex;align-items:center;gap:10px;z-index:2}
+.nav-right{position:relative;z-index:1;display:flex;align-items:center;gap:10px}
 .nav-right .btn-sm{border-radius:999px;height:44px;padding:0 22px;box-shadow:0 10px 30px -14px rgba(29,111,224,.9)}
 .hero-actions .btn{border-radius:999px;height:54px;padding:0 28px}
 .nav-toggle{display:none;width:44px;height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;place-items:center;cursor:pointer}
@@ -473,9 +471,8 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
   /* Below 1040px the link capsule is hidden, so the floating islands lose the
      only opaque surface in the bar. Without a backing the brand lockup and the
      hamburger outline sit straight on top of page content while scrolling. */
-  header.nav.scrolled{background:rgba(255,255,255,.93);backdrop-filter:blur(16px) saturate(1.3);border-bottom:1px solid var(--line)}
-  .nav-inner{height:70px}
-  header.nav.scrolled .nav-toggle{background:transparent}
+  .nav-inner{height:62px}
+  .nav-toggle{color:var(--ink);border-color:var(--line)}
 }
 @media(max-width:760px){
   .band{padding:64px 0}
