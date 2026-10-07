@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CAPABILITIES, PHASES } from "@/components/marketing/company-copy";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 
@@ -9,31 +10,6 @@ export const metadata: Metadata = {
   description:
     "Consult America unites engineering, AI, and enterprise consulting — with the specialized technology talent to design it, build it, and run it in production.",
 };
-
-const CAPABILITIES = [
-  {
-    title: "Enterprise Transformation",
-    body: "Reshape finance, procurement, and supply-chain operations around a connected, modern digital core.",
-  },
-  {
-    title: "Oracle Cloud",
-    body: "Migrate and modernize ERP, HCM, and SCM on Oracle Cloud, with a right-sized roadmap and a low-drama cutover.",
-  },
-  {
-    title: "AI + Data",
-    body: "Forecasting, assistants, and automation — operationalized with the data foundations and guardrails to run in production.",
-  },
-  {
-    title: "Engineering",
-    body: "Senior engineers who ship production systems, cloud-native builds, integrations, and the platforms your business runs on.",
-  },
-  {
-    title: "Managed Services",
-    body: "We run and evolve what we build — SLAs, monitoring, and continuous improvement after go-live.",
-  },
-] as const;
-
-const PHASES = ["Strategy", "Design", "Build", "Run"] as const;
 
 const WHY = [
   {
@@ -195,7 +171,7 @@ export default function AboutPage() {
                   <path d="M5 12h14M13 6l6 6-6 6" />
                 </svg>
               </a>
-              <Link href="/jobs" className="btn btn-ghost">
+              <Link href="/careers" className="btn btn-ghost">
                 Explore careers
               </Link>
             </div>

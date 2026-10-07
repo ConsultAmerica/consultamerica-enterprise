@@ -68,7 +68,7 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
             <Link href="/#insights">Insights</Link>
           </div>
           <div className="nav-item">
-            <Link href="/#careers">Careers</Link>
+            <Link href="/careers">Careers</Link>
           </div>
           <div className="nav-item">
             <Link href="/jobs">Jobs</Link>
@@ -138,7 +138,7 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
           <Link href="/#insights" onClick={() => setMenuOpen(false)}>
             Insights
           </Link>
-          <Link href="/#careers" onClick={() => setMenuOpen(false)}>
+          <Link href="/careers" onClick={() => setMenuOpen(false)}>
             Careers
           </Link>
           <Link href="/jobs" onClick={() => setMenuOpen(false)}>

@@ -196,7 +196,7 @@ export function JobsPortal({
         <h2>NO CURRENT OPENINGS</h2>
         <p>There are no open roles right now. Check back soon or explore Careers.</p>
         <p style={{ marginTop: 16 }}>
-          <Link href="/#careers" className="btn btn-primary btn-sm">
+          <Link href="/careers" className="btn btn-primary btn-sm">
             Careers
             <svg
               width="15"
@@ -221,7 +221,7 @@ export function JobsPortal({
     <div className="jobs-shell">
       <section className="jobs-hero">
         <div className="wrap">
-          <p className="jobs-hero-eyebrow">Careers</p>
+          <p className="jobs-hero-eyebrow">Open positions</p>
           <h1>
             Find work that
             <br />
@@ -229,7 +229,10 @@ export function JobsPortal({
           </h1>
           <p>
             Explore opportunities across consulting, Oracle, AI, data,
-            engineering and enterprise transformation.
+            engineering and enterprise transformation.{" "}
+            <Link href="/careers" className="jobs-hero-link">
+              Explore careers →
+            </Link>
           </p>
           <form className="jobs-search" onSubmit={onSearchSubmit}>
             <input

@@ -501,7 +501,7 @@ export function EnterpriseHome() {
               <a href="#insights">Insights</a>
             </div>
             <div className="nav-item">
-              <a href="#careers">Careers</a>
+              <Link href="/careers">Careers</Link>
             </div>
             <div className="nav-item">
               <Link href="/jobs">Jobs</Link>
@@ -553,9 +553,9 @@ export function EnterpriseHome() {
           <a href="#insights" onClick={() => setMenuOpen(false)}>
             Insights
           </a>
-          <a href="#careers" onClick={() => setMenuOpen(false)}>
+          <Link href="/careers" onClick={() => setMenuOpen(false)}>
             Careers
-          </a>
+          </Link>
           <Link href="/jobs" onClick={() => setMenuOpen(false)}>
             Jobs
           </Link>
@@ -892,9 +892,9 @@ export function EnterpriseHome() {
               <a href="#contact" className="btn btn-dark">
                 Hire through Consult America {ARROW_BTN}
               </a>
-              <a href="#careers" className="btn btn-outline" style={{ background: "#fff", borderColor: "var(--line)", color: "var(--ink)" }}>
+              <Link href="/careers" className="btn btn-outline" style={{ background: "#fff", borderColor: "var(--line)", color: "var(--ink)" }}>
                 Join our team
-              </a>
+              </Link>
             </div>
           </div>
           <div className="talent-gallery reveal d1">
@@ -1007,8 +1007,8 @@ export function EnterpriseHome() {
             to keep growing while they do it.
           </p>
           <div className="careers-actions">
-            <Link href="/jobs" className="btn btn-primary">
-              View open roles {ARROW_BTN}
+            <Link href="/careers" className="btn btn-primary">
+              Explore careers {ARROW_BTN}
             </Link>
             <a href="#talent" className="btn btn-ghost">
               Life at Consult America
