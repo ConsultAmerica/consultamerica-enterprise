@@ -22,6 +22,7 @@ import {
   SUGGEST,
 } from "@/data/marketing";
 import { ContactFab } from "@/components/marketing/ContactFab";
+import { INSIGHTS } from "@/data/insights";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
 function subscribeReducedMotion(onStoreChange: () => void) {
@@ -959,45 +960,36 @@ export function EnterpriseHome() {
             <p>How enterprises are rebuilding the digital core for an AI-native decade.</p>
           </div>
           <div className="ins reveal">
-            <a className="ins-feat" href="#">
-              <img src="/img/data.jpg" alt="" />
+            <Link className="ins-feat" href={`/insights/${INSIGHTS[0].slug}`}>
+              <img src={INSIGHTS[0].image} alt="" />
               <div className="ins-body">
                 <div className="ins-meta">
-                  <span>Point of view</span>
+                  <span>{INSIGHTS[0].kind}</span>
                   <span className="dot" />
-                  <span className="mut">Oct 2026</span>
+                  <span className="mut">{INSIGHTS[0].date}</span>
                   <span className="dot" />
-                  <span className="mut">9 min read</span>
+                  <span className="mut">{INSIGHTS[0].readTime}</span>
                 </div>
-                <h3>Modernizing Oracle ERP without the big-bang risk</h3>
+                <h3>{INSIGHTS[0].title}</h3>
                 <span className="arrowlink rm" style={{ color: "#fff" }}>
                   Read more {ARR_ICON}
                 </span>
               </div>
-            </a>
+            </Link>
             <div className="ins-col">
-              <a className="ins-small" href="#">
-                <img src="/img/ai.jpg" alt="" />
-                <div className="ins-body">
-                  <div className="ins-meta">
-                    <span>Research</span>
-                    <span className="dot" />
-                    <span className="mut">6 min</span>
+              {INSIGHTS.slice(1, 3).map((a) => (
+                <Link className="ins-small" href={`/insights/${a.slug}`} key={a.slug}>
+                  <img src={a.image} alt="" />
+                  <div className="ins-body">
+                    <div className="ins-meta">
+                      <span>{a.kind}</span>
+                      <span className="dot" />
+                      <span className="mut">{a.readTime}</span>
+                    </div>
+                    <h3>{a.title}</h3>
                   </div>
-                  <h3>Agentic AI in the enterprise: pilots to production</h3>
-                </div>
-              </a>
-              <a className="ins-small" href="#">
-                <img src="/img/team2.jpg" alt="" />
-                <div className="ins-body">
-                  <div className="ins-meta">
-                    <span>Field note</span>
-                    <span className="dot" />
-                    <span className="mut">4 min</span>
-                  </div>
-                  <h3>Building engineering teams that outlast the project</h3>
-                </div>
-              </a>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
