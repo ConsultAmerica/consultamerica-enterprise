@@ -891,9 +891,6 @@ export function EnterpriseHome() {
             <Link href="/careers" className="btn btn-primary">
               Explore careers {ARROW_BTN}
             </Link>
-            <Link href="/life" className="btn btn-ghost">
-              Life at Consult America
-            </Link>
           </div>
         </div>
       </section>
