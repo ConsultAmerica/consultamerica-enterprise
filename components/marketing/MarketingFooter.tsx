@@ -54,14 +54,6 @@ export function MarketingFooter() {
                 Hagerstown, MD 21740
               </p>
             </div>
-            <div className="office">
-              <h5>Get in touch</h5>
-              <p>
-                <a href="mailto:info@consultamerica.com">info@consultamerica.com</a>
-                <br />
-                <a href="tel:+17034967858">703-496-7858</a>
-              </p>
-            </div>
           </div>
         </div>
         <div className="foot-util">
