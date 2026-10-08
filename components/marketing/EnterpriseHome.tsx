@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -10,7 +11,6 @@ import {
 } from "react";
 
 import {
-  ANSWERS,
   CAP_ICONS,
   CAPS,
   CLIENTS,
@@ -19,10 +19,14 @@ import {
   IND_ICONS,
   INDUSTRIES,
   PROD,
-  SUGGEST,
 } from "@/data/marketing";
+import { AssistantPalette } from "@/components/assistant/AssistantPalette";
 import { ContactFab } from "@/components/marketing/ContactFab";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { CONTACT_CTA, PRIMARY_NAV, navHref, type MegaKey } from "@/components/marketing/nav-config";
+import { CareersNavMenu, MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
+
+const MENU_TOGGLE_ID = "navToggle";
 
 function subscribeReducedMotion(onStoreChange: () => void) {
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -74,19 +78,6 @@ const CHEV = (
 const ARROW_BTN = (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <path d="M5 12h14M13 6l6 6-6 6" />
-  </svg>
-);
-
-const SEARCH_ICO = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <circle cx="11" cy="11" r="7" />
-    <path d="m21 21-4.3-4.3" />
-  </svg>
-);
-
-const SARR = (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="m9 6 6 6-6 6" />
   </svg>
 );
 
@@ -187,54 +178,19 @@ function MegaPanel({
   );
 }
 
-type CmdkView =
-  | { mode: "suggest" }
-  | { mode: "answer"; question: string; answer: string };
-
 export function EnterpriseHome() {
   const [menuOpen, setMenuOpen] = useState(false);
+  useMobileMenuEscape(menuOpen, setMenuOpen, MENU_TOGGLE_ID);
   const [cmdkOpen, setCmdkOpen] = useState(false);
-  const [cmdkView, setCmdkView] = useState<CmdkView>({ mode: "suggest" });
-  const [cmdkInput, setCmdkInput] = useState("");
   const [capSel, setCapSel] = useState(0);
   const [indSel, setIndSel] = useState(0);
-  const cmdkInputRef = useRef<HTMLInputElement>(null);
   const countersRun = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => true);
   const heroSources = !reducedMotion;
 
-  const openCmdk = () => {
-    setCmdkOpen(true);
-    setCmdkView({ mode: "suggest" });
-    setCmdkInput("");
-    setTimeout(() => cmdkInputRef.current?.focus(), 120);
-  };
-
-  const closeCmdk = () => {
-    setCmdkOpen(false);
-    setCmdkInput("");
-    setCmdkView({ mode: "suggest" });
-  };
-
-  const cmdkAsk = (q: string) => {
-    const question = q.trim();
-    if (!question) return;
-    const answer =
-      ANSWERS[question] ??
-      "Great question. A Consult America specialist will map this to your estate and follow up within one business day with a concrete next step.";
-    setCmdkView({ mode: "answer", question, answer });
-    setCmdkInput("");
-    setTimeout(() => cmdkInputRef.current?.focus(), 0);
-  };
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.overflow = cmdkOpen ? "hidden" : "";
-    return () => {
-      root.style.overflow = "";
-    };
-  }, [cmdkOpen]);
+  const openCmdk = () => setCmdkOpen(true);
+  const closeCmdk = useCallback(() => setCmdkOpen(false), []);
 
   useEffect(() => {
     if (!heroSources || !videoRef.current) return;
@@ -248,15 +204,12 @@ export function EnterpriseHome() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        if (cmdkOpen) closeCmdk();
-        else openCmdk();
-      } else if (e.key === "Escape" && cmdkOpen) {
-        closeCmdk();
+        setCmdkOpen((open) => !open);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cmdkOpen]);
+  }, []);
 
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -358,50 +311,77 @@ export function EnterpriseHome() {
     PROD[i][2],
   ];
 
-  const suggestList = (label: string) => (
-    <>
-      <div className="cmdk-label">{label}</div>
-      {SUGGEST.map(([q, labelText]) => (
-        <div
-          key={q}
-          className="cmdk-item"
-          role="button"
-          tabIndex={0}
-          onClick={() => cmdkAsk(q)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              cmdkAsk(q);
-            }
+  const megaPanels: Record<MegaKey, { id: string; panel: ReactNode }> = {
+    capabilities: {
+      id: "megaCap",
+      panel: (
+        <MegaPanel
+          groups={[
+            [
+              "Engineering & AI",
+              [
+                ci(0, "Cloud-native builds, platforms, integrations"),
+                ci(1, "GenAI, assistants, and automation in production"),
+              ],
+            ],
+            [
+              "Cloud & Transformation",
+              [
+                ci(2, "Migrate and modernize ERP, HCM, SCM on OCI"),
+                ci(3, "Reshape operations around a modern digital core"),
+              ],
+            ],
+            ["Operate & Run", [ci(4, "SLAs, monitoring, and continuous improvement")]],
+          ]}
+          feature={{
+            img: "/img/meeting.jpg",
+            label: "How we work",
+            title: "Design, build, run",
+            desc: "One team from assessment through production and managed operations.",
+            href: "#why",
           }}
-        >
-          <span className="ico">{SEARCH_ICO}</span>
-          {labelText}
-          <span className="arr">{SARR}</span>
-        </div>
-      ))}
-      <div
-        className="cmdk-item"
-        role="button"
-        tabIndex={0}
-        onClick={() => {
-          closeCmdk();
-          window.location.hash = "#contact";
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            closeCmdk();
-            window.location.hash = "#contact";
-          }
-        }}
-      >
-        <span className="ico">{ARROW_BTN}</span>
-        Talk to a specialist
-        <span className="arr">{SARR}</span>
-      </div>
-    </>
-  );
+        />
+      ),
+    },
+    industries: {
+      id: "megaInd",
+      panel: (
+        <MegaPanel
+          groups={[
+            ["Regulated", [ii(0), ii(3)]],
+            ["Operations", [ii(1), ii(2)]],
+            ["Commerce", [ii(4)]],
+          ]}
+          feature={{
+            img: "/img/finance.jpg",
+            label: "Client impact",
+            title: "Proof in production",
+            desc: "Outcomes delivered across regulated, high-stakes industries.",
+            href: "#why",
+          }}
+        />
+      ),
+    },
+    products: {
+      id: "megaProd",
+      panel: (
+        <MegaPanel
+          groups={[
+            ["AI products", [pi(1), pi(2), pi(4), pi(5)]],
+            ["Commerce & retail", [pi(6), pi(10), pi(3), pi(7), pi(9)]],
+            ["Platforms", [pi(0), pi(8)]],
+          ]}
+          feature={{
+            img: "/img/ai.jpg",
+            label: "Built by Consult America",
+            title: "11 live products",
+            desc: "Real, deployed apps across AI, commerce, healthcare, and booking.",
+            href: "#contact",
+          }}
+        />
+      ),
+    },
+  };
 
   return (
     <>
@@ -416,96 +396,24 @@ export function EnterpriseHome() {
             </span>
           </a>
           <nav className="nav-mid" aria-label="Primary">
-            <div className="nav-item has-mega">
-              <a href="#capabilities">
-                Capabilities {CHEV}
-              </a>
-              <div className="mega" id="megaCap">
-                <MegaPanel
-                  groups={[
-                    [
-                      "Engineering & AI",
-                      [
-                        ci(0, "Cloud-native builds, platforms, integrations"),
-                        ci(1, "GenAI, assistants, and automation in production"),
-                      ],
-                    ],
-                    [
-                      "Cloud & Transformation",
-                      [
-                        ci(2, "Migrate and modernize ERP, HCM, SCM on OCI"),
-                        ci(3, "Reshape operations around a modern digital core"),
-                      ],
-                    ],
-                    ["Operate & Run", [ci(4, "SLAs, monitoring, and continuous improvement")]],
-                  ]}
-                  feature={{
-                    img: "/img/meeting.jpg",
-                    label: "How we work",
-                    title: "Design, build, run",
-                    desc: "One team from assessment through production and managed operations.",
-                    href: "#why",
-                  }}
-                />
-              </div>
-            </div>
-            <div className="nav-item has-mega">
-              <a href="#industries">
-                Industries {CHEV}
-              </a>
-              <div className="mega" id="megaInd">
-                <MegaPanel
-                  groups={[
-                    ["Regulated", [ii(0), ii(3)]],
-                    ["Operations", [ii(1), ii(2)]],
-                    ["Commerce", [ii(4)]],
-                  ]}
-                  feature={{
-                    img: "/img/finance.jpg",
-                    label: "Client impact",
-                    title: "Proof in production",
-                    desc: "Outcomes delivered across regulated, high-stakes industries.",
-                    href: "#why",
-                  }}
-                />
-              </div>
-            </div>
-            <div className="nav-item has-mega">
-              <a href="#contact">
-                Products {CHEV}
-              </a>
-              <div className="mega" id="megaProd">
-                <MegaPanel
-                  groups={[
-                    ["AI products", [pi(1), pi(2), pi(4), pi(5)]],
-                    ["Commerce & retail", [pi(6), pi(10), pi(3), pi(7), pi(9)]],
-                    ["Platforms", [pi(0), pi(8)]],
-                  ]}
-                  feature={{
-                    img: "/img/ai.jpg",
-                    label: "Built by Consult America",
-                    title: "11 live products",
-                    desc: "Real, deployed apps across AI, commerce, healthcare, and booking.",
-                    href: "#contact",
-                  }}
-                />
-              </div>
-            </div>
-            <div className="nav-item">
-              <a href="#ai">AI</a>
-            </div>
-            <div className="nav-item">
-              <a href="#talent">Talent</a>
-            </div>
-            <div className="nav-item">
-              <a href="#insights">Insights</a>
-            </div>
-            <div className="nav-item">
-              <Link href="/careers">Careers</Link>
-            </div>
-            <div className="nav-item">
-              <Link href="/jobs">Jobs</Link>
-            </div>
+            {PRIMARY_NAV.map((item) => {
+              const mega = item.mega ? megaPanels[item.mega] : null;
+              return mega ? (
+                <div className="nav-item has-mega" key={item.label}>
+                  <a href={navHref(item, true)}>
+                    {item.label} {CHEV}
+                  </a>
+                  <div className="mega" id={mega.id}>
+                    {mega.panel}
+                  </div>
+                </div>
+              ) : (
+                <div className="nav-item" key={item.label}>
+                  <Link href={navHref(item, true)}>{item.label}</Link>
+                </div>
+              );
+            })}
+            <CareersNavMenu />
           </nav>
           <div className="nav-right">
             <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={openCmdk}>
@@ -516,13 +424,15 @@ export function EnterpriseHome() {
               </span>
               Ask AI
             </button>
-            <a href="#contact" className="btn btn-primary btn-sm">
-              Talk to an expert {ARROW_BTN}
+            <a href={CONTACT_CTA.anchor} className="btn btn-primary btn-sm">
+              {CONTACT_CTA.label} {ARROW_BTN}
             </a>
             <button
               type="button"
               className="nav-toggle"
-              aria-label="Menu"
+              id={MENU_TOGGLE_ID}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-controls="mobileMenu"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((o) => !o)}
             >
@@ -535,30 +445,7 @@ export function EnterpriseHome() {
           </div>
         </div>
         <div className={`mobile-menu${menuOpen ? " open" : ""}`} id="mobileMenu">
-          <a href="#capabilities" onClick={() => setMenuOpen(false)}>
-            Capabilities
-          </a>
-          <a href="#industries" onClick={() => setMenuOpen(false)}>
-            Industries
-          </a>
-          <a href="#contact" onClick={() => setMenuOpen(false)}>
-            Products
-          </a>
-          <a href="#ai" onClick={() => setMenuOpen(false)}>
-            AI
-          </a>
-          <a href="#talent" onClick={() => setMenuOpen(false)}>
-            Talent
-          </a>
-          <a href="#insights" onClick={() => setMenuOpen(false)}>
-            Insights
-          </a>
-          <Link href="/careers" onClick={() => setMenuOpen(false)}>
-            Careers
-          </Link>
-          <Link href="/jobs" onClick={() => setMenuOpen(false)}>
-            Jobs
-          </Link>
+          <MobileNavLinks onHome onNavigate={() => setMenuOpen(false)} />
           <a
             href="#"
             onClick={(e) => {
@@ -569,8 +456,8 @@ export function EnterpriseHome() {
           >
             Ask Consult America AI
           </a>
-          <a href="#contact" className="btn btn-primary" onClick={() => setMenuOpen(false)}>
-            Talk to an expert
+          <a href={CONTACT_CTA.anchor} className="btn btn-primary" onClick={() => setMenuOpen(false)}>
+            {CONTACT_CTA.label}
           </a>
         </div>
       </header>
@@ -1042,54 +929,7 @@ export function EnterpriseHome() {
       <MarketingFooter />
 
       {/* Ask AI command palette */}
-      <div
-        className={`cmdk${cmdkOpen ? " open" : ""}`}
-        id="cmdk"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Ask Consult America AI"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) closeCmdk();
-        }}
-      >
-        <div className="cmdk-panel">
-          <div className="cmdk-input-row">
-            <span className="spk">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M12 2l1.9 5.4 5.4 1.9-5.4 1.9L12 16l-1.9-5.4L4.7 9l5.4-1.9z" />
-              </svg>
-            </span>
-            <input
-              ref={cmdkInputRef}
-              id="cmdkInput"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="Ask Consult America AI about your transformation…"
-              value={cmdkInput}
-              onChange={(e) => setCmdkInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") cmdkAsk(cmdkInput);
-              }}
-            />
-            <kbd>Esc</kbd>
-          </div>
-          <div className="cmdk-body" id="cmdkBody">
-            {cmdkView.mode === "answer" ? (
-              <>
-                <div className="cmdk-user">{cmdkView.question}</div>
-                <div className="cmdk-answer">{cmdkView.answer}</div>
-                {suggestList("Keep exploring")}
-              </>
-            ) : (
-              suggestList("Suggested")
-            )}
-          </div>
-          <div className="cmdk-foot">
-            <span>AI-assisted · a specialist follows up within one business day</span>
-            <span className="mono">Consult America AI</span>
-          </div>
-        </div>
-      </div>
+      <AssistantPalette open={cmdkOpen} onClose={closeCmdk} context={{ page: "home" }} />
 
       <ContactFab onAskAi={openCmdk} />
     </>

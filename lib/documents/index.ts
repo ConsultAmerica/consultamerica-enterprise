@@ -13,6 +13,7 @@ export {
   isCandidateDocumentsReady,
   linkDocumentToApplication,
   replacePrimaryResume,
+  setPrimaryResume,
   uploadCandidateDocument,
   type ApplicationDocumentLink,
   type CandidateDocumentRow,

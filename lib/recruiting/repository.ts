@@ -269,14 +269,25 @@ export type SubmitApplicationInput = {
   coverLetter?: string;
   additionalInformation?: string;
   source?: string;
-  /** Required by the Supabase repository: Easy Apply persists it before success. */
+  /** Required by the Supabase repository (unless libraryResumeDocumentId is set): Easy Apply persists it before success. */
   resume?: EasyApplyResume;
+  /**
+   * Server-only. The signed-in candidate's id, resolved from the session —
+   * never from client input. Skips the email lookup so the application is
+   * filed on the authenticated candidate's own record.
+   */
+  sessionCandidateId?: string;
+  /** Server-only, with sessionCandidateId: submit a résumé already in that candidate's library. */
+  libraryResumeDocumentId?: string;
 };
 
 export type SubmitApplicationResult = {
   candidateId: string;
   applicationId: string;
   applicationNumber: string;
+  /** Present when a resume was persisted and linked (Supabase Easy Apply). */
+  resumeDocumentId?: string;
+  outcome?: "created" | "existing" | "recovered";
 };
 
 /** Writes backing the public "Apply" flow (candidate + application creation). */

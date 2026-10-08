@@ -76,6 +76,11 @@ export function JobDetailView({ job, compact = false }: JobDetailViewProps) {
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
             </Link>
+          ) : null}
+          {job.applicationType === "INTERNAL" ? (
+            <Link href={`/jobs/${job.slug}/apply/detailed`} className="btn btn-dark">
+              Detailed application
+            </Link>
           ) : externalUrl ? (
             <a
               href={externalUrl}

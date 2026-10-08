@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { SaveJobButton } from "@/components/candidate/SaveJobButton";
 import { JobDetailView } from "@/components/jobs/JobDetailView";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
+import { getCandidateSession } from "@/lib/candidate-portal/session";
+import { getCandidatePortalStore } from "@/lib/candidate-portal/store";
 import { getJobBySlug } from "@/lib/jobs";
 
 type JobPageProps = {
@@ -70,10 +73,13 @@ export default async function JobSlugPage({ params }: JobPageProps) {
   const { slug } = await params;
   const job = await getJobBySlug(slug);
   if (!job) notFound();
+  const session = await getCandidateSession();
+  const requisitionId = job.requisitionId || job.id;
+  const saved = session ? await getCandidatePortalStore().isJobSaved(session.candidateId, requisitionId) : false;
 
   return (
     <>
-      <MarketingHeader />
+      <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
       <main className="jobs-shell">
         <div className="wrap" style={{ paddingTop: 120, paddingBottom: 80, maxWidth: 860 }}>
           {job.acceptingApplications ? (
@@ -84,6 +90,14 @@ export default async function JobSlugPage({ params }: JobPageProps) {
                   __html: JSON.stringify(jobPostingJsonLd(job)),
                 }}
               />
+              <div className="cp-job-tools">
+                <SaveJobButton
+                  requisitionId={requisitionId}
+                  initiallySaved={saved}
+                  signedIn={Boolean(session)}
+                  returnTo={`/jobs/${job.slug}`}
+                />
+              </div>
               <JobDetailView job={job} />
             </>
           ) : (

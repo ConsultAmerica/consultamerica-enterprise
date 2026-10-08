@@ -54,6 +54,19 @@ export function createSupabaseEasyApplyPorts(client: SupabaseClient): EasyApplyP
       return (data?.[0]?.id as string | undefined) ?? null;
     },
 
+    async findLibraryResume({ candidateId, documentId }) {
+      const { data, error } = await client
+        .from("documents")
+        .select("id")
+        .eq("id", documentId)
+        .eq("candidate_id", candidateId)
+        .eq("document_type", "RESUME")
+        .eq("status", "ACTIVE")
+        .maybeSingle();
+      check(error, "library resume lookup failed");
+      return Boolean(data);
+    },
+
     async createCandidate({ id, data, now }) {
       const { error } = await client.from("candidate_profiles").insert({
         id,

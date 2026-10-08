@@ -1338,3 +1338,1141 @@
   }
 }
 
+
+/* ===== Ask AI assistant (extends the .cmdk palette in styles/enterprise.css) ===== */
+button.cmdk-item {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+}
+
+.cmdk-esc {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cmdk-reply {
+  white-space: pre-line;
+}
+
+.cmdk-pending {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.cmdk-jobs {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cmdk-job {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cmdk-job-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cmdk-job-main strong {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.cmdk-job-main span {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.cmdk-job-actions {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cmdk-job-actions a,
+.cmdk-links a {
+  color: var(--cyan);
+  text-decoration: none;
+}
+
+.cmdk-job-actions a:hover,
+.cmdk-links a:hover {
+  color: #fff;
+}
+
+.cmdk-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cmdk-grounding {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 520px) {
+  .cmdk-job {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .cmdk-foot span:first-child {
+    font-size: 10.5px;
+  }
+}
+
+.mobile-menu .mobile-ask {
+  padding: 15px 4px;
+  font-family: inherit;
+  font-size: 17px;
+  text-align: left;
+  color: var(--cyan);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+/* ===== Careers nav dropdown (components/marketing/SiteNav.tsx) =====
+   Matches .nav-item>a and the mega panels' card language. Opened by state
+   (.is-open), never by :hover alone, so touch and keyboard behave the same. */
+.nav-item > .nav-dd-trigger {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: #13263f;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.nav-item > .nav-dd-trigger:hover,
+.nav-item.is-open > .nav-dd-trigger,
+.nav-item > .nav-dd-trigger.is-active {
+  background: rgba(10, 19, 34, 0.07);
+  color: var(--ink);
+}
+.nav-item > .nav-dd-trigger .chev {
+  width: 13px;
+  height: 13px;
+  opacity: 0.6;
+  transition: transform 0.25s;
+}
+.nav-item.is-open > .nav-dd-trigger .chev {
+  transform: rotate(180deg);
+}
+/* Compact link spacing on narrower desktops, so the pill never squeezes the
+   wordmark (the brand keeps its full width; the pill gives up padding). */
+@media (max-width: 1480px) {
+  .nav-item > a,
+  .nav-item > .nav-dd-trigger {
+    padding: 9px 12px;
+  }
+}
+@media (max-width: 1320px) {
+  .nav-mid {
+    padding: 5px 6px;
+  }
+  .nav-item > a,
+  .nav-item > .nav-dd-trigger {
+    padding: 8px 9px;
+    font-size: 13.5px;
+  }
+  .nav-right .btn-sm {
+    padding: 0 18px;
+  }
+}
+@media (max-width: 1240px) and (min-width: 1181px) {
+  .nav-item > a,
+  .nav-item > .nav-dd-trigger {
+    padding: 8px 7px;
+    font-size: 13px;
+  }
+  .nav-item > a .chev,
+  .nav-item > .nav-dd-trigger .chev {
+    width: 11px;
+    height: 11px;
+  }
+  header.nav > .wrap {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+@media (min-width: 1181px) {
+  .brand {
+    flex-shrink: 0;
+  }
+}
+/* hover bridge across the gap between the pill and the panel */
+.has-dd::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 100%;
+  height: 18px;
+}
+.nav-dd {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: -8px;
+  width: 320px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 30px 64px -34px rgba(10, 19, 34, 0.38);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  /* visibility flips instantly on open (so ArrowDown can focus the first link
+     in the same frame) and only after the fade on close */
+  transition: opacity 0.18s, transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s linear 0.18s;
+  z-index: 55;
+}
+.nav-item.is-open > .nav-dd {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 0.18s, transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s;
+}
+.nav-dd ul {
+  list-style: none;
+}
+.nav-dd a {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  transition: background 0.16s;
+}
+.nav-dd a:hover,
+.nav-dd a:focus-visible {
+  background: var(--tint);
+}
+.nav-dd a:focus-visible {
+  outline-offset: -2px;
+}
+.nav-dd-t {
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  transition: color 0.16s;
+}
+.nav-dd a:hover .nav-dd-t,
+.nav-dd a[aria-current="page"] .nav-dd-t {
+  color: var(--blue);
+}
+.nav-dd-d {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-dd {
+    transition: none;
+  }
+}
+
+/* Mobile menu: Careers as an always-expanded labelled group (no nested accordion). */
+.mobile-menu .mm-group {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mobile-menu .mm-group-label {
+  font-family: "Geist Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  padding-bottom: 4px;
+}
+.mobile-menu .mm-group a.mm-sub {
+  padding: 12px 0 12px 14px;
+  border-bottom: 0;
+  border-left: 2px solid rgba(255, 255, 255, 0.12);
+}
+.mobile-menu .mm-group a.mm-sub[aria-current="page"] {
+  border-left-color: var(--cyan);
+  color: #fff;
+}
+
+/* ===== Recruiting workspace (/app) — enterprise tokens, no teal ===== */
+.ws {
+  min-height: 100vh;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.ws-bar {
+  background: var(--navy);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.ws-bar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.ws-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ws-brand img {
+  width: 26px;
+  height: 26px;
+}
+
+.ws-brand small {
+  font-family: "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  font-weight: 500;
+}
+
+.ws-nav {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+}
+
+.ws-nav a {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ws-nav a:hover,
+.ws-nav a[aria-current="page"] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ws-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.ws-user button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ws-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+
+.ws-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.ws-eyebrow {
+  font-family: "Geist Mono", monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.ws-head h1 {
+  font-size: clamp(24px, 2.6vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin-top: 6px;
+}
+
+.ws-head p {
+  margin-top: 6px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  max-width: 70ch;
+}
+
+.ws-panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.ws-panel + .ws-panel {
+  margin-top: 16px;
+}
+
+.ws-panel h2 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+}
+
+.ws-panel h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 16px 0 8px;
+}
+
+.ws-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.ws-grid-wide {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.ws-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ws-stat {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ws-stat strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ws-stat span {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.ws-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.ws-tabs a {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.ws-tabs a[aria-current="page"] {
+  color: var(--ink);
+  border-bottom-color: var(--blue);
+  font-weight: 600;
+}
+
+.ws-table-wrap {
+  overflow-x: auto;
+}
+
+.ws-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ws-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.ws-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.ws-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.ws-table a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ws-table a:hover {
+  color: var(--blue);
+}
+
+.ws-muted {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.ws-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--tint);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.ws-pill.blue {
+  background: rgba(29, 111, 224, 0.1);
+  color: var(--blue-d);
+}
+
+.ws-pill.amber {
+  background: #fdf3df;
+  color: #8a5a00;
+}
+
+.ws-pill.red {
+  background: #fdecec;
+  color: #a12626;
+}
+
+.ws-pill.green {
+  background: #e8f4ee;
+  color: #1f6b45;
+}
+
+.ws-dl {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 8px 16px;
+  font-size: 14px;
+}
+
+.ws-dl dt {
+  color: var(--ink-2);
+}
+
+.ws-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ws-chip {
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  background: #fff;
+}
+
+.ws-chip.matched {
+  border-color: rgba(31, 107, 69, 0.35);
+  color: #1f6b45;
+}
+
+.ws-chip.notfound {
+  border-style: dashed;
+  color: var(--ink-2);
+}
+
+.ws-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ws-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.ws-list li:last-child {
+  border-bottom: 0;
+}
+
+.ws-score {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ws-score strong {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.ws-note {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.ws-source {
+  white-space: pre-wrap;
+  font-size: 13.5px;
+  line-height: 1.6;
+  max-height: 560px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.ws-form .apply-field {
+  margin-bottom: 12px;
+}
+
+.ws-field-meta {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.ws-field-meta q {
+  color: var(--ink-2);
+}
+
+.ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.ws-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.ws-btn.primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+.ws-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.ws-flash {
+  margin-top: 12px;
+  font-size: 13.5px;
+}
+
+.ws-flash.ok {
+  color: #1f6b45;
+}
+
+.ws-flash.err {
+  color: #a12626;
+}
+
+.login-page {
+  max-width: 460px;
+  padding-top: 132px;
+  padding-bottom: 96px;
+}
+
+.login-page h1 {
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 8px 0 8px;
+}
+
+.login-lead {
+  color: var(--ink-2);
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .ws-grid,
+  .ws-grid-wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ws-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ws-dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ws-bar-inner {
+    gap: 14px;
+  }
+  .ws-brand small,
+  .ws-user span {
+    display: none;
+  }
+}
+
+/* ===== Detailed Apply ===== */
+.apply-stepper {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0 0 18px;
+  padding: 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+.apply-stepper li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.apply-stepper span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  background: #fff;
+}
+
+.apply-stepper li[aria-current="step"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.apply-stepper li[aria-current="step"] span {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+.apply-stepper li.done span {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.apply-sub-heading {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+}
+
+.apply-repeat {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 12px 4px;
+  margin-bottom: 10px;
+}
+
+.apply-repeat-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.apply-review dl {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 8px 16px;
+  font-size: 14.5px;
+}
+
+.apply-review dt {
+  color: var(--ink-2);
+}
+
+@media (max-width: 640px) {
+  .apply-review dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.apply-job-meta a {
+  color: var(--blue);
+  font-weight: 600;
+}
+
+/* ===== Candidate portal (/candidate) — reuses the .ws workspace shell ===== */
+.cp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.cp-more {
+  margin-top: 12px;
+  font-size: 14px;
+}
+.cp-more a,
+.cp .ws-list a,
+.cp-login-help a {
+  color: var(--blue);
+  font-weight: 600;
+}
+.cp-draft {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.cp-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.cp-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.cp-msg {
+  font-size: 13px;
+  color: #1f6b45;
+  margin-top: 6px;
+}
+.cp-msg-error {
+  color: #a12626;
+}
+.cp-fine {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.cp-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.cp-upload .apply-field {
+  width: 100%;
+  margin-bottom: 0;
+}
+.cp-check,
+.cp-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.cp-radio {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  background: #fff;
+}
+.cp-radio span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.cp-radio:has(input:checked) {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 1px var(--blue);
+}
+.cp-resume-pick {
+  border: 0;
+  padding: 0;
+}
+.cp-resume-pick legend {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cp-resumes > li {
+  padding: 16px 0;
+}
+.cp-resume-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.cp-resume-name {
+  overflow-wrap: anywhere;
+}
+.cp-resume-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.cp-resume-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px 18px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+.cp-resume-actions > a {
+  color: var(--blue);
+  font-weight: 600;
+  padding: 2px 0;
+}
+.cp-extract {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--surface);
+}
+.cp-extract h3 {
+  margin: 0 0 10px;
+}
+.cp-dl {
+  margin-bottom: 10px;
+}
+.cp-review {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+.cp-form .apply-field input[readonly] {
+  background: var(--surface);
+  color: var(--ink-2);
+}
+.cp-job-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.cp-save-job {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cp-save-job[aria-pressed="true"] {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.cp-login {
+  max-width: 560px;
+}
+.cp-login-panel {
+  margin-top: 8px;
+}
+.cp-demo-pick {
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14.5px;
+}
+.cp-demo-pick legend {
+  font-weight: 600;
+  padding: 0 4px;
+}
+.cp-login-help {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--ink-2);
+  display: grid;
+  gap: 10px;
+}
+.apply-actions .cp-save-draft {
+  margin-left: auto;
+}
+@media (max-width: 640px) {
+  .cp-draft,
+  .cp-resume-head {
+    flex-direction: column;
+  }
+  .cp-draft-actions {
+    justify-content: flex-start;
+  }
+  .cp-table thead {
+    display: none;
+  }
+  .cp-table tr {
+    display: block;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cp-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border: 0;
+  }
+  .cp-table td::before {
+    content: attr(data-label);
+    color: var(--ink-2);
+    font-size: 12.5px;
+  }
+  .apply-actions .cp-save-draft {
+    margin-left: 0;
+  }
+}
+/* Grid panels sit side by side; the stacked-panel margin would misalign columns. */
+.cp .ws-grid > .ws-panel + .ws-panel {
+  margin-top: 0;
+}
+.cp-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cp-resume-actions {
+  align-items: center;
+}
+.cp-resume-actions .apply-text-btn {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 2px 0;
+}
+@media (max-width: 640px) {
+  /* Portal nav gets its own full-width row on phones so every section is visible. */
+  .cp .ws-bar-inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px 16px 6px;
+    gap: 6px 12px;
+  }
+  .cp .ws-brand {
+    flex: 1;
+  }
+  .cp .ws-nav {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    gap: 2px;
+    overflow: visible;
+  }
+  .cp .ws-nav a {
+    padding: 7px 10px;
+    font-size: 13.5px;
+  }
+  .cp-table td .cp-cell {
+    align-items: flex-end;
+    text-align: right;
+  }
+}

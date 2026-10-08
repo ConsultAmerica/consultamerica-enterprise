@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CAPABILITIES, PHASES } from "@/components/marketing/company-copy";
+import { CAPABILITIES, PHASES, WHY } from "@/components/marketing/company-copy";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 
@@ -10,21 +10,6 @@ export const metadata: Metadata = {
   description:
     "Consult America unites engineering, AI, and enterprise consulting — with the specialized technology talent to design it, build it, and run it in production.",
 };
-
-const WHY = [
-  {
-    title: "We engineer, not just advise",
-    body: "Production systems, not slideware — senior practitioners stay attached to delivery.",
-  },
-  {
-    title: "AI-first, operationalized",
-    body: "Models that run, monitored and governed, connected to the enterprise core.",
-  },
-  {
-    title: "Talent on tap",
-    body: "Elite engineers and Oracle specialists — embedded in your teams or hired direct.",
-  },
-] as const;
 
 export default function AboutPage() {
   return (

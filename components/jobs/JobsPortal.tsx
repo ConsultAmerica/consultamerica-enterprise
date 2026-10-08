@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { JobDetailView } from "@/components/jobs/JobDetailView";
+import { LEARN_ABOUT_CAREERS } from "@/components/marketing/nav-config";
 import {
   formatPostedDate,
   type Job,
@@ -194,10 +195,10 @@ export function JobsPortal({
     return (
       <div className="jobs-empty">
         <h2>NO CURRENT OPENINGS</h2>
-        <p>There are no open roles right now. Check back soon or explore Careers.</p>
+        <p>There are no open roles right now. Check back soon or learn about careers at Consult America.</p>
         <p style={{ marginTop: 16 }}>
-          <Link href="/careers" className="btn btn-primary btn-sm">
-            Careers
+          <Link href={LEARN_ABOUT_CAREERS.href} className="btn btn-primary btn-sm">
+            {LEARN_ABOUT_CAREERS.label}
             <svg
               width="15"
               height="15"
@@ -230,8 +231,8 @@ export function JobsPortal({
           <p>
             Explore opportunities across consulting, Oracle, AI, data,
             engineering and enterprise transformation.{" "}
-            <Link href="/careers" className="jobs-hero-link">
-              Explore careers →
+            <Link href={LEARN_ABOUT_CAREERS.href} className="jobs-hero-link">
+              {LEARN_ABOUT_CAREERS.label} →
             </Link>
           </p>
           <form className="jobs-search" onSubmit={onSearchSubmit}>

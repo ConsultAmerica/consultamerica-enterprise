@@ -1036,7 +1036,7 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
         .slice(0, 4)
         .toUpperCase()}`;
 
-      await client.from("job_requisitions").insert({
+      const { error: requisitionError } = await client.from("job_requisitions").insert({
         id: requisitionId,
         requisition_number: requisitionNumber,
         title: input.title,
@@ -1060,6 +1060,9 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
         created_at: now,
         updated_at: now,
       });
+      if (requisitionError) {
+        throw new Error(`Requisition insert failed (${requisitionError.code}): ${requisitionError.message}`);
+      }
 
       let postingSlug: string | undefined;
       if (input.publishNow) {
@@ -1154,17 +1157,14 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
       if (!client) {
         throw new Error("Supabase is not configured");
       }
-      if (!input.resume) {
+      if (!input.resume && !input.libraryResumeDocumentId) {
         throw new Error("Easy Apply requires a resume");
       }
       const { submitEasyApplication } = await import("@/lib/recruiting/easy-apply");
       const { createSupabaseEasyApplyPorts } = await import(
         "@/lib/recruiting/easy-apply-supabase"
       );
-      return submitEasyApplication(
-        { ...input, resume: input.resume },
-        { ports: createSupabaseEasyApplyPorts(client) },
-      );
+      return submitEasyApplication(input, { ports: createSupabaseEasyApplyPorts(client) });
     },
 
     async updateApplicationStage(applicationId, status) {

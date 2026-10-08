@@ -30,7 +30,7 @@ export default async function JobApplyPage({ params }: ApplyPageProps) {
   if (!job.acceptingApplications) {
     return (
       <>
-        <MarketingHeader />
+        <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
         <main>
           <div className="apply-page">
             <div className="wrap apply-page-inner">
@@ -64,7 +64,7 @@ export default async function JobApplyPage({ params }: ApplyPageProps) {
 
   return (
     <>
-      <MarketingHeader />
+      <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
       <main>
         <EasyApplyForm job={job} />
       </main>

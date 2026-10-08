@@ -4,7 +4,7 @@
  * Storage and Postgres are not one transaction, so the workflow is ordered to
  * keep partial state small and recoverable:
  *
- *   job eligibility → candidate (create/reuse) → portal account (best effort)
+ *   job eligibility → candidate (session / create / reuse) → portal account (best effort)
  *   → existing application?  complete: return it (no duplicate)
  *                            missing resume: recover by attaching one
  *   → resume object (private storage) → document metadata
@@ -66,7 +66,20 @@ export type EasyApplyInput = {
   coverLetter?: string;
   additionalInformation?: string;
   source?: string;
-  resume: EasyApplyResume;
+  /** A new upload. Required unless libraryResumeDocumentId is set. */
+  resume?: EasyApplyResume;
+  /**
+   * Server-only: the signed-in candidate's id from the session (never client
+   * input). Replaces the email lookup, so the application is filed on the
+   * authenticated candidate's own record.
+   */
+  sessionCandidateId?: string;
+  /**
+   * Server-only, with sessionCandidateId: an ACTIVE résumé already in that
+   * candidate's library. It is linked as-is (no new upload), is never
+   * removed by failure compensation, and does not change the default résumé.
+   */
+  libraryResumeDocumentId?: string;
 };
 
 export type EasyApplyResult = {
@@ -75,6 +88,8 @@ export type EasyApplyResult = {
   applicationNumber: string;
   /** "created" (new), "existing" (already complete), "recovered" (resume attached on retry). */
   outcome: "created" | "existing" | "recovered";
+  /** The resume document linked to the application. */
+  resumeDocumentId: string;
 };
 
 export type ExistingApplication = { id: string; applicationNumber: string };
@@ -84,6 +99,8 @@ export type EasyApplyPorts = {
   /** Throws on lookup failure; resolves false when the job is missing or not open. */
   isJobOpen(postingId: string): Promise<boolean>;
   findCandidateIdByEmail(email: string): Promise<string | null>;
+  /** True when documentId is an ACTIVE résumé document owned by candidateId. */
+  findLibraryResume(input: { candidateId: string; documentId: string }): Promise<boolean>;
   createCandidate(input: { id: string; data: EasyApplyInput; now: string }): Promise<void>;
   ensurePortalAccount(input: { candidateId: string; email: string; displayName: string }): Promise<void>;
   findApplication(candidateId: string, requisitionId: string): Promise<ExistingApplication | null>;
@@ -191,15 +208,16 @@ export async function submitEasyApplication(
   const open = await step("job-lookup", () => ports.isJobOpen(input.postingId));
   if (!open) throw new JobClosedError();
 
-  // 2. Candidate: reuse by email, otherwise create.
+  // 2. Candidate: the signed-in candidate, else reuse by email, else create.
   const email = input.email.trim();
-  const candidateId = await step("candidate", async () => {
+  const libraryDocumentId = input.sessionCandidateId ? input.libraryResumeDocumentId : undefined;
+  const candidateId = input.sessionCandidateId ?? (await step("candidate", async () => {
     const existing = await ports.findCandidateIdByEmail(email.toLowerCase());
     if (existing) return existing;
     const id = newId("cand");
     await ports.createCandidate({ id, data: input, now });
     return id;
-  });
+  }));
   ctx.candidateId = candidateId;
 
   // 3. Portal sign-in invite. Never blocks the submission.
@@ -219,15 +237,13 @@ export async function submitEasyApplication(
     ctx.applicationId = existing.id;
     const linked = await step("document-link", () => ports.findResumeLink(existing.id));
     if (linked) {
-      return { candidateId, applicationId: existing.id, applicationNumber: existing.applicationNumber, outcome: "existing" };
+      return { candidateId, applicationId: existing.id, applicationNumber: existing.applicationNumber, outcome: "existing", resumeDocumentId: linked };
     }
     // Partial earlier attempt: attach the resume and complete it.
     const documentId = await persistResume();
     await linkAndVerify(existing.id, documentId, { compensateApplication: false });
-    await bestEffort("primary-resume", "primary resume flag update failed", () =>
-      ports.markPrimaryResume({ candidateId, documentId, now }),
-    );
-    return { candidateId, applicationId: existing.id, applicationNumber: existing.applicationNumber, outcome: "recovered" };
+    await promotePrimary(documentId);
+    return { candidateId, applicationId: existing.id, applicationNumber: existing.applicationNumber, outcome: "recovered", resumeDocumentId: documentId };
   }
 
   // 5. New application: resume first, so a storage/metadata failure leaves no application.
@@ -248,27 +264,37 @@ export async function submitEasyApplication(
   await linkAndVerify(applicationId, documentId, { compensateApplication: true });
 
   // 6. Enrichment / audit trail. Logged on failure, never blocks success.
-  await bestEffort("primary-resume", "primary resume flag update failed", () =>
-    ports.markPrimaryResume({ candidateId, documentId, now }),
-  );
+  await promotePrimary(documentId);
   await bestEffort("submission-record", "activity/status history insert failed", () =>
     ports.recordSubmission({ candidateId, applicationId, requisitionId: input.requisitionId, now }),
   );
 
-  return { candidateId, applicationId, applicationNumber, outcome: "created" };
+  return { candidateId, applicationId, applicationNumber, outcome: "created", resumeDocumentId: documentId };
 
   // --- helpers (hoisted) -------------------------------------------------
 
   async function persistResume(): Promise<string> {
+    if (libraryDocumentId) {
+      ctx.documentId = libraryDocumentId;
+      await step("document-metadata", async () => {
+        const owned = await ports.findLibraryResume({ candidateId, documentId: libraryDocumentId });
+        if (!owned) throw new Error("library resume not found for candidate");
+      });
+      return libraryDocumentId;
+    }
+    const resume = input.resume;
+    if (!resume) {
+      return step("resume-upload", () => Promise.reject(new Error("no resume provided")));
+    }
     const docId = newId("doc");
     ctx.documentId = docId;
     const storagePath = await step("resume-upload", () =>
-      ports.uploadResumeObject({ candidateId, documentId: docId, resume: input.resume }),
+      ports.uploadResumeObject({ candidateId, documentId: docId, resume }),
     );
     storagePathFor.set(docId, storagePath);
     await step("document-metadata", async () => {
       try {
-        await ports.insertResumeDocument({ documentId: docId, candidateId, storagePath, resume: input.resume, now });
+        await ports.insertResumeDocument({ documentId: docId, candidateId, storagePath, resume, now });
       } catch (error) {
         await removeObject(storagePath);
         throw error;
@@ -301,7 +327,17 @@ export async function submitEasyApplication(
     });
   }
 
+  /** A library résumé keeps the candidate's chosen default; a new upload becomes the default. */
+  async function promotePrimary(docId: string) {
+    if (docId === libraryDocumentId) return;
+    await bestEffort("primary-resume", "primary resume flag update failed", () =>
+      ports.markPrimaryResume({ candidateId, documentId: docId, now }),
+    );
+  }
+
   async function discardResume(docId: string, storagePath?: string) {
+    // Never compensate away a document this attempt did not create.
+    if (docId === libraryDocumentId) return;
     await bestEffort("cleanup", "could not remove unlinked resume metadata", () =>
       ports.removeResumeDocument(docId),
     );

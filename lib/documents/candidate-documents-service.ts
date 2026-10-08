@@ -399,6 +399,40 @@ export async function replacePrimaryResume(input: {
   return created;
 }
 
+/** Makes an ACTIVE resume the candidate's only primary (default) resume. */
+export async function setPrimaryResume(input: {
+  candidateId: string;
+  documentId: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  const client = getSupabaseServiceClient();
+  if (!client) {
+    return { ok: false, message: "Document uploads require the connected candidate environment." };
+  }
+
+  const { data: existing } = await client
+    .from("documents")
+    .select("candidate_id, document_type, status")
+    .eq("id", input.documentId)
+    .maybeSingle();
+
+  if (!existing || existing.status !== "ACTIVE" || existing.document_type !== "RESUME") {
+    return { ok: false, message: "Document not found." };
+  }
+  if ((existing.candidate_id as string) !== input.candidateId) {
+    return { ok: false, message: "Forbidden." };
+  }
+
+  await clearPrimaryResumeFlags(input.candidateId, input.documentId);
+  const { error } = await client
+    .from("documents")
+    .update({ is_primary_resume: true, updated_at: new Date().toISOString() })
+    .eq("id", input.documentId)
+    .eq("candidate_id", input.candidateId);
+
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
 /** Archive without removing storage object or application_documents links. */
 export async function archiveCandidateDocument(input: {
   candidateId: string;

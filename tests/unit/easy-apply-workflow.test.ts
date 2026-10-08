@@ -17,7 +17,7 @@ function createFakeStore(options: { jobOpen?: boolean; jobLookupFails?: boolean 
     candidates: new Map<string, string>(), // email -> candidateId
     applications: new Map<string, { id: string; applicationNumber: string }>(), // cand|req -> app
     objects: new Set<string>(),
-    documents: new Map<string, { candidateId: string; primary: boolean }>(),
+    documents: new Map<string, { candidateId: string; primary: boolean; library?: boolean }>(),
     links: new Map<string, string>(), // applicationId -> documentId
     submissions: [] as string[],
     portalInvites: 0,
@@ -40,6 +40,11 @@ function createFakeStore(options: { jobOpen?: boolean; jobLookupFails?: boolean 
     async findCandidateIdByEmail(email) {
       maybeFail("findCandidateIdByEmail");
       return state.candidates.get(email) ?? null;
+    },
+    async findLibraryResume({ candidateId, documentId }) {
+      maybeFail("findLibraryResume");
+      const doc = state.documents.get(documentId);
+      return Boolean(doc?.library && doc.candidateId === candidateId);
     },
     async createCandidate({ id, data }) {
       maybeFail("createCandidate");
@@ -264,5 +269,74 @@ describe("Easy Apply workflow", () => {
     const serialized = JSON.stringify(logs, (_k, v) => (v instanceof Error ? v.message : v));
     expect(serialized).not.toContain("example.com");
     expect(serialized).not.toContain("[1,2,3,4]");
+  });
+
+  describe("signed-in candidate (session candidate + library résumé)", () => {
+    function withLibrary() {
+      const store = createFakeStore();
+      store.state.documents.set("doc-lib", { candidateId: "cand-me", primary: false, library: true });
+      store.state.documents.set("doc-default", { candidateId: "cand-me", primary: true, library: true });
+      store.state.documents.set("doc-other", { candidateId: "cand-other", primary: false, library: true });
+      return store;
+    }
+    const signedIn: EasyApplyInput = {
+      ...input,
+      resume: undefined,
+      sessionCandidateId: "cand-me",
+      libraryResumeDocumentId: "doc-lib",
+    };
+
+    it("files on the session candidate without an email lookup or a new upload", async () => {
+      const { state, failNext, deps } = withLibrary();
+      failNext("findCandidateIdByEmail", 5); // would throw if consulted
+      const result = await submitEasyApplication(signedIn, deps);
+
+      expect(result).toMatchObject({ candidateId: "cand-me", outcome: "created", resumeDocumentId: "doc-lib" });
+      expect(state.candidates.size).toBe(0);
+      expect(state.objects.size).toBe(0);
+      expect(state.links.get(result.applicationId)).toBe("doc-lib");
+      // The candidate's chosen default résumé is left alone.
+      expect(state.documents.get("doc-default")?.primary).toBe(true);
+      expect(state.documents.get("doc-lib")?.primary).toBe(false);
+    });
+
+    it("rejects another candidate's document before creating an application", async () => {
+      const { state, deps } = withLibrary();
+      await expect(
+        submitEasyApplication({ ...signedIn, libraryResumeDocumentId: "doc-other" }, deps),
+      ).rejects.toMatchObject({ stage: "document-metadata" });
+      expect(state.applications.size).toBe(0);
+    });
+
+    it("ignores a library document id without a session candidate", async () => {
+      const { state, deps } = withLibrary();
+      const result = await submitEasyApplication({ ...input, libraryResumeDocumentId: "doc-other" }, deps);
+      expect(state.links.get(result.applicationId)).not.toBe("doc-other");
+      expect(state.objects.size).toBe(1);
+    });
+
+    it("link failure compensates the application but never removes the library résumé", async () => {
+      const { state, failNext, deps } = withLibrary();
+      failNext("linkResume");
+      await expect(submitEasyApplication(signedIn, deps)).rejects.toMatchObject({ stage: "document-link" });
+      expect(state.applications.size).toBe(0);
+      expect(state.documents.has("doc-lib")).toBe(true);
+    });
+
+    it("a repeat submission returns the existing application", async () => {
+      const { state, deps } = withLibrary();
+      const first = await submitEasyApplication(signedIn, deps);
+      const second = await submitEasyApplication(signedIn, deps);
+      expect(second).toMatchObject({ outcome: "existing", applicationId: first.applicationId });
+      expect(state.applications.size).toBe(1);
+    });
+
+    it("fails cleanly when neither an upload nor a library résumé is given", async () => {
+      const { state, deps } = withLibrary();
+      await expect(
+        submitEasyApplication({ ...signedIn, libraryResumeDocumentId: undefined }, deps),
+      ).rejects.toMatchObject({ stage: "resume-upload" });
+      expect(state.applications.size).toBe(0);
+    });
   });
 });

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CAPABILITIES, PHASES } from "@/components/marketing/company-copy";
+import { CAPABILITIES, HIRING_STEPS, PHASES } from "@/components/marketing/company-copy";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
+import { SEARCH_OPEN_JOBS } from "@/components/marketing/nav-config";
 import { assertProductionSupabaseConfigured } from "@/app/lib/supabase/server";
 import { getOpenJobs } from "@/lib/jobs";
 import type { Job } from "@/lib/jobs/public-model";
@@ -18,14 +19,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const FEATURED_LIMIT = 6;
-
-const HIRING_STEPS = [
-  { title: "Explore opportunities", body: "Browse open roles and find the work that fits your experience." },
-  { title: "Apply", body: "A short application with your resume — it carries your professional history." },
-  { title: "Recruiting review", body: "Our recruiting team reviews your application against the role." },
-  { title: "Interview process", body: "Shortlisted candidates are invited to interviews with the team." },
-  { title: "Decision", body: "The team makes a hiring decision for the role." },
-] as const;
 
 const ARROW = (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -48,7 +41,7 @@ export default async function CareersPage() {
 
   return (
     <>
-      <MarketingHeader solid={false} />
+      <MarketingHeader solid={false} assistantContext={{ page: "careers" }} />
       <main className="about-page careers-page">
         <section className="about-hero">
           <div className="wrap about-hero-inner">
@@ -62,8 +55,8 @@ export default async function CareersPage() {
               that turn complex challenges into working systems.
             </p>
             <div className="about-people-actions">
-              <Link href="/jobs" className="btn btn-primary">
-                Explore open roles {ARROW}
+              <Link href={SEARCH_OPEN_JOBS.href} className="btn btn-primary">
+                {SEARCH_OPEN_JOBS.label} {ARROW}
               </Link>
             </div>
           </div>
@@ -170,8 +163,8 @@ export default async function CareersPage() {
               </div>
             )}
             <div className="careers-openings-all">
-              <Link href="/jobs" className="btn btn-dark">
-                View all open roles {ARROW}
+              <Link href={SEARCH_OPEN_JOBS.href} className="btn btn-dark">
+                {SEARCH_OPEN_JOBS.label} {ARROW}
               </Link>
             </div>
           </div>
@@ -203,8 +196,8 @@ export default async function CareersPage() {
             <h2 style={{ marginTop: 18 }}>Explore open roles.</h2>
             <p>See every position currently accepting applications.</p>
             <div className="cta-actions">
-              <Link href="/jobs" className="btn btn-primary">
-                Explore open roles {ARROW}
+              <Link href={SEARCH_OPEN_JOBS.href} className="btn btn-primary">
+                {SEARCH_OPEN_JOBS.label} {ARROW}
               </Link>
             </div>
           </div>

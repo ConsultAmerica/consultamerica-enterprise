@@ -52,7 +52,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
 
   return (
     <>
-      <MarketingHeader solid={false} />
+      <MarketingHeader solid={false} assistantContext={{ page: "jobs" }} />
       <main>
         <JobsPortal
           key={[search.q, search.location, search.category, search.sort, search.page].join("|")}

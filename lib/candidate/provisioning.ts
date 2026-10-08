@@ -30,12 +30,19 @@ export async function provisionCandidatePortalAccount(input: {
     if (existingCandidate?.profile_id) return;
 
     const now = new Date().toISOString();
+    const site = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/+$/, "");
     const { data: invited, error: inviteError } =
-      await client.auth.admin.inviteUserByEmail(input.email);
-    if (inviteError || !invited?.user) {
-      console.error(
-        `Candidate portal invite failed for ${input.email}: ${inviteError?.message}`,
+      await client.auth.admin.inviteUserByEmail(
+        input.email,
+        site ? { redirectTo: `${site}/candidate/activate` } : undefined,
       );
+    if (inviteError || !invited?.user) {
+      // Ids and codes only — never the applicant's email address.
+      console.error("[candidate-provisioning]", {
+        event: "invite-failed",
+        candidateId: input.candidateId,
+        code: inviteError?.code ?? inviteError?.status ?? null,
+      });
       return;
     }
 
