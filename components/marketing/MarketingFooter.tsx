@@ -23,7 +23,7 @@ export function MarketingFooter() {
           </div>
           <div className="foot-col">
             <h4>Company</h4>
-            <Link href="/about">Who we are</Link>
+            <Link href="/life">Who we are</Link>
             <Link href="/#talent">Talent</Link>
             <Link href="/#insights">Insights</Link>
             <Link href="/careers">Careers</Link>
@@ -40,14 +40,6 @@ export function MarketingFooter() {
           <div className="foot-contact">
             <div className="office">
               <h5>Headquarters</h5>
-              <p>
-                20130 Lakeview Center Plaza, Suite 400
-                <br />
-                Ashburn, VA 20147
-              </p>
-            </div>
-            <div className="office">
-              <h5>Branch Office</h5>
               <p>
                 1101 Opal Court, Suite 211
                 <br />
