@@ -172,12 +172,6 @@ export function ContactFab({ onAskAi, onTalkToExpert }: ContactFabProps) {
           )}
         </div>
 
-        <div className="chub-foot">
-          <span>Prefer to talk?</span>
-          <a href={`tel:${CONTACT.phoneHref}`} data-focusable tabIndex={open ? 0 : -1}>
-            {CONTACT.phone}
-          </a>
-        </div>
       </div>
 
       <button
