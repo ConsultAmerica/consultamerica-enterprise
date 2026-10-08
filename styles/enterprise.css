@@ -68,7 +68,7 @@ header.nav{position:fixed;inset:0 0 auto 0;z-index:60;background:transparent;bac
 header.nav.nav-gone{opacity:0;transform:translateY(-22px);pointer-events:none}
 header.nav>.wrap{max-width:1360px;margin:0 auto;padding-left:20px;padding-right:14px}
 .nav-inner{position:relative;display:flex;align-items:center;justify-content:space-between;
-  height:80px;gap:28px;border-radius:18px;
+  height:92px;gap:28px;border-radius:18px;
   background:#fff;
   border:1px solid rgba(255,255,255,.65);
   box-shadow:0 10px 36px -14px rgba(7,12,24,.5);
@@ -100,7 +100,7 @@ header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -
 .nav-item:hover>a{background:rgba(10,19,34,.07)}
 .nav-item>a .chev{width:13px;height:13px;opacity:.6;transition:transform .25s}
 .nav-item:hover>a .chev{transform:rotate(180deg)}
-.mega{position:fixed;left:0;right:0;top:102px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 30px 64px -34px rgba(10,19,34,.3);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .2s,transform .3s cubic-bezier(.2,.9,.3,1);z-index:55}
+.mega{position:fixed;left:0;right:0;top:114px;background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);box-shadow:0 30px 64px -34px rgba(10,19,34,.3);opacity:0;visibility:hidden;transform:translateY(-8px);transition:opacity .2s,transform .3s cubic-bezier(.2,.9,.3,1);z-index:55}
 .nav-item:hover .mega{opacity:1;visibility:visible;transform:translateY(0)}
 .has-mega::after{content:"";position:absolute;left:-8px;right:-8px;top:100%;height:40px}
 .mega-inner{max-width:1200px;margin:0 auto;padding:34px 40px 38px;display:grid;grid-template-columns:1fr 1fr 1fr 312px;gap:26px 40px;align-items:start}
@@ -707,5 +707,5 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 /* ---- LOGO TEST 4: the mark is a full lockup with the wordmark baked in,
    so the HTML wordmark and tagline are hidden to avoid saying it twice. ---- */
 .brand .bt{display:none}
-.brand .mark{height:64px}
-@media(max-width:600px){.brand .mark{height:48px}}
+.brand .mark{height:76px}
+@media(max-width:600px){.brand .mark{height:56px}}
