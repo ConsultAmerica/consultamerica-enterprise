@@ -706,6 +706,7 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 
 /* ---- LOGO TEST 4: the mark is a full lockup with the wordmark baked in,
    so the HTML wordmark and tagline are hidden to avoid saying it twice. ---- */
-.brand .bt{display:none}
-.brand .mark{height:76px}
+/* wordmark + tagline shown beside the circular mark, as on production */
+.brand .bt{display:flex}
+.brand .mark{height:70px}
 @media(max-width:600px){.brand .mark{height:56px}}
