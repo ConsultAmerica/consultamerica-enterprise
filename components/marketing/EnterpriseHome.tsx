@@ -449,16 +449,17 @@ export function EnterpriseHome() {
         </div>
         <div className={`mobile-menu${menuOpen ? " open" : ""}`} id="mobileMenu">
           <MobileNavLinks onHome onNavigate={() => setMenuOpen(false)} />
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
+          {/* Same markup/label as MarketingHeader's mobile menu so the two agree. */}
+          <button
+            type="button"
+            className="mobile-ask"
+            onClick={() => {
               setMenuOpen(false);
               openCmdk();
             }}
           >
-            Ask Consult America AI
-          </a>
+            Ask AI
+          </button>
           <button type="button" className="btn btn-primary" onClick={() => { setMenuOpen(false); setExpertOpen(true); }}>
             {CONTACT_CTA.label}
           </button>
@@ -890,6 +891,10 @@ export function EnterpriseHome() {
           <div className="careers-actions">
             <Link href="/careers" className="btn btn-primary">
               Explore careers {ARROW_BTN}
+            </Link>
+            {/* Points at /life, not the removed #talent section. */}
+            <Link href="/life" className="btn btn-ghost">
+              Life at Consult America
             </Link>
           </div>
         </div>

@@ -96,7 +96,7 @@ export function ContactFab({ onAskAi, onTalkToExpert }: ContactFabProps) {
     },
     {
       key: "ai",
-      title: "Ask Consult AI",
+      title: "Ask AI",
       desc: "Get answers instantly",
       icon: ICON_AI,
       onSelect: onAskAi,

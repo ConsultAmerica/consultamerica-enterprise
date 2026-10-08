@@ -136,6 +136,7 @@ header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -
 header.nav.scrolled .nav-toggle{color:var(--ink);border-color:var(--line)}
 .mobile-menu{display:none;flex-direction:column;padding:12px 24px 24px;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1)}
 .mobile-menu a{padding:15px 4px;font-size:17px;color:rgba(255,255,255,.88);border-bottom:1px solid rgba(255,255,255,.08)}
+/* .mobile-ask is styled in app/globals.css (one source of truth). */
 .mobile-menu .btn{margin-top:16px}
 .mobile-menu.open{display:flex}
 @media(min-width:1181px){.mobile-menu{display:none!important}}

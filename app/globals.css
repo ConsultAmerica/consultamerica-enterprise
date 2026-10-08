@@ -1750,6 +1750,10 @@ button.cmdk-item {
 }
 
 .mobile-menu .mobile-ask {
+  /* A <button> shrink-wraps by default, which would make the border-bottom
+     narrower than the link rows above it. Force the full-width row. */
+  display: block;
+  width: 100%;
   padding: 15px 4px;
   font-family: inherit;
   font-size: 17px;
