@@ -396,7 +396,7 @@ export function EnterpriseHome() {
               <span className="bw">
                 <b>Consult</b> <em>America</em>
               </span>
-              <span className="btag">AI Technology and Services</span>
+              <span className="btag">AI Consultancy</span>
             </span>
           </a>
           <nav className="nav-mid" aria-label="Primary">

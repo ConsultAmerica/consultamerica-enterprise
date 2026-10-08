@@ -28,7 +28,6 @@ export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
   // until a Products section or page is approved.
   { label: "Products", href: "/#contact", anchor: "#contact", mega: "products" },
   { label: "AI", href: "/#ai", anchor: "#ai" },
-  { label: "Talent", href: "/#talent", anchor: "#talent" },
   { label: "Insights", href: "/#insights", anchor: "#insights" },
   // One plain link for both pages: /careers, also current on /jobs and job detail
   // pages. Jobs is reached from the Careers page CTAs.
