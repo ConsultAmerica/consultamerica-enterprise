@@ -703,3 +703,9 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 .btn-outline:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-1px)}
 .brand .logo{height:40px;width:auto;object-fit:contain;transition:transform .3s}
 .brand:hover .logo{transform:scale(1.03)}
+
+/* ---- LOGO TEST 4: the mark is a full lockup with the wordmark baked in,
+   so the HTML wordmark and tagline are hidden to avoid saying it twice. ---- */
+.brand .bt{display:none}
+.brand .mark{height:64px}
+@media(max-width:600px){.brand .mark{height:48px}}
