@@ -26,7 +26,7 @@ import { ContactFab } from "@/components/marketing/ContactFab";
 import { INSIGHTS } from "@/data/insights";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { CONTACT_CTA, PRIMARY_NAV, navHref, type MegaKey } from "@/components/marketing/nav-config";
-import { CareersNavMenu, MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
+import { MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
 
 const MENU_TOGGLE_ID = "navToggle";
 
@@ -417,7 +417,6 @@ export function EnterpriseHome() {
                 </div>
               );
             })}
-            <CareersNavMenu />
           </nav>
           <div className="nav-right">
             <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={openCmdk}>

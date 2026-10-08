@@ -146,7 +146,7 @@ export function JobsPortal({
     if (error) {
       return (
         <div className="jobs-error">
-          <h2>BACKEND ERROR</h2>
+          <h2>We couldn&apos;t load open roles</h2>
           <p>{error}</p>
           <p style={{ marginTop: 16 }}>
             <Link href="/jobs" className="btn btn-dark btn-sm">
@@ -162,8 +162,8 @@ export function JobsPortal({
     if (total === 0 && filtersActive) {
       return (
         <div className="jobs-empty">
-          <h2>NO FILTER MATCHES</h2>
-          <p>No roles match these filters. Clear a filter or try different keywords.</p>
+          <h2>No roles match your search</h2>
+          <p>Try fewer filters, a broader keyword, or a different location.</p>
           <p style={{ marginTop: 16 }}>
             <button
               type="button"
@@ -194,8 +194,8 @@ export function JobsPortal({
     }
     return (
       <div className="jobs-empty">
-        <h2>NO CURRENT OPENINGS</h2>
-        <p>There are no open roles right now. Check back soon or learn about careers at Consult America.</p>
+        <h2>No open roles right now</h2>
+        <p>We post new roles here as soon as they&apos;re approved. In the meantime, learn about careers at Consult America.</p>
         <p style={{ marginTop: 16 }}>
           <Link href={LEARN_ABOUT_CAREERS.href} className="btn btn-primary btn-sm">
             {LEARN_ABOUT_CAREERS.label}
@@ -388,29 +388,24 @@ export function JobsPortal({
           ) : (
             jobs.map((job) => {
               const active = selectedJob?.id === job.id;
-              const meta = `${job.location} · ${job.workplaceType} · ${job.employmentType}`;
+              const category = job.categories[0];
               const body = (
                 <>
-                  {job.isNew ? <div className="new">NEW</div> : null}
+                  {job.isNew || category ? (
+                    <div className="jc-top">
+                      {job.isNew ? <span className="new">NEW</span> : null}
+                      {category ? <span className="jc-cat">{category.label}</span> : null}
+                    </div>
+                  ) : null}
                   <h3>{job.title}</h3>
                   <div className="meta">
-                    {job.company}
-                    <br />
-                    {meta}
-                    {job.skills.length > 0 ? (
-                      <>
-                        <br />
-                        <span className="skills">{job.skills.join(" · ")}</span>
-                      </>
-                    ) : null}
-                    <br />
-                    Posted {formatPostedDate(job.postedAt)}
-                    {job.applicationType === "INTERNAL" ? (
-                      <>
-                        {" · "}
-                        <span style={{ color: "var(--blue)" }}>Easy Apply →</span>
-                      </>
-                    ) : null}
+                    {job.company} · {job.location} · {job.workplaceType} · {job.employmentType}
+                  </div>
+                  {job.summary ? <p className="jc-sum">{job.summary}</p> : null}
+                  <div className="jc-foot">
+                    <span>Posted {formatPostedDate(job.postedAt)}</span>
+                    {job.closesAt ? <span>Closes {formatPostedDate(job.closesAt)}</span> : null}
+                    {job.applicationType === "INTERNAL" ? <span className="jc-easy">Easy Apply</span> : null}
                   </div>
                 </>
               );
@@ -437,9 +432,9 @@ export function JobsPortal({
           )}
         </div>
 
-        <div className="jobs-detail">
-          {isDesktop ? (
-            isPending && !selectedJob ? (
+        {isDesktop ? (
+          <div className="jobs-detail">
+            {isPending && !selectedJob ? (
               <div aria-hidden>
                 <div className="skeleton" style={{ height: 28, width: "80%", marginBottom: 16 }} />
                 <div className="skeleton" style={{ height: 16, width: "60%", marginBottom: 10 }} />
@@ -453,14 +448,9 @@ export function JobsPortal({
                 <h2>Select a role</h2>
                 <p>Choose a job from the list to preview details.</p>
               </div>
-            )
-          ) : (
-            <div className="jobs-empty">
-              <h2>Open a role</h2>
-              <p>Tap a listing to view the full description and apply.</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

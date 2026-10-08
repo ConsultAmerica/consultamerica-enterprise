@@ -21,6 +21,7 @@ import type {
   CandidateListItem,
   CandidateProfileDetail,
   CreateJobRequisitionInput,
+  JobDescriptionInput,
   JobDetail,
   JobListItem,
   RecruitingApplicationQueueReads,
@@ -80,6 +81,10 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
     ...(process.env.NODE_ENV === "production" ? [] : stagingPortalJobs()),
   ];
   const requisitions = [...seedRequisitions];
+  const withRequisitionNumber = (posting: Job): Job => ({
+    ...posting,
+    requisitionNumber: requisitions.find((r) => r.id === posting.requisitionId)?.requisitionNumber,
+  });
   const candidates: CandidateProfile[] = [...seedCandidates];
   const applications: Application[] = [...seedApplications];
   const offers: Offer[] = [];
@@ -109,19 +114,53 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
           const aDate = a.publishedAt ?? a.createdAt;
           const bDate = b.publishedAt ?? b.createdAt;
           return new Date(bDate).getTime() - new Date(aDate).getTime();
-        });
+        })
+        .map(withRequisitionNumber);
     },
 
     async getPostingBySlug(slug: string) {
-      return postings.find(
-        (posting) => posting.slug === slug && isPubliclyOpen(posting),
+      const posting = postings.find(
+        (item) => item.slug === slug && isPubliclyOpen(item),
       );
+      return posting ? withRequisitionNumber(posting) : undefined;
     },
 
     async getPostingBySlugAny(slug: string) {
-      return postings.find(
-        (posting) => posting.slug === slug && posting.status !== "DRAFT",
+      const posting = postings.find(
+        (item) => item.slug === slug && item.status !== "DRAFT",
       );
+      return posting ? withRequisitionNumber(posting) : undefined;
+    },
+
+    async getPostingForRequisition(requisitionId: string) {
+      return postings.find((posting) => posting.requisitionId === requisitionId);
+    },
+
+    async updateJobDescription(requisitionId: string, input: JobDescriptionInput) {
+      const requisition = requisitions.find((r) => r.id === requisitionId);
+      if (!requisition) return undefined;
+      const now = new Date().toISOString();
+      Object.assign(requisition, {
+        description: input.description,
+        responsibilities: input.responsibilities,
+        qualifications: input.qualifications,
+        preferredQualifications: input.preferredQualifications,
+        updatedAt: now,
+      });
+      const posting = postings.find((p) => p.requisitionId === requisitionId);
+      if (posting) {
+        Object.assign(posting, {
+          summary: input.summary,
+          description: input.description,
+          responsibilities: input.responsibilities,
+          qualifications: input.qualifications,
+          preferredQualifications: input.preferredQualifications,
+          experienceLevel: input.experienceLevel || undefined,
+          applicationDeadline: input.applicationDeadline || undefined,
+          updatedAt: now,
+        });
+      }
+      return { postingUpdated: Boolean(posting) };
     },
 
     async getRequisitionById(id: string) {

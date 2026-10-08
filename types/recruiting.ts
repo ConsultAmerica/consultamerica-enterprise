@@ -137,6 +137,8 @@ export type JobRequisitionApproval = {
 export type Job = {
   id: string;
   requisitionId: string;
+  /** Public reference (job_requisitions.requisition_number), when known. */
+  requisitionNumber?: string;
   slug: string;
   title: string;
   summary: string;

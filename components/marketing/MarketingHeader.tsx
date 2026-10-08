@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { AssistantPalette, type AssistantPageContext } from "@/components/assistant/AssistantPalette";
-import { CONTACT_CTA, PRIMARY_NAV, isActivePath } from "@/components/marketing/nav-config";
+import { CONTACT_CTA, PRIMARY_NAV, isNavItemActive } from "@/components/marketing/nav-config";
 import { ExpertForm } from "@/components/marketing/ExpertForm";
 import { CHEV, MEGA_IDS, NavMegaPanel } from "@/components/marketing/PrimaryNav";
-import { CareersNavMenu, MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
+import { MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
 
 const MENU_TOGGLE_ID = "navToggle";
 
@@ -87,13 +87,12 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
                 </div>
               ) : (
                 <div className="nav-item" key={item.label}>
-                  <Link href={item.href} aria-current={isActivePath(pathname, item.href) ? "page" : undefined}>
+                  <Link href={item.href} aria-current={isNavItemActive(pathname, item) ? "page" : undefined}>
                     {item.label}
                   </Link>
                 </div>
               ),
             )}
-            <CareersNavMenu />
           </nav>
           <div className="nav-right">
             <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={() => setAskOpen(true)}>

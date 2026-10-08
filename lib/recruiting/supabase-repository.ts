@@ -10,6 +10,7 @@ import type {
   CandidateProfileDetail,
   CandidateListItem,
   CreateJobRequisitionInput,
+  JobDescriptionInput,
   JobDetail,
   JobListItem,
   RecruitingApplicationQueueReads,
@@ -44,6 +45,18 @@ import {
   type Offer,
   type RecruitingActivity,
 } from "@/types/recruiting";
+
+/** Public reference numbers for postings (one batched read; missing ones stay undefined). */
+async function withRequisitionNumbers(
+  client: NonNullable<ReturnType<typeof getSupabaseServiceClient>>,
+  postings: Job[],
+): Promise<Job[]> {
+  const ids = [...new Set(postings.map((posting) => posting.requisitionId).filter(Boolean))];
+  if (ids.length === 0) return postings;
+  const { data } = await client.from("job_requisitions").select("id, requisition_number").in("id", ids);
+  const numbers = new Map((data ?? []).map((row) => [row.id as string, row.requisition_number as string]));
+  return postings.map((posting) => ({ ...posting, requisitionNumber: numbers.get(posting.requisitionId) || undefined }));
+}
 
 /** snake_case (Postgres) -> camelCase (app) row mappers, one per table. */
 
@@ -308,9 +321,8 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
 
       const { data } = await query.order("published_at", { ascending: false });
 
-      return (data ?? [])
-        .map(mapPosting)
-        .filter((posting) => isPubliclyOpen(posting));
+      const postings = (data ?? []).map(mapPosting).filter((posting) => isPubliclyOpen(posting));
+      return withRequisitionNumbers(client, postings);
     },
 
     async getPostingBySlug(slug: string) {
@@ -334,7 +346,7 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
       const { data } = await client.from("jobs").select("*").eq("slug", slug).maybeSingle();
       const posting = data ? mapPosting(data) : undefined;
       if (!posting || posting.status === "DRAFT") return undefined;
-      return posting;
+      return (await withRequisitionNumbers(client, [posting]))[0];
     },
 
     async getRequisitionById(id: string) {
@@ -1084,6 +1096,52 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
       }
 
       return { requisitionId, postingSlug };
+    },
+
+    async getPostingForRequisition(requisitionId: string) {
+      const client = getSupabaseServiceClient();
+      if (!client) return undefined;
+      const { data, error } = await client.from("jobs").select("*").eq("requisition_id", requisitionId).maybeSingle();
+      if (error) throw new Error(`posting lookup failed (${error.code})`);
+      return data ? mapPosting(data) : undefined;
+    },
+
+    async updateJobDescription(requisitionId: string, input: JobDescriptionInput) {
+      const client = getSupabaseServiceClient();
+      if (!client) return undefined;
+      const now = new Date().toISOString();
+      const { data: updated, error } = await client
+        .from("job_requisitions")
+        .update({
+          description: input.description,
+          responsibilities: input.responsibilities,
+          qualifications: input.qualifications,
+          preferred_qualifications: input.preferredQualifications,
+          updated_at: now,
+        })
+        .eq("id", requisitionId)
+        .select("id");
+      if (error) throw new Error(`requisition update failed (${error.code})`);
+      if (!updated?.length) return undefined;
+
+      // Same content on the posting, if one exists. Status and dates of
+      // publication are untouched: publishing stays a separate step.
+      const { data: posting, error: postingError } = await client
+        .from("jobs")
+        .update({
+          summary: input.summary,
+          description: input.description,
+          responsibilities: input.responsibilities,
+          qualifications: input.qualifications,
+          preferred_qualifications: input.preferredQualifications,
+          experience_level: input.experienceLevel || null,
+          application_deadline: input.applicationDeadline || null,
+          updated_at: now,
+        })
+        .eq("requisition_id", requisitionId)
+        .select("id");
+      if (postingError) throw new Error(`posting update failed (${postingError.code})`);
+      return { postingUpdated: (posting ?? []).length > 0 };
     },
 
     async publishJobRequisition(requisitionId: string) {

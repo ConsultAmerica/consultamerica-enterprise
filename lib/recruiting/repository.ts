@@ -245,8 +245,23 @@ export type RecruitingJobReads = {
   getJobDetail(requisitionId: string): Promise<JobDetail | undefined>;
 };
 
+/** Recruiter edits to a job description (requisition + its posting). Never changes status. */
+export type JobDescriptionInput = {
+  summary: string;
+  description: string;
+  responsibilities: string[];
+  qualifications: string[];
+  preferredQualifications: string[];
+  experienceLevel?: string;
+  /** ISO date; empty clears it. */
+  applicationDeadline?: string;
+};
+
 /** Writes backing requisition creation/publishing from the ATS. */
 export type RecruitingJobWrites = {
+  updateJobDescription(requisitionId: string, input: JobDescriptionInput): Promise<{ postingUpdated: boolean } | undefined>;
+  /** The posting's editable fields, for the recruiter editor. */
+  getPostingForRequisition(requisitionId: string): Promise<Job | undefined>;
   createJobRequisition(
     input: CreateJobRequisitionInput,
   ): Promise<{ requisitionId: string; postingSlug?: string }>;
@@ -279,6 +294,8 @@ export type SubmitApplicationInput = {
   sessionCandidateId?: string;
   /** Server-only, with sessionCandidateId: submit a résumé already in that candidate's library. */
   libraryResumeDocumentId?: string;
+  /** Server-only: false skips the portal invitation email (rate-limited anonymous submissions). */
+  allowPortalInvite?: boolean;
 };
 
 export type SubmitApplicationResult = {

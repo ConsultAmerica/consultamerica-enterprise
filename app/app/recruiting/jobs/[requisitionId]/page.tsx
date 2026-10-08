@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { JobDescriptionEditor } from "@/components/workspace/JobDescriptionEditor";
 import { MatchAnalysis, MatchScore } from "@/components/workspace/MatchAnalysis";
 import { fmtDate, humanize, oneParam } from "@/components/workspace/format";
+import { assessJobCompleteness } from "@/lib/jobs/completeness";
 import { recruitingRepository } from "@/lib/recruiting";
 import { findCandidatesForRequisition } from "@/lib/recruiting/matching";
 import { applicationStatusLabels } from "@/types/recruiting";
@@ -15,9 +17,20 @@ type Props = {
 export default async function RequisitionPage({ params, searchParams }: Props) {
   const { requisitionId } = await params;
   const tab = oneParam((await searchParams).tab) ?? "overview";
-  const detail = await recruitingRepository.getJobDetail(requisitionId);
+  const [detail, posting] = await Promise.all([
+    recruitingRepository.getJobDetail(requisitionId),
+    recruitingRepository.getPostingForRequisition(requisitionId),
+  ]);
   if (!detail) notFound();
   const r = detail.requisition;
+  const readiness = assessJobCompleteness({
+    summary: posting ? posting.summary : undefined,
+    description: posting?.description ?? r.description,
+    responsibilities: posting?.responsibilities ?? r.responsibilities,
+    qualifications: posting?.qualifications ?? r.qualifications,
+    preferredQualifications: posting?.preferredQualifications ?? r.preferredQualifications,
+    locationName: posting?.locationName ?? detail.locationName,
+  });
   const base = `/app/recruiting/jobs/${requisitionId}`;
 
   return (
@@ -47,12 +60,38 @@ export default async function RequisitionPage({ params, searchParams }: Props) {
           Applications ({detail.candidateCount})
         </Link>
         <Link href={`${base}?tab=matches`} aria-current={tab === "matches" ? "page" : undefined}>Potential matches</Link>
+        <Link href={`${base}?tab=description`} aria-current={tab === "description" ? "page" : undefined}>
+          Edit description{readiness.ready ? "" : " · needs work"}
+        </Link>
       </nav>
 
       {tab === "applications" ? <Applications requisitionId={requisitionId} /> : null}
       {tab === "matches" ? <PotentialMatches requisitionId={requisitionId} /> : null}
+      {tab === "description" ? (
+        <JobDescriptionEditor
+          requisitionId={requisitionId}
+          hasPosting={Boolean(posting)}
+          locationName={posting?.locationName ?? detail.locationName}
+          initial={{
+            summary: posting?.summary ?? "",
+            description: posting?.description ?? r.description,
+            responsibilities: posting?.responsibilities ?? r.responsibilities,
+            qualifications: posting?.qualifications ?? r.qualifications,
+            preferredQualifications: posting?.preferredQualifications ?? r.preferredQualifications,
+            experienceLevel: posting?.experienceLevel ?? "",
+            applicationDeadline: posting?.applicationDeadline?.slice(0, 10) ?? "",
+          }}
+        />
+      ) : null}
       {tab === "overview" ? (
         <section className="ws-panel">
+          {readiness.ready ? null : (
+            <p className="ws-note" style={{ marginBottom: 16 }}>
+              This description is incomplete for publication ({readiness.checks.filter((c) => !c.ok).length} item
+              {readiness.checks.filter((c) => !c.ok).length === 1 ? "" : "s"} to fix).{" "}
+              <Link href={`${base}?tab=description`}>Complete it</Link>
+            </p>
+          )}
           <h2>Description</h2>
           <p style={{ whiteSpace: "pre-wrap", fontSize: 14.5 }}>{r.description}</p>
           {r.responsibilities.length ? (

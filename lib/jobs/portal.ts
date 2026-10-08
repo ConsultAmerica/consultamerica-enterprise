@@ -42,20 +42,22 @@ export function safeExternalApplyUrl(value: string | undefined): string | null {
 }
 
 export const PORTAL_CATEGORIES = [
-  { id: "ai-ml", label: "AI / Machine Learning", test: /ai|machine learning|\bllm\b|gen ai/i },
-  { id: "oracle", label: "Oracle / ERP", test: /oracle|fusion|erp/i },
-  { id: "software", label: "Software Engineering", test: /software|full stack|frontend|backend|engineer/i },
-  { id: "data", label: "Data & Analytics", test: /data|analytics|warehouse/i },
+  // Whole words only: "ai" must not match "maintain", "Airflow" or "detail".
+  { id: "ai-ml", label: "AI / Machine Learning", test: /\bai\b|artificial intelligence|machine learning|\bllms?\b|\bgen ?ai\b|generative/i },
+  { id: "oracle", label: "Oracle / ERP", test: /\boracle\b|\bfusion\b|\berp\b/i },
+  { id: "software", label: "Software Engineering", test: /software|full stack|frontend|backend|\bengineer(?:ing)?\b/i },
+  { id: "data", label: "Data & Analytics", test: /\bdata\b|analytics|warehouse/i },
   { id: "cloud", label: "Cloud / DevOps", test: /cloud|devops|kubernetes|platform engineer/i },
   { id: "security", label: "Cybersecurity", test: /cyber|security engineer/i },
   { id: "pm", label: "Project / Program Management", test: /project|program manager|pmo/i },
   { id: "ba", label: "Business Analysis", test: /business analyst|business analysis/i },
-  { id: "qa", label: "QA / Testing", test: /\bqa\b|test engineer|quality/i },
+  { id: "qa", label: "QA / Testing", test: /\bqa\b|test engineer|test automation|\btesting\b|quality assurance/i },
+  { id: "consulting", label: "Consulting", test: /\bconsultant\b|\bconsulting\b/i },
   { id: "crm", label: "CRM", test: /\bcrm\b|clientflow/i },
   { id: "hr", label: "HR / HCM", test: /\bhr\b|hcm|people operations/i },
-  { id: "finance", label: "Finance / Accounting", test: /finance|account/i },
+  { id: "finance", label: "Finance / Accounting", test: /\bfinance\b|\baccounting\b|\baccountant\b/i },
   { id: "sales", label: "Sales / Business Development", test: /sales|business development/i },
-  { id: "operations", label: "Operations / Administration", test: /operations|administration/i },
+  { id: "operations", label: "Operations / Administration", test: /\boperations\b|\badministration\b/i },
 ] as const;
 
 export type PortalCategoryId = (typeof PORTAL_CATEGORIES)[number]["id"];

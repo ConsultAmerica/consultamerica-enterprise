@@ -28,6 +28,7 @@ import {
   skillsFor,
   type PortalSearch,
 } from "@/lib/jobs/portal";
+import { relatedJobs } from "@/lib/jobs/detail";
 import type { Job, JobFilters } from "@/lib/jobs/public-model";
 
 export type { Job, JobFilters } from "@/lib/jobs/public-model";
@@ -62,6 +63,8 @@ function toPublicJob(posting: JobPosting): Job {
     isNew: open && isNewListing(postedAt),
     isDemo: posting.isDemo,
     requisitionId: posting.requisitionId,
+    referenceNumber: posting.requisitionNumber || posting.requisitionId || posting.id,
+    closesAt: posting.applicationDeadline ?? posting.expiresAt,
     company: posting.companyName || "Consult America",
     companySummary: posting.companySummary,
     experienceLevel: posting.experienceLevel,
@@ -143,6 +146,11 @@ export async function getJobBySlug(slug: string): Promise<Job | undefined> {
   const posting = await getPostingBySlugAny(slug);
   if (!posting || !includeOnPublicSite(posting)) return undefined;
   return toPublicJob(posting);
+}
+
+/** Up to `limit` other open roles related to `job` (same category, then department). */
+export async function getRelatedJobs(job: Job, limit = 3): Promise<Job[]> {
+  return relatedJobs(job, await getOpenJobs(), limit);
 }
 
 export async function getAllJobSlugs(): Promise<string[]> {

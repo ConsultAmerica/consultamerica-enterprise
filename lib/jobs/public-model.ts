@@ -25,6 +25,10 @@ export type Job = {
   isNew: boolean;
   isDemo: boolean;
   requisitionId: string;
+  /** Public reference number (e.g. REQ-2026-0142); falls back to the requisition id. */
+  referenceNumber: string;
+  /** Application deadline, else listing expiry — the date applications close, if set. */
+  closesAt?: string;
   company: string;
   companySummary?: string;
   experienceLevel?: string;

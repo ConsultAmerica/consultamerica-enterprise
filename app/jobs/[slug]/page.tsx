@@ -8,7 +8,7 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { getCandidateSession } from "@/lib/candidate-portal/session";
 import { getCandidatePortalStore } from "@/lib/candidate-portal/store";
-import { getJobBySlug } from "@/lib/jobs";
+import { getJobBySlug, getRelatedJobs } from "@/lib/jobs";
 
 type JobPageProps = {
   params: Promise<{ slug: string }>;
@@ -50,10 +50,11 @@ function jobPostingJsonLd(job: NonNullable<Awaited<ReturnType<typeof getJobBySlu
     identifier: {
       "@type": "PropertyValue",
       name: job.company,
-      value: job.requisitionId || job.id,
+      value: job.referenceNumber,
     },
     url: `/jobs/${job.slug}`,
   };
+  if (job.closesAt) payload.validThrough = job.closesAt;
   if (job.salaryMin != null || job.salaryMax != null) {
     payload.baseSalary = {
       "@type": "MonetaryAmount",
@@ -75,13 +76,16 @@ export default async function JobSlugPage({ params }: JobPageProps) {
   if (!job) notFound();
   const session = await getCandidateSession();
   const requisitionId = job.requisitionId || job.id;
-  const saved = session ? await getCandidatePortalStore().isJobSaved(session.candidateId, requisitionId) : false;
+  const [saved, related] = await Promise.all([
+    session ? getCandidatePortalStore().isJobSaved(session.candidateId, requisitionId) : Promise.resolve(false),
+    job.acceptingApplications ? getRelatedJobs(job) : Promise.resolve([]),
+  ]);
 
   return (
     <>
       <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
       <main className="jobs-shell">
-        <div className="wrap" style={{ paddingTop: 120, paddingBottom: 80, maxWidth: 860 }}>
+        <div className={`wrap${job.acceptingApplications ? " jd-wrap" : ""}`} style={job.acceptingApplications ? undefined : { paddingTop: 120, paddingBottom: 80, maxWidth: 860 }}>
           {job.acceptingApplications ? (
             <>
               <script
@@ -90,15 +94,18 @@ export default async function JobSlugPage({ params }: JobPageProps) {
                   __html: JSON.stringify(jobPostingJsonLd(job)),
                 }}
               />
-              <div className="cp-job-tools">
-                <SaveJobButton
-                  requisitionId={requisitionId}
-                  initiallySaved={saved}
-                  signedIn={Boolean(session)}
-                  returnTo={`/jobs/${job.slug}`}
-                />
-              </div>
-              <JobDetailView job={job} />
+              <JobDetailView
+                job={job}
+                related={related}
+                panelExtra={
+                  <SaveJobButton
+                    requisitionId={requisitionId}
+                    initiallySaved={saved}
+                    signedIn={Boolean(session)}
+                    returnTo={`/jobs/${job.slug}`}
+                  />
+                }
+              />
             </>
           ) : (
             <div className="jobs-empty" style={{ textAlign: "left", padding: 0 }}>
