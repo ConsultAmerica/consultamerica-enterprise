@@ -7,6 +7,8 @@ import { CONTACT } from "@/data/marketing";
 type ContactFabProps = {
   /** Opens the Ask-AI command palette (the same one ⌘K and the nav button use). */
   onAskAi?: () => void;
+  /** Opens the enquiry form rather than scrolling to the CTA band. */
+  onTalkToExpert?: () => void;
 };
 
 /** 1.6-weight line icons on a 18px box. No filled shapes, no chat bubbles. */
@@ -39,7 +41,7 @@ type Route = {
   onSelect?: () => void;
 };
 
-export function ContactFab({ onAskAi }: ContactFabProps) {
+export function ContactFab({ onAskAi, onTalkToExpert }: ContactFabProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -90,7 +92,7 @@ export function ContactFab({ onAskAi }: ContactFabProps) {
       title: "Talk to an expert",
       desc: "Engineering, AI & transformation",
       icon: ICON_EXPERT,
-      href: "#contact",
+      ...(onTalkToExpert ? { onSelect: onTalkToExpert } : { href: "#contact" }),
     },
     {
       key: "ai",

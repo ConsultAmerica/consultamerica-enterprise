@@ -21,6 +21,7 @@ import {
   PROD,
   SUGGEST,
 } from "@/data/marketing";
+import { ExpertForm } from "@/components/marketing/ExpertForm";
 import { ContactFab } from "@/components/marketing/ContactFab";
 import { INSIGHTS } from "@/data/insights";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
@@ -194,6 +195,7 @@ type CmdkView =
 
 export function EnterpriseHome() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expertOpen, setExpertOpen] = useState(false);
   const [cmdkOpen, setCmdkOpen] = useState(false);
   const [cmdkView, setCmdkView] = useState<CmdkView>({ mode: "suggest" });
   const [cmdkInput, setCmdkInput] = useState("");
@@ -425,6 +427,7 @@ export function EnterpriseHome() {
               <span className="bw">
                 <b>Consult</b> <em>America</em>
               </span>
+              <span className="btag">AI Technology and Services</span>
             </span>
           </a>
           <nav className="nav-mid" aria-label="Primary">
@@ -528,9 +531,9 @@ export function EnterpriseHome() {
               </span>
               Ask AI
             </button>
-            <a href="#contact" className="btn btn-primary btn-sm">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpertOpen(true)}>
               Talk to an expert {ARROW_BTN}
-            </a>
+            </button>
             <button
               type="button"
               className="nav-toggle"
@@ -581,9 +584,9 @@ export function EnterpriseHome() {
           >
             Ask Consult America AI
           </a>
-          <a href="#contact" className="btn btn-primary" onClick={() => setMenuOpen(false)}>
+          <button type="button" className="btn btn-primary" onClick={() => { setMenuOpen(false); setExpertOpen(true); }}>
             Talk to an expert
-          </a>
+          </button>
         </div>
       </header>
 
@@ -622,12 +625,12 @@ export function EnterpriseHome() {
             design it, build it, and run it in production.
           </p>
           <div className="hero-actions h-rise">
-            <a href="#contact" className="btn btn-primary">
+            <button type="button" className="btn btn-primary" onClick={() => setExpertOpen(true)}>
               Talk to an expert{" "}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
-            </a>
+            </button>
             <a href="#capabilities" className="btn btn-ghost">
               Explore capabilities{" "}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -1032,9 +1035,9 @@ export function EnterpriseHome() {
             and the team to get you there.
           </p>
           <div className="cta-actions">
-            <a href="#" className="btn btn-primary">
+            <button type="button" className="btn btn-primary" onClick={() => setExpertOpen(true)}>
               Talk to an expert {ARROW_BTN}
-            </a>
+            </button>
             <a href="#" className="btn btn-ghost">
               Book a 30-min call
             </a>
@@ -1094,7 +1097,8 @@ export function EnterpriseHome() {
         </div>
       </div>
 
-      <ContactFab onAskAi={openCmdk} />
+      <ContactFab onAskAi={openCmdk} onTalkToExpert={() => setExpertOpen(true)} />
+      <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} />
     </>
   );
 }

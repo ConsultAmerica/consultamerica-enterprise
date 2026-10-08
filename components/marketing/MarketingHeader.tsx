@@ -45,6 +45,7 @@ export function MarketingHeader({ solid = true }: MarketingHeaderProps) {
             <span className="bw">
               <b>Consult</b> <em>America</em>
             </span>
+            <span className="btag">AI Technology and Services</span>
           </span>
         </Link>
         <PrimaryNav base="/" />
