@@ -142,6 +142,34 @@ export default function LifePage() {
           </div>
         </section>
 
+
+        <section className="band">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="eyebrow">Inside the office</span>
+              <h2>Where the work happens.</h2>
+            </div>
+            <div className="life-shots">
+              <figure className="ls-a">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/img/life/meeting.jpg" alt="Team reviewing work together around a meeting table" />
+              </figure>
+              <figure className="ls-b">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/img/life/desks.jpg" alt="Engineers working at a shared desk bank" />
+              </figure>
+              <figure className="ls-c">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/img/life/floor.jpg" alt="The main engineering floor" />
+              </figure>
+              <figure className="ls-d">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/img/life/hallway.jpg" alt="Colleagues talking between meetings" />
+              </figure>
+            </div>
+          </div>
+        </section>
+
         <section className="band tintbg">
           <div className="wrap life-where">
             <div>
