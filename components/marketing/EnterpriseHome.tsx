@@ -892,7 +892,7 @@ export function EnterpriseHome() {
               Explore careers {ARROW_BTN}
             </Link>
             <Link href="/about" className="btn btn-ghost">
-              About Consult America
+              Life at Consult America
             </Link>
           </div>
         </div>
