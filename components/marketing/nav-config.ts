@@ -20,7 +20,7 @@ export type PrimaryNavItem = {
 };
 
 export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
-  { label: "Life", href: "/life" },
+  { label: "About", href: "/life" },
   { label: "Capabilities", href: "/#capabilities", anchor: "#capabilities", mega: "capabilities" },
   { label: "Industries", href: "/#industries", anchor: "#industries", mega: "industries" },
   // Products has no destination of its own yet (the homepage mega panel lists

@@ -93,9 +93,8 @@ export default function LifePage() {
               <h2>Four things that actually shape the day.</h2>
             </div>
             <div className="life-grid">
-              {PRINCIPLES.map((p, i) => (
+              {PRINCIPLES.map((p) => (
                 <article className="life-card" key={p.k}>
-                  <span className="life-n">{String(i + 1).padStart(2, "0")}</span>
                   <h3>{p.k}</h3>
                   <p>{p.d}</p>
                 </article>

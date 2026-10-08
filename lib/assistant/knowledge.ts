@@ -91,7 +91,7 @@ export function getCompanyInformation(topic: CompanyTopic): KnowledgeAnswer {
     case "contact":
       return {
         topic,
-        facts: [`Email: ${CONTACT.email}`, `Phone: ${CONTACT.phone}`],
+        facts: [`Email: ${CONTACT.email}`],
         links: [{ label: "Talk to an expert", href: "/#contact" }],
       };
   }

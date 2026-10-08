@@ -715,7 +715,6 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 .life-card{position:relative;padding:26px 26px 28px;border:1px solid var(--line);border-radius:16px;background:#fff;
   transition:border-color .2s,transform .2s,box-shadow .25s}
 .life-card:hover{border-color:rgba(29,111,224,.3);transform:translateY(-2px);box-shadow:0 18px 40px -26px rgba(10,19,34,.4)}
-.life-n{font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:.12em;color:var(--blue)}
 .life-card h3{font-size:19px;font-weight:650;letter-spacing:-.02em;color:var(--ink);margin-top:10px}
 .life-card p{font-size:14.5px;line-height:1.6;color:var(--ink-2);margin-top:8px}
 

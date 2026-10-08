@@ -75,10 +75,7 @@ export function ExpertForm({ open, onClose }: { open: boolean; onClose: () => vo
               </svg>
             </span>
             <h2>Thanks, that&rsquo;s with us.</h2>
-            <p>
-              A specialist will read it and reply within one business day. If it&rsquo;s urgent, call{" "}
-              <a href={`tel:${CONTACT.phoneHref}`}>{CONTACT.phone}</a>.
-            </p>
+            <p>A specialist will read it and reply within one business day.</p>
             <button type="button" className="btn btn-primary" onClick={onClose}>
               Close
             </button>

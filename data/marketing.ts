@@ -50,8 +50,6 @@ export const ECO = [
 // address the company publishes itself — do not swap in a guessed inbox.
 export const CONTACT = {
   country: "United States",
-  phone: "+1 (703) 496-7858",
-  phoneHref: "+17034967858",
   email: "hr@consultamerica.net",
 } as const;
 
