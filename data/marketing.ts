@@ -24,7 +24,7 @@ export const PROD = [
   ["Bosiano", "Fashion e-commerce", "https://bosiano.com/", "/img/products/bosiano.png"],
   ["Sarco Appliances", "Sales & service", "https://sarco.global/", "/img/products/sarco.png"],
   ["AppointEase", "Booking platform", "https://appointease-hlohx8tz2-n-sfds-projects.vercel.app/", "/img/products/appointease.png"],
-  ["Smart Appliances", "Home-service booking", "https://smart-appliances-kappa.vercel.app/", "/img/products/smart-appliances.png"],
+  ["Smart Appliances", "Home-service booking", "https://smartappliances.co/", "/img/products/smart-appliances.png"],
   ["Romeah", "Quiet-luxury fashion", "https://romeah.com/", "/img/products/romeah.png"],
   // Append only. The Products mega-menu picks entries by index (pi(n) in
   // EnterpriseHome), so inserting mid-array silently repoints every column.
