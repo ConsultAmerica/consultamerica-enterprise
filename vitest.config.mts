@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // Integration tests need local Supabase; run them with vitest.integration.config.mts.
+    exclude: ["tests/integration/**", "node_modules/**"],
   },
   resolve: {
     alias: {

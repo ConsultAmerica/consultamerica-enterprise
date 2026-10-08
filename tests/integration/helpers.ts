@@ -40,8 +40,9 @@ export async function messageCount(to: string): Promise<number> {
   return ((await res.json()) as { messages_count?: number }).messages_count ?? 0;
 }
 
-export function check<T>(result: { data: T; error: { message: string; code?: string } | null }, what: string): T {
+export function check<T>(result: { data: T; error: { message: string; code?: string } | null }, what: string): NonNullable<T> {
   if (result.error) throw new Error(`${what}: ${result.error.code ?? ""} ${result.error.message}`);
+  if (result.data == null) throw new Error(`${what}: no data`);
   return result.data;
 }
 

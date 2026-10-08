@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AssistantPalette, type AssistantPageContext } from "@/components/assistant/AssistantPalette";
 import { CONTACT_CTA, PRIMARY_NAV, isActivePath } from "@/components/marketing/nav-config";
+import { ExpertForm } from "@/components/marketing/ExpertForm";
+import { CHEV, MEGA_IDS, NavMegaPanel } from "@/components/marketing/PrimaryNav";
 import { CareersNavMenu, MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
 
 const MENU_TOGGLE_ID = "navToggle";
@@ -24,6 +26,7 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
   const [scrolled, setScrolled] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const closeAsk = useCallback(() => setAskOpen(false), []);
+  const [expertOpen, setExpertOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -68,16 +71,28 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
               <span className="bw">
                 <b>Consult</b> <em>America</em>
               </span>
+              <span className="btag">AI Technology and Services</span>
             </span>
           </Link>
           <nav className="nav-mid" aria-label="Primary">
-            {PRIMARY_NAV.map((item) => (
-              <div className="nav-item" key={item.label}>
-                <Link href={item.href} aria-current={isActivePath(pathname, item.href) ? "page" : undefined}>
-                  {item.label}
-                </Link>
-              </div>
-            ))}
+            {PRIMARY_NAV.map((item) =>
+              item.mega ? (
+                <div className="nav-item has-mega" key={item.label}>
+                  <a href={item.href}>
+                    {item.label} {CHEV}
+                  </a>
+                  <div className="mega" id={MEGA_IDS[item.mega]}>
+                    <NavMegaPanel mega={item.mega} base="/" />
+                  </div>
+                </div>
+              ) : (
+                <div className="nav-item" key={item.label}>
+                  <Link href={item.href} aria-current={isActivePath(pathname, item.href) ? "page" : undefined}>
+                    {item.label}
+                  </Link>
+                </div>
+              ),
+            )}
             <CareersNavMenu />
           </nav>
           <div className="nav-right">
@@ -89,7 +104,7 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
               </span>
               Ask AI
             </button>
-            <Link href={CONTACT_CTA.href} className="btn btn-primary btn-sm">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpertOpen(true)}>
               {CONTACT_CTA.label}{" "}
               <svg
                 width="15"
@@ -104,7 +119,7 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
               >
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
-            </Link>
+            </button>
             <button
               type="button"
               className="nav-toggle"
@@ -144,13 +159,21 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
             >
               Ask AI
             </button>
-            <Link href={CONTACT_CTA.href} className="btn btn-primary" onClick={() => setMenuOpen(false)}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setMenuOpen(false);
+                setExpertOpen(true);
+              }}
+            >
               {CONTACT_CTA.label}
-            </Link>
+            </button>
           </div>
         ) : null}
       </header>
       <AssistantPalette open={askOpen} onClose={closeAsk} context={assistantContext} />
+      <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} />
     </>
   );
 }

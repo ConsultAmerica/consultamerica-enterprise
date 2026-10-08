@@ -21,7 +21,9 @@ import {
   PROD,
 } from "@/data/marketing";
 import { AssistantPalette } from "@/components/assistant/AssistantPalette";
+import { ExpertForm } from "@/components/marketing/ExpertForm";
 import { ContactFab } from "@/components/marketing/ContactFab";
+import { INSIGHTS } from "@/data/insights";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { CONTACT_CTA, PRIMARY_NAV, navHref, type MegaKey } from "@/components/marketing/nav-config";
 import { CareersNavMenu, MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
@@ -181,6 +183,7 @@ function MegaPanel({
 export function EnterpriseHome() {
   const [menuOpen, setMenuOpen] = useState(false);
   useMobileMenuEscape(menuOpen, setMenuOpen, MENU_TOGGLE_ID);
+  const [expertOpen, setExpertOpen] = useState(false);
   const [cmdkOpen, setCmdkOpen] = useState(false);
   const [capSel, setCapSel] = useState(0);
   const [indSel, setIndSel] = useState(0);
@@ -393,6 +396,7 @@ export function EnterpriseHome() {
               <span className="bw">
                 <b>Consult</b> <em>America</em>
               </span>
+              <span className="btag">AI Technology and Services</span>
             </span>
           </a>
           <nav className="nav-mid" aria-label="Primary">
@@ -424,9 +428,9 @@ export function EnterpriseHome() {
               </span>
               Ask AI
             </button>
-            <a href={CONTACT_CTA.anchor} className="btn btn-primary btn-sm">
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpertOpen(true)}>
               {CONTACT_CTA.label} {ARROW_BTN}
-            </a>
+            </button>
             <button
               type="button"
               className="nav-toggle"
@@ -456,9 +460,9 @@ export function EnterpriseHome() {
           >
             Ask Consult America AI
           </a>
-          <a href={CONTACT_CTA.anchor} className="btn btn-primary" onClick={() => setMenuOpen(false)}>
+          <button type="button" className="btn btn-primary" onClick={() => { setMenuOpen(false); setExpertOpen(true); }}>
             {CONTACT_CTA.label}
-          </a>
+          </button>
         </div>
       </header>
 
@@ -497,12 +501,12 @@ export function EnterpriseHome() {
             design it, build it, and run it in production.
           </p>
           <div className="hero-actions h-rise">
-            <a href="#contact" className="btn btn-primary">
+            <button type="button" className="btn btn-primary" onClick={() => setExpertOpen(true)}>
               Talk to an expert{" "}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
-            </a>
+            </button>
             <a href="#capabilities" className="btn btn-ghost">
               Explore capabilities{" "}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -835,45 +839,36 @@ export function EnterpriseHome() {
             <p>How enterprises are rebuilding the digital core for an AI-native decade.</p>
           </div>
           <div className="ins reveal">
-            <a className="ins-feat" href="#">
-              <img src="/img/data.jpg" alt="" />
+            <Link className="ins-feat" href={`/insights/${INSIGHTS[0].slug}`}>
+              <img src={INSIGHTS[0].image} alt="" />
               <div className="ins-body">
                 <div className="ins-meta">
-                  <span>Point of view</span>
+                  <span>{INSIGHTS[0].kind}</span>
                   <span className="dot" />
-                  <span className="mut">Oct 2026</span>
+                  <span className="mut">{INSIGHTS[0].date}</span>
                   <span className="dot" />
-                  <span className="mut">9 min read</span>
+                  <span className="mut">{INSIGHTS[0].readTime}</span>
                 </div>
-                <h3>Modernizing Oracle ERP without the big-bang risk</h3>
+                <h3>{INSIGHTS[0].title}</h3>
                 <span className="arrowlink rm" style={{ color: "#fff" }}>
                   Read more {ARR_ICON}
                 </span>
               </div>
-            </a>
+            </Link>
             <div className="ins-col">
-              <a className="ins-small" href="#">
-                <img src="/img/ai.jpg" alt="" />
-                <div className="ins-body">
-                  <div className="ins-meta">
-                    <span>Research</span>
-                    <span className="dot" />
-                    <span className="mut">6 min</span>
+              {INSIGHTS.slice(1, 3).map((a) => (
+                <Link className="ins-small" href={`/insights/${a.slug}`} key={a.slug}>
+                  <img src={a.image} alt="" />
+                  <div className="ins-body">
+                    <div className="ins-meta">
+                      <span>{a.kind}</span>
+                      <span className="dot" />
+                      <span className="mut">{a.readTime}</span>
+                    </div>
+                    <h3>{a.title}</h3>
                   </div>
-                  <h3>Agentic AI in the enterprise: pilots to production</h3>
-                </div>
-              </a>
-              <a className="ins-small" href="#">
-                <img src="/img/team2.jpg" alt="" />
-                <div className="ins-body">
-                  <div className="ins-meta">
-                    <span>Field note</span>
-                    <span className="dot" />
-                    <span className="mut">4 min</span>
-                  </div>
-                  <h3>Building engineering teams that outlast the project</h3>
-                </div>
-              </a>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
@@ -916,9 +911,9 @@ export function EnterpriseHome() {
             and the team to get you there.
           </p>
           <div className="cta-actions">
-            <a href="#" className="btn btn-primary">
+            <button type="button" className="btn btn-primary" onClick={() => setExpertOpen(true)}>
               Talk to an expert {ARROW_BTN}
-            </a>
+            </button>
             <a href="#" className="btn btn-ghost">
               Book a 30-min call
             </a>
@@ -931,7 +926,8 @@ export function EnterpriseHome() {
       {/* Ask AI command palette */}
       <AssistantPalette open={cmdkOpen} onClose={closeCmdk} context={{ page: "home" }} />
 
-      <ContactFab onAskAi={openCmdk} />
+      <ContactFab onAskAi={openCmdk} onTalkToExpert={() => setExpertOpen(true)} />
+      <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} />
     </>
   );
 }

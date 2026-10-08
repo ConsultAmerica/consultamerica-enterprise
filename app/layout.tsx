@@ -10,9 +10,6 @@ export const metadata: Metadata = {
   },
   description:
     "Consult America unites engineering, AI, and enterprise consulting — with the specialized technology talent to design it, build it, and run it in production.",
-  icons: {
-    icon: "/logo-mark.png?v=ca4",
-  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
