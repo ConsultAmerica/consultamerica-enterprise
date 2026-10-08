@@ -10,7 +10,7 @@ import { submitEasyApplication } from "@/lib/recruiting/easy-apply";
 import { createSupabaseEasyApplyPorts } from "@/lib/recruiting/easy-apply-supabase";
 import { JobClosedError } from "@/lib/recruiting/errors";
 
-import { activatedCandidate, check, createJobs, pdfBytes, service, testEmail } from "./helpers";
+import { activatedCandidate, anon, check, checkRow, createJobs, latestAuthLink, messageCount, pdfBytes, service, testEmail } from "./helpers";
 
 const db = service();
 const ports = createSupabaseEasyApplyPorts(db);
@@ -107,7 +107,7 @@ describe("applications against the isolated database", () => {
     expect(submitted.ok).toBe(true);
     if (!submitted.ok) return;
 
-    const app = check(await db.from("applications").select("candidate_id, requisition_id, job_id, status").eq("id", submitted.applicationId).single(), "app");
+    const app = checkRow(await db.from("applications").select("candidate_id, requisition_id, job_id, status").eq("id", submitted.applicationId).single(), "app");
     expect(app).toEqual({ candidate_id: a.candidateId, requisition_id: jobs.open.req, job_id: jobs.open.job, status: "APPLIED" });
     const links = check(await db.from("application_documents").select("document_id, document_role").eq("application_id", submitted.applicationId), "links");
     expect(links).toEqual([{ document_id: resume!.documentId, document_role: "RESUME" }]);
@@ -152,7 +152,7 @@ describe("applications against the isolated database", () => {
       },
     };
     await expect(submitEasyApplication(input, { ports: flaky, log: () => undefined })).rejects.toMatchObject({ stage: "document-link" });
-    const cand = check(await db.from("candidate_profiles").select("id").ilike("email", email).single(), "cand");
+    const cand = checkRow(await db.from("candidate_profiles").select("id").ilike("email", email).single(), "cand");
     expect(check(await db.from("applications").select("id").eq("candidate_id", cand.id), "compensated")).toEqual([]);
     expect(check(await db.from("documents").select("id").eq("candidate_id", cand.id), "no orphan doc")).toEqual([]);
 
@@ -198,11 +198,58 @@ describe("applications against the isolated database", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const app = check(await db.from("applications").select("candidate_id").eq("id", result.applicationId).single(), "app");
-    const links = check(await db.from("application_documents").select("document_id").eq("application_id", result.applicationId), "links");
+    // The public response carries the reference only — no internal ids.
+    expect(Object.keys(result).sort()).toEqual(["applicationNumber", "ok"]);
+    expect(result.applicationNumber).toMatch(/^APP-/);
+    const app = checkRow(
+      await db.from("applications").select("id, candidate_id").eq("application_number", result.applicationNumber).single(),
+      "app",
+    );
+    const links = check(await db.from("application_documents").select("document_id").eq("application_id", app.id), "links");
     expect(links).toHaveLength(1);
-    const cand = check(await db.from("candidate_profiles").select("email, profile_id").eq("id", app.candidate_id).single(), "cand");
+    const cand = checkRow(await db.from("candidate_profiles").select("email, profile_id").eq("id", app.candidate_id).single(), "cand");
     expect(cand.email).toBe(email);
     expect(cand.profile_id).toBeTruthy(); // invitation sent; the account stays unusable until the inbox owner opens it
+  });
+  it("anonymous submission with an ACTIVATED candidate's email: filed once, no new invitation, default résumé kept, nothing revealed", async () => {
+    const { submitJobApplication } = await import("@/lib/recruiting/actions");
+    const email = testEmail("owner");
+    const second = await createJobs(db);
+    const resume = (name: string) => {
+      const form = new FormData();
+      form.set("resume", new File([pdfBytes()], name, { type: "application/pdf" }));
+      return form;
+    };
+    const applicant = { firstName: "Owner", lastName: "Applicant", email, phone: "555-0123" };
+
+    // The owner applies, accepts the invitation and activates (status ACTIVE, as activateCandidateAccount sets).
+    const first = await submitJobApplication({ requisitionId: jobs.open.req, postingId: jobs.open.job, ...applicant }, resume("owner.pdf"));
+    expect(first.ok && first.applicationNumber).toMatch(/^APP-/);
+    const link = await latestAuthLink(email);
+    expect((await anon().auth.verifyOtp({ token_hash: link.searchParams.get("token_hash")!, type: "invite" })).error).toBeNull();
+    const cand = checkRow(await db.from("candidate_profiles").select("id, profile_id").ilike("email", email).single(), "cand");
+    check(await db.from("profiles").update({ status: "ACTIVE" }).eq("id", cand.profile_id), "activate");
+    const ownersDefault = checkRow(
+      await db.from("documents").select("id").eq("candidate_id", cand.id).eq("is_primary_resume", true).single(),
+      "default",
+    );
+    const mailBefore = await messageCount(email);
+
+    // Someone else types the owner's address on a second job (email unverified on Easy Apply).
+    const other = await submitJobApplication({ requisitionId: second.open.req, postingId: second.open.job, ...applicant }, resume("someone-else.pdf"));
+    expect(other.ok).toBe(true);
+    // ...and again on the owner's job: no duplicate, and the owner's reference is NOT revealed.
+    const repeat = await submitJobApplication({ requisitionId: jobs.open.req, postingId: jobs.open.job, ...applicant }, resume("again.pdf"));
+    expect(repeat).toEqual({ ok: true, applicationNumber: "" });
+
+    const apps = checkRow(await db.from("applications").select("id, requisition_id").eq("candidate_id", cand.id), "apps");
+    expect(apps.map((x) => x.requisition_id).sort()).toEqual([jobs.open.req, second.open.req].sort());
+    const stillDefault = checkRow(
+      await db.from("documents").select("id").eq("candidate_id", cand.id).eq("is_primary_resume", true).single(),
+      "default",
+    );
+    expect(stillDefault.id).toBe(ownersDefault.id);
+    await new Promise((r) => setTimeout(r, 1000));
+    expect(await messageCount(email)).toBe(mailBefore);
   });
 });

@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { after } from "next/server";
+
+import { checkPublicRateLimit, clientIp } from "@/lib/assistant/rate-limit";
 
 import { recruitingRepository } from "@/lib/recruiting";
 import { JobClosedError } from "@/lib/recruiting/errors";
@@ -28,9 +31,42 @@ export type SubmitJobApplicationInput = {
   additionalInformation?: string;
 };
 
+/**
+ * What an anonymous submitter gets back. No internal ids, and the reference
+ * number only for an application this request created: the email address is
+ * unverified, so "already applied" must not reveal someone else's application.
+ */
 export type SubmitJobApplicationResponse =
+  | { ok: true; applicationNumber: string }
+  | { ok: false; error: string };
+
+/** Internal result of the canonical submission (signed-in paths need the ids). */
+type FiledApplicationResponse =
   | ({ ok: true } & SubmitApplicationResult)
   | { ok: false; error: string };
+
+function publicResponse(filed: FiledApplicationResponse): SubmitJobApplicationResponse {
+  if (!filed.ok) return filed;
+  return { ok: true, applicationNumber: filed.outcome === "created" ? filed.applicationNumber : "" };
+}
+
+/**
+ * Anonymous submissions may trigger a portal invitation email to the address
+ * typed in the form; cap that per client so the form can't be used to flood
+ * inboxes or exhaust the Auth email quota. The submission itself is never
+ * limited here, and a missing limiter store (migration 045) doesn't block
+ * invitations — Supabase Auth's own email rate limit still applies.
+ */
+async function anonymousInviteAllowed(): Promise<boolean> {
+  try {
+    const decision = await checkPublicRateLimit("candidate-invite", clientIp(await headers()));
+    if (decision.allowed || decision.reason === "store-unavailable") return true;
+    console.warn("[easy-apply]", { event: "portal-invite-rate-limited", reason: decision.reason });
+    return false;
+  } catch {
+    return true;
+  }
+}
 
 const INCOMPLETE_MESSAGE = "We couldn't complete your application. Please try again.";
 const RESUME_REQUIRED_MESSAGE = "Please upload your resume (PDF, DOC, or DOCX).";
@@ -48,7 +84,7 @@ export async function submitJobApplication(
   input: SubmitJobApplicationInput,
   resumeFormData?: FormData | null,
 ): Promise<SubmitJobApplicationResponse> {
-  return fileApplication(input, { kind: "upload", formData: resumeFormData }, { source: "Careers Site" });
+  return publicResponse(await fileApplication(input, { kind: "upload", formData: resumeFormData }, { source: "Careers Site" }));
 }
 
 /**
@@ -76,7 +112,7 @@ export async function submitDetailedApplication(
   } catch {
     return { ok: false, error: "Please review your profile details and try again." };
   }
-  return fileApplication(
+  return publicResponse(await fileApplication(
     { ...input, portfolioUrl: input.portfolioUrl || profile.portfolioUrl || undefined },
     { kind: "upload", formData },
     {
@@ -84,7 +120,7 @@ export async function submitDetailedApplication(
       onApplied: (result) =>
         saveApplicationSnapshot({ applicationId: result.applicationId, candidateId: result.candidateId, profile, answers }),
     },
-  );
+  ));
 }
 
 /**
@@ -108,7 +144,7 @@ async function fileApplication(
     sessionCandidateId?: string;
     onApplied?: (result: SubmitApplicationResult) => Promise<void>;
   },
-): Promise<SubmitJobApplicationResponse> {
+): Promise<FiledApplicationResponse> {
   let upload: UploadedResume | null = null;
   if (resumeSource.kind === "upload") {
     const resumeFile = resumeSource.formData?.get("resume");
@@ -157,6 +193,7 @@ async function fileApplication(
         : undefined,
       sessionCandidateId: options.sessionCandidateId,
       libraryResumeDocumentId: resumeSource.kind === "library" ? resumeSource.documentId : undefined,
+      allowPortalInvite: options.sessionCandidateId ? false : await anonymousInviteAllowed(),
     });
     if (options.onApplied) await options.onApplied(result);
     revalidatePath(`/app/recruiting/candidates/${result.candidateId}`);
@@ -169,6 +206,7 @@ async function fileApplication(
       candidateId: result.candidateId,
       applicationId: result.applicationId,
       applicationNumber: result.applicationNumber,
+      outcome: result.outcome,
     };
   } catch (error) {
     if (error instanceof JobClosedError) {

@@ -21,6 +21,7 @@ function createFakeStore(options: { jobOpen?: boolean; jobLookupFails?: boolean 
     links: new Map<string, string>(), // applicationId -> documentId
     submissions: [] as string[],
     portalInvites: 0,
+    activated: new Set<string>(), // candidate ids with an ACTIVE portal account
   };
   const failures = new Map<PortName, number>();
   const failNext = (port: PortName, times = 1) => failures.set(port, times);
@@ -40,6 +41,9 @@ function createFakeStore(options: { jobOpen?: boolean; jobLookupFails?: boolean 
     async findCandidateIdByEmail(email) {
       maybeFail("findCandidateIdByEmail");
       return state.candidates.get(email) ?? null;
+    },
+    async hasActivatedAccount(candidateId) {
+      return state.activated.has(candidateId);
     },
     async findLibraryResume({ candidateId, documentId }) {
       maybeFail("findLibraryResume");
@@ -260,6 +264,30 @@ describe("Easy Apply workflow", () => {
       "primary-resume",
       "submission-record",
     ]);
+  });
+
+  it("anonymous submission onto an ACTIVATED account: filed, but no invitation and the owner's default résumé is kept", async () => {
+    const { state, deps } = createFakeStore();
+    const first = await submitEasyApplication(input, deps);
+    const ownersDefault = [...state.documents].find(([, d]) => d.primary)![0];
+    state.activated.add(first.candidateId);
+    const invitesBefore = state.portalInvites;
+
+    const second = await submitEasyApplication({ ...input, requisitionId: "req-2" }, deps);
+    expect(second.outcome).toBe("created");
+    expect(second.candidateId).toBe(first.candidateId);
+    expectNoIncompleteApplications(state);
+    expect(state.portalInvites).toBe(invitesBefore);
+    expect(state.documents.get(ownersDefault)!.primary).toBe(true);
+    expect(state.documents.get(second.resumeDocumentId)!.primary).toBe(false);
+  });
+
+  it("allowPortalInvite=false (rate-limited client) still files the application but sends no invitation", async () => {
+    const { state, deps } = createFakeStore();
+    const result = await submitEasyApplication({ ...input, allowPortalInvite: false }, deps);
+    expect(result.outcome).toBe("created");
+    expectNoIncompleteApplications(state);
+    expect(state.portalInvites).toBe(0);
   });
 
   it("logs ids only — never the email or resume bytes", async () => {

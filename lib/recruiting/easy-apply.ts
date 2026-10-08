@@ -80,6 +80,11 @@ export type EasyApplyInput = {
    * removed by failure compensation, and does not change the default résumé.
    */
   libraryResumeDocumentId?: string;
+  /**
+   * Server-only: false skips the portal invitation email for this submission
+   * (the public action rate-limits invitations per client). Default true.
+   */
+  allowPortalInvite?: boolean;
 };
 
 export type EasyApplyResult = {
@@ -99,6 +104,8 @@ export type EasyApplyPorts = {
   /** Throws on lookup failure; resolves false when the job is missing or not open. */
   isJobOpen(postingId: string): Promise<boolean>;
   findCandidateIdByEmail(email: string): Promise<string | null>;
+  /** True when the candidate record is bound to an ACTIVATED portal account (profile status ACTIVE). */
+  hasActivatedAccount(candidateId: string): Promise<boolean>;
   /** True when documentId is an ACTIVE résumé document owned by candidateId. */
   findLibraryResume(input: { candidateId: string; documentId: string }): Promise<boolean>;
   createCandidate(input: { id: string; data: EasyApplyInput; now: string }): Promise<void>;
@@ -209,11 +216,18 @@ export async function submitEasyApplication(
   if (!open) throw new JobClosedError();
 
   // 2. Candidate: the signed-in candidate, else reuse by email, else create.
+  //    An anonymous submission filed onto a record that already has an
+  //    activated account (the email is not verified here) must not change
+  //    that account: no invitation, and the default résumé stays the owner's.
   const email = input.email.trim();
   const libraryDocumentId = input.sessionCandidateId ? input.libraryResumeDocumentId : undefined;
+  let anonymousOnActivatedAccount = false;
   const candidateId = input.sessionCandidateId ?? (await step("candidate", async () => {
     const existing = await ports.findCandidateIdByEmail(email.toLowerCase());
-    if (existing) return existing;
+    if (existing) {
+      anonymousOnActivatedAccount = await ports.hasActivatedAccount(existing);
+      return existing;
+    }
     const id = newId("cand");
     await ports.createCandidate({ id, data: input, now });
     return id;
@@ -221,13 +235,15 @@ export async function submitEasyApplication(
   ctx.candidateId = candidateId;
 
   // 3. Portal sign-in invite. Never blocks the submission.
-  await bestEffort("portal-account", "portal account provisioning failed", () =>
-    ports.ensurePortalAccount({
-      candidateId,
-      email,
-      displayName: `${input.firstName} ${input.lastName}`.trim(),
-    }),
-  );
+  if (!anonymousOnActivatedAccount && input.allowPortalInvite !== false) {
+    await bestEffort("portal-account", "portal account provisioning failed", () =>
+      ports.ensurePortalAccount({
+        candidateId,
+        email,
+        displayName: `${input.firstName} ${input.lastName}`.trim(),
+      }),
+    );
+  }
 
   // 4. Existing application for this requisition: never create a duplicate.
   const existing = await step("application", () =>
@@ -329,7 +345,7 @@ export async function submitEasyApplication(
 
   /** A library résumé keeps the candidate's chosen default; a new upload becomes the default. */
   async function promotePrimary(docId: string) {
-    if (docId === libraryDocumentId) return;
+    if (docId === libraryDocumentId || anonymousOnActivatedAccount) return;
     await bestEffort("primary-resume", "primary resume flag update failed", () =>
       ports.markPrimaryResume({ candidateId, documentId: docId, now }),
     );

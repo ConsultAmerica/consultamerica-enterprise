@@ -195,5 +195,43 @@ CREATE TRIGGER objects_protect_submitted_documents
   BEFORE DELETE ON storage.objects
   FOR EACH ROW EXECUTE FUNCTION protect_submitted_document_object();
 
+-- Nor replaced in place: an upsert (overwrite) changes `version`, a move or
+-- rename changes `name`/`bucket_id`, and a versioned-bucket delete sets a
+-- delete marker — each would leave the application pointing at different
+-- bytes, or none. Reads (download, signed URLs) do not update the row and
+-- metadata-only updates stay allowed. Applies to the service role too.
+CREATE OR REPLACE FUNCTION protect_submitted_document_object_update()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, storage
+AS $$
+BEGIN
+  IF OLD.bucket_id IN ('candidate-documents', 'candidate-resumes')
+     AND (
+       NEW.name IS DISTINCT FROM OLD.name
+       OR NEW.bucket_id IS DISTINCT FROM OLD.bucket_id
+       OR NEW.version IS DISTINCT FROM OLD.version
+       OR COALESCE((to_jsonb(NEW) ->> 'is_delete_marker')::boolean, false)
+     )
+     AND EXISTS (
+       SELECT 1
+         FROM public.documents d
+         JOIN public.application_documents ad ON ad.document_id = d.id
+        WHERE d.storage_path = OLD.name
+     ) THEN
+    RAISE EXCEPTION 'File % belongs to a submitted application and cannot be replaced or moved', OLD.name
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS objects_protect_submitted_documents_update ON storage.objects;
+CREATE TRIGGER objects_protect_submitted_documents_update
+  BEFORE UPDATE ON storage.objects
+  FOR EACH ROW EXECUTE FUNCTION protect_submitted_document_object_update();
+
 REVOKE ALL ON FUNCTION protect_submitted_document() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION protect_submitted_document_object() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION protect_submitted_document_object_update() FROM PUBLIC, anon, authenticated;

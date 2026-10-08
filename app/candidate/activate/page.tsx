@@ -5,11 +5,11 @@ import { signOutOfActivation } from "@/app/actions/candidate-activation";
 import { isExplicitDemoMode } from "@/app/lib/supabase/client";
 import { getSupabaseServerAuthClient } from "@/app/lib/supabase/auth-server";
 import { getSupabaseServiceClient } from "@/app/lib/supabase/server";
-import { AccessRequestForm, HashSessionBridge, SetPasswordForm } from "@/components/candidate/ActivationForms";
+import { AccessRequestForm, ClaimRecordForm, HashSessionBridge, SetPasswordForm } from "@/components/candidate/ActivationForms";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { resolveActivation } from "@/lib/candidate-portal/activation";
-import { createActivationPorts } from "@/lib/candidate-portal/activation-supabase";
+import { createActivationPorts, currentActivationIdentity } from "@/lib/candidate-portal/activation-supabase";
 
 export const metadata: Metadata = { title: "Activate your candidate account", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -39,23 +39,38 @@ export default async function ActivatePage({ searchParams }: Props) {
   } else {
     const auth = await getSupabaseServerAuthClient();
     const service = getSupabaseServiceClient();
-    const user = auth && !errorKey ? (await auth.auth.getUser()).data.user : null;
-    const state =
-      user && service
-        ? await resolveActivation(
-            { authUserId: user.id, email: user.email ?? null, emailConfirmed: Boolean(user.email_confirmed_at) },
-            createActivationPorts(service),
-          )
-        : null;
+    const identity = auth && !errorKey ? await currentActivationIdentity(auth) : null;
+    const user = identity ? { email: identity.email } : null;
+    const state = identity && service ? await resolveActivation(identity, createActivationPorts(service)) : null;
 
     if (user && state?.kind === "ready") {
       content = (
         <>
           <p className="apply-job-meta">
             Your email is verified. Choose a password to finish activating your account. It will show the applications
-            submitted with this email address.
+            connected to your invitation.
           </p>
           <SetPasswordForm email={user.email ?? ""} />
+        </>
+      );
+    } else if (user && state?.kind === "claimable") {
+      content = (
+        <>
+          <p className="apply-job-meta">
+            Your email is verified. We have an earlier application filed under <strong>{user.email}</strong> that
+            isn&apos;t connected to an account yet. Connect it to this sign-in to see it in your candidate portal.
+          </p>
+          <ClaimRecordForm />
+        </>
+      );
+    } else if (user && state?.kind === "claim-needs-fresh-proof") {
+      content = (
+        <>
+          <p className="apply-job-meta">
+            To connect an earlier application to this sign-in, we need to confirm you can still open email sent to{" "}
+            <strong>{user.email}</strong>. Request a new link below and open it within 15 minutes.
+          </p>
+          <AccessRequestForm />
         </>
       );
     } else if (user) {

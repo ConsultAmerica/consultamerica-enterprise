@@ -2,8 +2,14 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import type { getSupabaseServerAuthClient } from "@/app/lib/supabase/auth-server";
 import { provisionCandidatePortalAccount } from "@/lib/candidate/provisioning";
-import type { AccessRequestPorts, ActivationPorts } from "@/lib/candidate-portal/activation";
+import {
+  hasFreshEmailProof,
+  type AccessRequestPorts,
+  type ActivationPorts,
+  type AuthIdentity,
+} from "@/lib/candidate-portal/activation";
 
 /** Public origin used in emailed links (NEXT_PUBLIC_SITE_URL, else NEXT_PUBLIC_APP_URL). */
 export function siteOrigin(): string {
@@ -14,6 +20,28 @@ export function siteOrigin(): string {
 /** Where emailed links land when the Supabase template still uses the default ConfirmationURL. */
 export function activationRedirectUrl(): string {
   return `${siteOrigin()}/candidate/activate`;
+}
+
+type AuthClient = NonNullable<Awaited<ReturnType<typeof getSupabaseServerAuthClient>>>;
+
+/**
+ * The signed-in identity, from the Auth server (getUser) plus the verified
+ * JWT's `amr` (getClaims) for how recently the inbox was proven. Never from
+ * client input.
+ */
+export async function currentActivationIdentity(auth: AuthClient): Promise<AuthIdentity | null> {
+  const {
+    data: { user },
+  } = await auth.auth.getUser();
+  if (!user) return null;
+  const { data: claims } = await auth.auth.getClaims();
+  const verified = claims?.claims?.sub === user.id ? claims.claims : null;
+  return {
+    authUserId: user.id,
+    email: user.email ?? null,
+    emailConfirmed: Boolean(user.email_confirmed_at),
+    freshEmailProof: hasFreshEmailProof(verified?.amr, Math.floor(Date.now() / 1000)),
+  };
 }
 
 const escapeLike = (v: string) => v.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -37,7 +65,71 @@ export function createActivationPorts(service: SupabaseClient): ActivationPorts 
         .limit(1);
       return data?.[0] ? { candidateId: data[0].id as string } : null;
     },
+    async listRoles(profileId) {
+      const { data, error } = await service.from("user_roles").select("role").eq("user_id", profileId);
+      if (error) throw new Error(`role lookup failed (${error.code})`);
+      return (data ?? []).map((r) => r.role as string);
+    },
+    async findUnlinkedCandidatesByEmail(email) {
+      const { data, error } = await service
+        .from("candidate_profiles")
+        .select("id")
+        .ilike("email", escapeLike(email))
+        .is("profile_id", null)
+        .limit(5);
+      if (error) throw new Error(`candidate lookup failed (${error.code})`);
+      return (data ?? []).map((r) => ({ candidateId: r.id as string }));
+    },
   };
+}
+
+/**
+ * Binds a still-unlinked candidate record to a verified sign-in (the claim
+ * step; the caller has already re-run resolveActivation and got "claimable").
+ * The candidate update is conditional on profile_id IS NULL, so a race or a
+ * replay can never re-point a record that is already someone's.
+ */
+export async function bindClaimedCandidate(
+  service: SupabaseClient,
+  input: { candidateId: string; profileId: string | null; authUserId: string; email: string; displayName: string },
+): Promise<{ ok: true; profileId: string } | { ok: false }> {
+  const now = new Date().toISOString();
+  let profileId = input.profileId;
+  if (!profileId) {
+    profileId = `profile-${input.candidateId}`;
+    const { error } = await service.from("profiles").insert({
+      id: profileId,
+      email: input.email,
+      display_name: input.displayName || input.email,
+      status: "INVITED",
+      auth_user_id: input.authUserId,
+      created_at: now,
+      updated_at: now,
+    });
+    if (error) {
+      console.error("[candidate-claim]", { event: "profile-insert-failed", code: error.code ?? null });
+      return { ok: false };
+    }
+  }
+  const { data: bound, error: bindError } = await service
+    .from("candidate_profiles")
+    .update({ profile_id: profileId, updated_at: now })
+    .eq("id", input.candidateId)
+    .is("profile_id", null)
+    .select("id");
+  if (bindError || (bound ?? []).length !== 1) {
+    console.error("[candidate-claim]", { event: "bind-failed", code: bindError?.code ?? "already-linked" });
+    if (!input.profileId) await service.from("profiles").delete().eq("id", profileId).eq("auth_user_id", input.authUserId);
+    return { ok: false };
+  }
+  const { error: roleError } = await service
+    .from("user_roles")
+    .insert({ id: `${profileId}-candidate`, user_id: profileId, role: "CANDIDATE" });
+  if (roleError && roleError.code !== "23505") {
+    console.error("[candidate-claim]", { event: "role-insert-failed", code: roleError.code ?? null });
+    return { ok: false };
+  }
+  return { ok: true, profileId };
 }
 
 export function createAccessRequestPorts(service: SupabaseClient): AccessRequestPorts {
@@ -66,7 +158,8 @@ export function createAccessRequestPorts(service: SupabaseClient): AccessRequest
       return { authUserId, emailConfirmed: Boolean(user.user.email_confirmed_at) };
     },
     async invite(input) {
-      await provisionCandidatePortalAccount(input);
+      const outcome = await provisionCandidatePortalAccount(input);
+      return outcome === "email-exists" ? "email-exists" : outcome === "failed" ? "failed" : "sent";
     },
     async reinvite({ profileId, email }) {
       const { data, error } = await service.auth.admin.inviteUserByEmail(email, { redirectTo });

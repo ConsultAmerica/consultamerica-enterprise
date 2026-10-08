@@ -4,7 +4,7 @@ import { submitEasyApplication } from "@/lib/recruiting/easy-apply";
 import { createSupabaseEasyApplyPorts } from "@/lib/recruiting/easy-apply-supabase";
 import { CANDIDATE_DOCUMENTS_BUCKET } from "@/lib/storage/candidate-documents";
 
-import { activatedCandidate, check, createJobs, pdfBytes, service, uid } from "./helpers";
+import { activatedCandidate, check, checkRow, createJobs, pdfBytes, service, uid } from "./helpers";
 
 /**
  * Storage + row-level security against the isolated database.
@@ -30,7 +30,7 @@ async function submittedApplication(cand: Cand, job: { req: string; job: string 
     },
     { ports: createSupabaseEasyApplyPorts(db), log: () => undefined },
   );
-  const doc = check(await db.from("documents").select("id, storage_path").eq("id", result.resumeDocumentId).single(), "doc");
+  const doc = checkRow(await db.from("documents").select("id, storage_path").eq("id", result.resumeDocumentId).single(), "doc");
   return { ...result, storagePath: doc.storage_path as string };
 }
 
@@ -77,11 +77,18 @@ describe(`storage & RLS security (stage=${STAGE})`, () => {
     expect(check(await a.client.from("documents").select("id").eq("id", appB.resumeDocumentId), "sel")).toEqual([]);
     expect(check(await a.client.from("applications").select("id").eq("id", appB.applicationId), "sel")).toEqual([]);
     await a.client.from("documents").update({ status: "DELETED" }).eq("id", appB.resumeDocumentId);
-    const docB = check(await db.from("documents").select("status").eq("id", appB.resumeDocumentId).single(), "docB");
+    const docB = checkRow(await db.from("documents").select("status").eq("id", appB.resumeDocumentId).single(), "docB");
     expect(docB.status).toBe("ACTIVE");
   });
 
   if (STAGE === "pre048") {
+    it("FINDING (019 as deployed): the owner CAN overwrite the bytes of their own submitted résumé in place", async () => {
+      const replaced = await a.client.storage
+        .from(CANDIDATE_DOCUMENTS_BUCKET)
+        .upload(appA.storagePath, new TextEncoder().encode("%PDF-1.4 replaced"), { contentType: "application/pdf", upsert: true });
+      expect(replaced.error).toBeNull();
+    });
+
     it("FINDING (019 as deployed): the owner CAN delete the file and metadata of their own submitted résumé", async () => {
       const removed = await a.client.storage.from(CANDIDATE_DOCUMENTS_BUCKET).remove([appA.storagePath]);
       expect(removed.error).toBeNull();
@@ -94,7 +101,7 @@ describe(`storage & RLS security (stage=${STAGE})`, () => {
     it("FINDING (013 as deployed): a candidate can change the email on their own candidate record", async () => {
       const takeover = `unclaimed.${uid()}@example.test`;
       await a.client.from("candidate_profiles").update({ email: takeover }).eq("id", a.candidateId);
-      const row = check(await db.from("candidate_profiles").select("email").eq("id", a.candidateId).single(), "row");
+      const row = checkRow(await db.from("candidate_profiles").select("email").eq("id", a.candidateId).single(), "row");
       expect(row.email).toBe(takeover);
       check(await db.from("candidate_profiles").update({ email: a.email }).eq("id", a.candidateId), "restore");
     });
@@ -136,7 +143,7 @@ describe(`storage & RLS security (stage=${STAGE})`, () => {
   it("owner CANNOT delete, repoint or mark DELETED their submitted document row, or edit application links", async () => {
     await a.client.from("documents").delete().eq("id", appA.resumeDocumentId);
     await a.client.from("documents").update({ storage_path: "x/y/z.pdf", status: "DELETED" }).eq("id", appA.resumeDocumentId);
-    const doc = check(await db.from("documents").select("status, storage_path").eq("id", appA.resumeDocumentId).single(), "doc");
+    const doc = checkRow(await db.from("documents").select("status, storage_path").eq("id", appA.resumeDocumentId).single(), "doc");
     expect(doc).toEqual({ status: "ACTIVE", storage_path: appA.storagePath });
     await a.client.from("application_documents").delete().eq("application_id", appA.applicationId);
     const links = check(await db.from("application_documents").select("document_id").eq("application_id", appA.applicationId), "links");
@@ -145,7 +152,7 @@ describe(`storage & RLS security (stage=${STAGE})`, () => {
 
   it("candidate CANNOT change the email (or link) on their candidate record; can still read it", async () => {
     await a.client.from("candidate_profiles").update({ email: `unclaimed.${uid()}@example.test`, profile_id: null }).eq("id", a.candidateId);
-    const row = check(await db.from("candidate_profiles").select("email, profile_id").eq("id", a.candidateId).single(), "row");
+    const row = checkRow(await db.from("candidate_profiles").select("email, profile_id").eq("id", a.candidateId).single(), "row");
     expect(row).toEqual({ email: a.email, profile_id: a.profileId });
     expect(check(await a.client.from("candidate_profiles").select("id").eq("id", a.candidateId), "self")).toHaveLength(1);
     expect(check(await a.client.from("candidate_profiles").select("id").eq("id", b.candidateId), "other")).toEqual([]);
@@ -180,6 +187,33 @@ describe(`storage & RLS security (stage=${STAGE})`, () => {
     const removed = await db.storage.from(CANDIDATE_DOCUMENTS_BUCKET).remove([appA.storagePath]);
     expect(removed.error).toBeTruthy();
     expect(await objectExists(appA.storagePath)).toBe(true);
+  });
+
+  it("submitted files cannot be replaced or moved even by the server; previews/downloads still work", async () => {
+    const bucket = db.storage.from(CANDIDATE_DOCUMENTS_BUCKET);
+    const before = await (await bucket.download(appB.storagePath)).data!.text();
+    const overwrite = await bucket.upload(appB.storagePath, new TextEncoder().encode("%PDF-1.4 tampered"), {
+      contentType: "application/pdf",
+      upsert: true,
+    });
+    expect(overwrite.error).toBeTruthy();
+    const moved = await bucket.move(appB.storagePath, `${b.candidateId}/moved-${uid()}.pdf`);
+    expect(moved.error).toBeTruthy();
+    expect(await (await bucket.download(appB.storagePath)).data!.text()).toBe(before);
+    // Authorized reads: server-signed URL (recruiter/candidate preview path) and the owner's own session.
+    const signed = await bucket.createSignedUrl(appB.storagePath, 60);
+    expect(signed.error).toBeNull();
+    expect((await fetch(signed.data!.signedUrl)).status).toBe(200);
+    expect((await b.client.storage.from(CANDIDATE_DOCUMENTS_BUCKET).download(appB.storagePath)).error).toBeNull();
+  });
+
+  it("an unsubmitted library file can still be replaced and moved by the server", async () => {
+    const bucket = db.storage.from(CANDIDATE_DOCUMENTS_BUCKET);
+    const path = `${a.candidateId}/doc-${uid()}/draft.pdf`;
+    check(await bucket.upload(path, pdfBytes(), { contentType: "application/pdf" }), "up");
+    expect((await bucket.upload(path, pdfBytes(), { contentType: "application/pdf", upsert: true })).error).toBeNull();
+    expect((await bucket.move(path, `${path}.v2`)).error).toBeNull();
+    expect((await bucket.remove([`${path}.v2`])).error).toBeNull();
   });
 
   it("an unsubmitted library file can still be removed by the server", async () => {

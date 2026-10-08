@@ -14,10 +14,16 @@ import {
   resolveActivation,
   validateNewPassword,
 } from "@/lib/candidate-portal/activation";
-import { createAccessRequestPorts, createActivationPorts } from "@/lib/candidate-portal/activation-supabase";
+import {
+  bindClaimedCandidate,
+  createAccessRequestPorts,
+  createActivationPorts,
+  currentActivationIdentity,
+} from "@/lib/candidate-portal/activation-supabase";
 
 export type ActivationFormState = { error: string | null };
 export type AccessRequestState = { message: string | null; error: string | null };
+export type ClaimState = { error: string | null };
 
 const UNAVAILABLE = "Account activation isn't available right now. Please try again later.";
 
@@ -32,15 +38,11 @@ export async function activateCandidateAccount(_prev: ActivationFormState, formD
   const service = getSupabaseServiceClient();
   if (!auth || !service) return { error: UNAVAILABLE };
 
-  const {
-    data: { user },
-  } = await auth.auth.getUser();
-  if (!user) return { error: "Your activation link has expired. Request a new one below." };
+  const identity = await currentActivationIdentity(auth);
+  if (!identity) return { error: "Your activation link has expired. Request a new one below." };
+  const user = { id: identity.authUserId, email: identity.email };
 
-  const state = await resolveActivation(
-    { authUserId: user.id, email: user.email ?? null, emailConfirmed: Boolean(user.email_confirmed_at) },
-    createActivationPorts(service),
-  );
+  const state = await resolveActivation(identity, createActivationPorts(service));
   if (state.kind !== "ready") return { error: "This sign-in isn't connected to a candidate account." };
 
   const password = String(formData.get("password") ?? "");
@@ -94,6 +96,44 @@ export async function requestCandidateAccessLink(_prev: AccessRequestState, form
     console.error("[candidate-access]", { event: "link-failed", error: error instanceof Error ? error.message : "unknown" });
   }
   return { message: ACCESS_REQUEST_MESSAGE, error: null };
+}
+
+/**
+ * Verified claim: binds the unlinked applicant record filed under this
+ * sign-in's verified address. Every condition is re-checked here (fresh
+ * emailed-link proof, still unlinked, single match, no staff role) — the
+ * page that rendered the button is not trusted.
+ */
+export async function claimCandidateRecord(_prev: ClaimState, formData: FormData): Promise<ClaimState> {
+  void formData;
+  const auth = await getSupabaseServerAuthClient();
+  const service = getSupabaseServiceClient();
+  if (!auth || !service) return { error: UNAVAILABLE };
+
+  const identity = await currentActivationIdentity(auth);
+  if (!identity) return { error: "Your sign-in has expired. Request a new link below." };
+
+  const state = await resolveActivation(identity, createActivationPorts(service));
+  if (state.kind === "claim-needs-fresh-proof") {
+    return { error: "For your security, request a new email link and open it to continue." };
+  }
+  if (state.kind !== "claimable") return { error: "There's no application record to connect to this sign-in." };
+
+  const { data: cand } = await service
+    .from("candidate_profiles")
+    .select("first_name, last_name")
+    .eq("id", state.candidateId)
+    .maybeSingle();
+  const bound = await bindClaimedCandidate(service, {
+    candidateId: state.candidateId,
+    profileId: state.profileId,
+    authUserId: identity.authUserId,
+    email: identity.email ?? "",
+    displayName: `${cand?.first_name ?? ""} ${cand?.last_name ?? ""}`.trim(),
+  });
+  if (!bound.ok) return { error: UNAVAILABLE };
+  console.info("[candidate-claim]", { event: "claimed", candidateId: state.candidateId });
+  redirect("/candidate/activate");
 }
 
 export async function signOutOfActivation() {

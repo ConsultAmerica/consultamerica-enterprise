@@ -54,6 +54,24 @@ export function createSupabaseEasyApplyPorts(client: SupabaseClient): EasyApplyP
       return (data?.[0]?.id as string | undefined) ?? null;
     },
 
+    async hasActivatedAccount(candidateId) {
+      const { data: candidate, error } = await client
+        .from("candidate_profiles")
+        .select("profile_id")
+        .eq("id", candidateId)
+        .maybeSingle();
+      check(error, "candidate account lookup failed");
+      const profileId = (candidate?.profile_id as string | null) ?? null;
+      if (!profileId) return false;
+      const { data: profile, error: profileError } = await client
+        .from("profiles")
+        .select("status")
+        .eq("id", profileId)
+        .maybeSingle();
+      check(profileError, "candidate account lookup failed");
+      return profile?.status === "ACTIVE";
+    },
+
     async findLibraryResume({ candidateId, documentId }) {
       const { data, error } = await client
         .from("documents")
@@ -86,7 +104,7 @@ export function createSupabaseEasyApplyPorts(client: SupabaseClient): EasyApplyP
     },
 
     async ensurePortalAccount(input) {
-      await provisionCandidatePortalAccount(input);
+      if ((await provisionCandidatePortalAccount(input)) === "failed") throw new Error("portal invitation failed");
     },
 
     async findApplication(candidateId, requisitionId) {

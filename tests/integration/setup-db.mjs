@@ -29,7 +29,8 @@ const parts = [
    DROP POLICY IF EXISTS candidate_documents_owner_read ON storage.objects; DROP POLICY IF EXISTS candidate_documents_owner_insert ON storage.objects;
    DROP POLICY IF EXISTS candidate_resumes_owner_read ON storage.objects; DROP POLICY IF EXISTS candidate_resumes_owner_insert ON storage.objects;
    DROP POLICY IF EXISTS candidate_documents_staff_read ON storage.objects; DROP POLICY IF EXISTS candidate_resumes_staff_read ON storage.objects;
-   DROP TRIGGER IF EXISTS objects_protect_submitted_documents ON storage.objects;`],
+   DROP TRIGGER IF EXISTS objects_protect_submitted_documents ON storage.objects;
+   DROP TRIGGER IF EXISTS objects_protect_submitted_documents_update ON storage.objects;`],
   ["bootstrap", read("tests/integration/sql/000_bootstrap.sql")],
   ["019 identity helpers (verbatim)", `SET check_function_bodies = off;\n${lines("db/schema/019_rls_security_pass.sql", 1, 144)}`],
   ["013 candidate_profiles + applications policies (verbatim)", `${lines("db/schema/013_rls.sql", 41, 48)}
@@ -37,6 +38,8 @@ ${lines("db/schema/013_rls.sql", 110, 136)}`],
   ["019 document policies (verbatim)", lines("db/schema/019_rls_security_pass.sql", 251, 285)],
   ["014 buckets + staff read (verbatim)", `${lines("db/schema/014_storage_buckets.sql", 8, 15)}\n${lines("db/schema/014_storage_buckets.sql", 27, 35)}\n${lines("db/schema/014_storage_buckets.sql", 44, 52)}`],
   ["019 storage owner policies (verbatim)", lines("db/schema/019_rls_security_pass.sql", 800, 849)],
+  ["016 one-primary-résumé index (verbatim)", lines("db/schema/016_candidate_documents_fields.sql", 32, 34)],
+  ["020 submitted-document immutability (verbatim)", read("db/schema/020_application_document_immutability.sql")],
   ["045", read("db/schema/045_recruiting_intelligence_and_email_intake.sql")],
   ["046", read("db/schema/046_candidate_portal_drafts_and_resume_review.sql")],
 ];

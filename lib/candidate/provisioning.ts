@@ -10,24 +10,36 @@ import { getSupabaseServiceClient, isSupabaseConfigured } from "@/app/lib/supaba
  * No-ops when Supabase isn't configured (demo mode uses DEMO_CANDIDATE_SESSION
  * instead — see lib/candidate/session.ts). Never throws: provisioning the
  * portal account must never block the underlying application submission.
+ *
+ * Returns "email-exists" when Supabase Auth already has a sign-in for the
+ * address (nothing is bound then — see the claim flow in
+ * lib/candidate-portal/activation.ts), "linked" when the record already has
+ * a portal profile.
  */
 export async function provisionCandidatePortalAccount(input: {
   candidateId: string;
   email: string;
   displayName: string;
-}): Promise<void> {
-  if (!isSupabaseConfigured()) return;
+}): Promise<"sent" | "linked" | "email-exists" | "failed" | "disabled"> {
+  if (!isSupabaseConfigured()) return "disabled";
 
   const client = getSupabaseServiceClient();
-  if (!client) return;
+  if (!client) return "disabled";
+
+  // Ids and codes only — never the applicant's email address.
+  const fail = (event: string, code: unknown) => {
+    console.error("[candidate-provisioning]", { event, candidateId: input.candidateId, code: code ?? null });
+    return "failed" as const;
+  };
 
   try {
-    const { data: existingCandidate } = await client
+    const { data: existingCandidate, error: lookupError } = await client
       .from("candidate_profiles")
       .select("profile_id")
       .eq("id", input.candidateId)
       .maybeSingle();
-    if (existingCandidate?.profile_id) return;
+    if (lookupError) return fail("candidate-lookup-failed", lookupError.code);
+    if (existingCandidate?.profile_id) return "linked";
 
     const now = new Date().toISOString();
     const site = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/+$/, "");
@@ -36,18 +48,15 @@ export async function provisionCandidatePortalAccount(input: {
         input.email,
         site ? { redirectTo: `${site}/candidate/activate` } : undefined,
       );
-    if (inviteError || !invited?.user) {
-      // Ids and codes only — never the applicant's email address.
-      console.error("[candidate-provisioning]", {
-        event: "invite-failed",
-        candidateId: input.candidateId,
-        code: inviteError?.code ?? inviteError?.status ?? null,
-      });
-      return;
+    if (inviteError?.code === "email_exists") {
+      console.info("[candidate-provisioning]", { event: "invite-skipped-email-exists", candidateId: input.candidateId });
+      return "email-exists";
     }
+    if (inviteError || !invited?.user) return fail("invite-failed", inviteError?.code ?? inviteError?.status);
 
+    // Idempotent: a concurrent submission may have created the same profile.
     const profileId = `profile-${input.candidateId}`;
-    await client.from("profiles").insert({
+    const { error: profileError } = await client.from("profiles").insert({
       id: profileId,
       email: input.email,
       display_name: input.displayName,
@@ -56,19 +65,25 @@ export async function provisionCandidatePortalAccount(input: {
       created_at: now,
       updated_at: now,
     });
+    if (profileError && profileError.code !== "23505") return fail("profile-insert-failed", profileError.code);
 
-    await client
+    // Bind only a still-unlinked record: never re-point an existing link.
+    const { error: bindError } = await client
       .from("candidate_profiles")
       .update({ profile_id: profileId, updated_at: now })
-      .eq("id", input.candidateId);
+      .eq("id", input.candidateId)
+      .is("profile_id", null);
+    if (bindError) return fail("candidate-bind-failed", bindError.code);
 
-    await client.from("user_roles").insert({
+    const { error: roleError } = await client.from("user_roles").insert({
       id: `${profileId}-candidate`,
       user_id: profileId,
       role: "CANDIDATE",
     });
+    if (roleError && roleError.code !== "23505") return fail("role-insert-failed", roleError.code);
+    return "sent";
   } catch (error) {
-    console.error("Candidate portal provisioning failed:", error);
+    return fail("provisioning-threw", error instanceof Error ? error.message : "unknown");
   }
 }
 

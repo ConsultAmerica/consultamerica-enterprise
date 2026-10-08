@@ -6,10 +6,30 @@ import { useActionState, useEffect } from "react";
 
 import {
   activateCandidateAccount,
+  claimCandidateRecord,
   requestCandidateAccessLink,
   type AccessRequestState,
   type ActivationFormState,
+  type ClaimState,
 } from "@/app/actions/candidate-activation";
+
+export function ClaimRecordForm() {
+  const [state, action, pending] = useActionState<ClaimState, FormData>(claimCandidateRecord, { error: null });
+  return (
+    <form action={action} className="apply-panel cp-login-panel" noValidate>
+      {state.error ? (
+        <p className="apply-error" role="alert">
+          {state.error}
+        </p>
+      ) : null}
+      <div className="apply-actions apply-actions-end">
+        <button type="submit" className="btn btn-primary" disabled={pending}>
+          {pending ? "Connecting…" : "Connect my application"}
+        </button>
+      </div>
+    </form>
+  );
+}
 
 export function SetPasswordForm({ email }: { email: string }) {
   const [state, action, pending] = useActionState<ActivationFormState, FormData>(activateCandidateAccount, { error: null });

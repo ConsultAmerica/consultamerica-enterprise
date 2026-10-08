@@ -75,6 +75,8 @@ export const RATE_LIMIT_SCOPES = {
   // normalized email instead of an IP) per address, so one inbox can't be flooded.
   "candidate-access": { visitor: { windowSeconds: 60 * 60, limit: 5 }, global: { windowSeconds: 24 * 60 * 60, limit: 2000 } },
   "candidate-access-email": { visitor: { windowSeconds: 60 * 60, limit: 3 }, global: { windowSeconds: 24 * 60 * 60, limit: 5000 } },
+  // Portal invitations triggered by anonymous Easy/Detailed Apply, per client IP.
+  "candidate-invite": { visitor: { windowSeconds: 60 * 60, limit: 10 }, global: { windowSeconds: 24 * 60 * 60, limit: 2000 } },
 } as const;
 
 export async function checkAssistantRateLimit(

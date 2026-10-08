@@ -40,10 +40,16 @@ export async function messageCount(to: string): Promise<number> {
   return ((await res.json()) as { messages_count?: number }).messages_count ?? 0;
 }
 
-export function check<T>(result: { data: T; error: { message: string; code?: string } | null }, what: string): NonNullable<T> {
+export function check<T>(result: { data: T; error: { message: string; code?: string } | null }, what: string): T {
   if (result.error) throw new Error(`${what}: ${result.error.code ?? ""} ${result.error.message}`);
-  if (result.data == null) throw new Error(`${what}: no data`);
   return result.data;
+}
+
+/** Like check(), for reads that must return data. */
+export function checkRow<T>(result: { data: T; error: { message: string; code?: string } | null }, what: string): NonNullable<T> {
+  const data = check(result, what);
+  if (data == null) throw new Error(`${what}: no data`);
+  return data;
 }
 
 /** An open job (+ requisition) and a closed one, unique per call. */
@@ -90,6 +96,6 @@ export async function activatedCandidate(db: SupabaseClient, tag = "cand") {
   const client = anon();
   const verified = await client.auth.verifyOtp({ token_hash: link.searchParams.get("token_hash")!, type: "invite" });
   if (verified.error) throw new Error(`activation failed: ${verified.error.message}`);
-  const cand = check(await db.from("candidate_profiles").select("profile_id").eq("id", candidateId).single(), "cand");
+  const cand = checkRow(await db.from("candidate_profiles").select("profile_id").eq("id", candidateId).single(), "cand");
   return { client, candidateId, profileId: cand.profile_id as string, email, authUserId: verified.data.user!.id };
 }
