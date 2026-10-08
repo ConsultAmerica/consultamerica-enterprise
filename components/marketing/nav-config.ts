@@ -27,8 +27,13 @@ export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
   // the live products; the trigger itself falls through to Contact). Kept as-is
   // until a Products section or page is approved.
   { label: "Products", href: "/#contact", anchor: "#contact", mega: "products" },
-  { label: "AI", href: "/#ai", anchor: "#ai" },
-  { label: "Insights", href: "/#insights", anchor: "#insights" },
+  // The "AI" item was removed from the nav. The #ai section is still on the
+  // homepage and still linked from the Capabilities mega panel.
+  // Was "Insights" (which pointed at the articles section). Renamed to
+  // Services and repointed at #capabilities, since that is the section that
+  // actually lists the service lines. The articles are still reachable from
+  // the homepage section and the footer.
+  { label: "Services", href: "/#capabilities", anchor: "#capabilities" },
   // One plain link for both pages: /careers, also current on /jobs and job detail
   // pages. Jobs is reached from the Careers page CTAs.
   { label: "Careers", href: "/careers", alsoActiveOn: ["/jobs"] },

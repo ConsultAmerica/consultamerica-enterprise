@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { CONTACT } from "@/data/marketing";
+
 export function MarketingFooter() {
   return (
     <footer>
@@ -39,12 +41,18 @@ export function MarketingFooter() {
           </div>
           <div className="foot-contact">
             <div className="office">
-              <h5>Headquarters</h5>
-              <p>
-                1101 Opal Court, Suite 211
-                <br />
-                Hagerstown, MD 21740
-              </p>
+              <h5>Locations</h5>
+              <a className="office-map" href={CONTACT.hq.mapUrl} target="_blank" rel="noopener noreferrer">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M20 10c0 5.5-8 12-8 12s-8-6.5-8-12a8 8 0 0 1 16 0Z" />
+                  <circle cx="12" cy="10" r="2.8" />
+                </svg>
+                <span>
+                  {CONTACT.hq.street}
+                  <br />
+                  {CONTACT.hq.city}
+                </span>
+              </a>
             </div>
           </div>
         </div>

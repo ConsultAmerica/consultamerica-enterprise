@@ -51,6 +51,15 @@ export const ECO = [
 export const CONTACT = {
   country: "United States",
   email: "hr@consultamerica.net",
+  // Hagerstown is the sole HQ — the Ashburn branch office was retired. Both the
+  // footer and the Life page render from here so the address can't drift.
+  hq: {
+    street: "1101 Opal Court, Suite 211",
+    city: "Hagerstown, MD 21740",
+    // Plain Maps search URL: opens in whichever maps app the visitor has and
+    // needs no API key, unlike an embedded Maps widget.
+    mapUrl: "https://www.google.com/maps/search/?api=1&query=1101+Opal+Court+Suite+211+Hagerstown+MD+21740",
+  },
 } as const;
 
 // Real clients only. CSRA is deliberately excluded (the artwork exists at

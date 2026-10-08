@@ -71,7 +71,7 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
               <span className="bw">
                 <b>Consult</b> <em>America</em>
               </span>
-              <span className="btag">AI Consultancy</span>
+              <span className="btag">Building Innovative Future</span>
             </span>
           </Link>
           <nav className="nav-mid" aria-label="Primary">

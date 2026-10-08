@@ -90,7 +90,7 @@ header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -
    no white-on-video state to lose contrast in */
 .brand .bw b{display:block;font-weight:600;color:#000}
 .brand .bw em{display:block;font-style:normal;font-weight:500;color:#000}
-.brand .btag{font-size:11px;font-weight:600;color:#6b7a8d;letter-spacing:.1em;white-space:nowrap;margin-top:3px;text-transform:uppercase}
+.brand .btag{font-size:11px;font-weight:600;color:var(--blue);letter-spacing:.1em;white-space:nowrap;margin-top:3px;text-transform:uppercase}
 @media(max-width:600px){.brand{gap:8px}.brand .mark{height:44px}.brand .bw{font-size:19px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
 /* links sit directly in the one bar now — no separate capsule */
 .nav-mid{position:relative;z-index:1;display:flex;gap:2px}
@@ -410,6 +410,14 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 .office p{font-size:14.5px;line-height:1.75;color:var(--ink-2)}
 .office a{color:var(--ink-2);transition:color .18s}
 .office a:hover{color:var(--blue)}
+/* HQ address as a map link. Used by the footer and the Life page, so it keeps
+   its own type rather than inheriting either block's. The pin is nudged down a
+   little to sit against the first line of the address, not between the two. */
+.office-map{display:inline-flex;align-items:flex-start;gap:9px;font-size:14.5px;line-height:1.75;
+  color:var(--ink-2);transition:color .18s}
+.office-map svg{flex:none;margin-top:4px;color:var(--blue);transition:transform .18s}
+.office-map:hover{color:var(--blue)}
+.office-map:hover svg{transform:translateY(-1px)}
 .socials{display:flex;gap:12px}
 .socials a{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);transition:color .2s,background .2s,border-color .2s,transform .2s}
 .socials a:hover{color:#fff;background:var(--blue);border-color:var(--blue);transform:translateY(-3px)}
