@@ -92,7 +92,7 @@ header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -
 .brand .bw em{display:block;font-style:normal;font-weight:500;color:#000}
 /* 10px, not 11px: at 11px "Building Innovative Future" measures 192px against
    a 187px wordmark, so it overhangs "Consult America". 10px lands at 175px. */
-.brand .btag{font-size:10px;font-weight:600;color:var(--blue);letter-spacing:.1em;white-space:nowrap;margin-top:3px;text-transform:uppercase}
+.brand .btag{font-size:10px;font-weight:600;color:var(--blue);letter-spacing:.1em;white-space:nowrap;margin-top:3px;text-transform:uppercase;padding-left:6px}
 @media(max-width:600px){.brand{gap:8px}.brand .mark{height:44px}.brand .bw{font-size:19px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
 /* links sit directly in the one bar now — no separate capsule */
 .nav-mid{position:relative;z-index:1;display:flex;gap:2px}
