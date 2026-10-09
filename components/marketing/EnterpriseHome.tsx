@@ -11,7 +11,6 @@ import {
 } from "react";
 
 import {
-  CAP_ICONS,
   CAPS,
   CLIENTS,
   COUNTERS,
@@ -27,6 +26,7 @@ import { INSIGHTS } from "@/data/insights";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { CONTACT_CTA, PRIMARY_NAV, navHref, type MegaKey } from "@/components/marketing/nav-config";
 import { MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
+import { CapabilitiesMegaPanel } from "@/components/marketing/PrimaryNav";
 
 const MENU_TOGGLE_ID = "navToggle";
 
@@ -295,12 +295,6 @@ export function EnterpriseHome() {
     };
   }, []);
 
-  const ci = (i: number, d: string): [string, string, string, string] => [
-    CAPS[i][0],
-    d,
-    CAP_ICONS[i],
-    "#capabilities",
-  ];
   const ii = (i: number): [string, string, string, string] => [
     INDUSTRIES[i][0],
     INDUSTRIES[i][1],
@@ -315,37 +309,7 @@ export function EnterpriseHome() {
   ];
 
   const megaPanels: Record<MegaKey, { id: string; panel: ReactNode }> = {
-    capabilities: {
-      id: "megaCap",
-      panel: (
-        <MegaPanel
-          groups={[
-            [
-              "Engineering & AI",
-              [
-                ci(0, "Cloud-native builds, platforms, integrations"),
-                ci(1, "GenAI, assistants, and automation in production"),
-              ],
-            ],
-            [
-              "Cloud & Transformation",
-              [
-                ci(2, "Migrate and modernize ERP, HCM, SCM on OCI"),
-                ci(3, "Reshape operations around a modern digital core"),
-              ],
-            ],
-            ["Operate & Run", [ci(4, "SLAs, monitoring, and continuous improvement")]],
-          ]}
-          feature={{
-            img: "/img/meeting.jpg",
-            label: "How we work",
-            title: "Design, build, run",
-            desc: "One team from assessment through production and managed operations.",
-            href: "#why",
-          }}
-        />
-      ),
-    },
+    capabilities: { id: "megaCap", panel: <CapabilitiesMegaPanel /> },
     industries: {
       id: "megaInd",
       panel: (

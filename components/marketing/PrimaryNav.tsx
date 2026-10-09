@@ -1,6 +1,6 @@
 "use client";
 
-import { CAP_ICONS, CAPS, IND_ICONS, INDUSTRIES, PROD } from "@/data/marketing";
+import { CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD } from "@/data/marketing";
 
 /**
  * The Capabilities / Industries / Products mega-menus, shared by sub-page
@@ -97,18 +97,40 @@ export function MegaPanel({
   );
 }
 
+/**
+ * Capabilities gets its own panel shape: one column per capability, with that
+ * capability's service lines listed under it. Five columns of plain text links
+ * rather than the three icon-and-description columns the other panels use —
+ * 25 items would not fit in that layout.
+ */
+export function CapabilitiesMegaPanel({ base = "" }: { base?: "" | "/" }) {
+  return (
+    <div className="mega-inner mega-svc">
+      {CAPS.map(([name], i) => (
+        <div className="mega-col" key={name}>
+          <a className="mega-h mega-h-link" href={`${base}#capabilities`}>
+            <PathIcon d={CAP_ICONS[i]} size={15} />
+            {name}
+          </a>
+          <ul className="msub">
+            {CAP_SERVICES[i].map((service) => (
+              <li key={service}>
+                <a href={`${base}#capabilities`}>{service}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export const MEGA_IDS = { capabilities: "megaCap", industries: "megaInd", products: "megaProd" } as const;
 
 /** One mega panel by section, so headers that render their own link list can reuse the panels. */
 export function NavMegaPanel({ mega, base = "" }: { mega: keyof typeof MEGA_IDS; base?: "" | "/" }) {
   const a = (hash: string) => `${base}${hash}`;
 
-  const ci = (i: number, d: string): [string, string, string, string] => [
-    CAPS[i][0],
-    d,
-    CAP_ICONS[i],
-    a("#capabilities"),
-  ];
   const ii = (i: number): [string, string, string, string] => [
     INDUSTRIES[i][0],
     INDUSTRIES[i][1],
@@ -117,24 +139,7 @@ export function NavMegaPanel({ mega, base = "" }: { mega: keyof typeof MEGA_IDS;
   ];
   const pi = (i: number): [string, string, string, string] => [PROD[i][0], PROD[i][1], PROD[i][3], PROD[i][2]];
 
-  if (mega === "capabilities") {
-    return (
-      <MegaPanel
-        groups={[
-          ["Engineering & AI", [ci(0, "Cloud-native builds, platforms, integrations"), ci(1, "GenAI, assistants, and automation in production")]],
-          ["Cloud & Transformation", [ci(2, "Migrate and modernize ERP, HCM, SCM on OCI"), ci(3, "Reshape operations around a modern digital core")]],
-          ["Operate & Run", [ci(4, "SLAs, monitoring, and continuous improvement")]],
-        ]}
-        feature={{
-          img: "/img/meeting.jpg",
-          label: "How we work",
-          title: "Design, build, run",
-          desc: "One team from assessment through production and managed operations.",
-          href: a("#why"),
-        }}
-      />
-    );
-  }
+  if (mega === "capabilities") return <CapabilitiesMegaPanel base={base} />;
   if (mega === "industries") {
     return (
       <MegaPanel

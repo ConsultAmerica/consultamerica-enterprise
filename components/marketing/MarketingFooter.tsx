@@ -42,17 +42,20 @@ export function MarketingFooter() {
           <div className="foot-contact">
             <div className="office">
               <h5>Locations</h5>
-              <a className="office-map" href={CONTACT.hq.mapUrl} target="_blank" rel="noopener noreferrer">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M20 10c0 5.5-8 12-8 12s-8-6.5-8-12a8 8 0 0 1 16 0Z" />
-                  <circle cx="12" cy="10" r="2.8" />
-                </svg>
-                <span>
-                  {CONTACT.hq.street}
-                  <br />
-                  {CONTACT.hq.city}
-                </span>
-              </a>
+              {CONTACT.offices.map((o) => (
+                <a className="office-map" key={o.city} href={o.mapUrl} target="_blank" rel="noopener noreferrer">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M20 10c0 5.5-8 12-8 12s-8-6.5-8-12a8 8 0 0 1 16 0Z" />
+                    <circle cx="12" cy="10" r="2.8" />
+                  </svg>
+                  <span>
+                    <b className="office-label">{o.label}</b>
+                    {o.street}
+                    <br />
+                    {o.city}
+                  </span>
+                </a>
+              ))}
             </div>
           </div>
         </div>
@@ -104,21 +107,6 @@ export function MarketingFooter() {
             </a>
           </div>
           <div className="foot-util-right">
-            <label className="region" aria-label="Region and language">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-                <circle cx="12" cy="12" r="9" />
-                <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
-              </svg>
-              <select defaultValue="United States (English)">
-                <option>United States (English)</option>
-                <option>Canada (English)</option>
-                <option>United Kingdom (English)</option>
-                <option>Global (English)</option>
-              </select>
-              <svg className="caret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </label>
             <span className="foot-copy">© 2026 Consult America. All rights reserved.</span>
           </div>
         </div>

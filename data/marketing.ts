@@ -6,6 +6,51 @@ export const CAPS = [
   ["Managed Services", "We run and evolve what we build, SLAs, monitoring, and continuous improvement after go-live.", "/img/cloud.jpg"],
 ] as const;
 
+/**
+ * Service lines under each capability, in the same order as CAPS, so
+ * CAP_SERVICES[i] belongs to CAPS[i][0]. These populate the Capabilities
+ * mega-menu.
+ *
+ * None of these have pages of their own yet, so every entry links to
+ * #capabilities. Give one a real page and only its href needs to change.
+ */
+export const CAP_SERVICES = [
+  // Engineering
+  [
+    "Cloud-native development",
+    "Platform engineering",
+    "API & systems integration",
+    "Application modernization",
+    "Quality & test automation",
+  ],
+  // AI & Data
+  [
+    "GenAI assistants & copilots",
+    "Forecasting & machine learning",
+    "Data platform & warehousing",
+    "Document & contract intelligence",
+    "Data governance & guardrails",
+  ],
+  // Oracle Cloud
+  ["Oracle ERP", "Oracle SCM", "Oracle HCM", "Oracle EPM", "Oracle Cloud Infrastructure"],
+  // Enterprise Transformation
+  [
+    "Finance transformation",
+    "Procurement & sourcing",
+    "Supply-chain operations",
+    "Process automation",
+    "Operating-model design",
+  ],
+  // Managed Services
+  [
+    "Application support",
+    "Cloud & infrastructure operations",
+    "Monitoring & SRE",
+    "Continuous improvement",
+    "Specialized talent",
+  ],
+] as const;
+
 export const INDUSTRIES = [
   ["Financial Services", "Modern core + AI risk and close", "Faster financial close and real-time risk on a modern Oracle core.", "/img/finance.jpg"],
   ["Supply Chain", "Forecasting that holds up", "AI forecasting and connected logistics that cut stockouts and cost.", "/img/logistics.jpg"],
@@ -51,15 +96,26 @@ export const ECO = [
 export const CONTACT = {
   country: "United States",
   email: "hr@consultamerica.net",
-  // Hagerstown is the sole HQ — the Ashburn branch office was retired. Both the
-  // footer and the Life page render from here so the address can't drift.
-  hq: {
-    street: "1101 Opal Court, Suite 211",
-    city: "Hagerstown, MD 21740",
-    // Plain Maps search URL: opens in whichever maps app the visitor has and
-    // needs no API key, unlike an embedded Maps widget.
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=1101+Opal+Court+Suite+211+Hagerstown+MD+21740",
-  },
+  // Ashburn is the headquarters, Hagerstown the second office. Both the footer
+  // and the Life page render from here so the addresses can't drift. Order
+  // matters: the first entry is the HQ.
+  // Plain Maps search URLs: they open in whichever maps app the visitor has and
+  // need no API key, unlike an embedded Maps widget.
+  offices: [
+    {
+      label: "Headquarters",
+      street: "20130 Lakeview Center Plaza, Suite 400",
+      city: "Ashburn, VA 20147",
+      mapUrl:
+        "https://www.google.com/maps/search/?api=1&query=20130+Lakeview+Center+Plaza+Suite+400+Ashburn+VA+20147",
+    },
+    {
+      label: "Maryland office",
+      street: "1101 Opal Court, Suite 211",
+      city: "Hagerstown, MD 21740",
+      mapUrl: "https://www.google.com/maps/search/?api=1&query=1101+Opal+Court+Suite+211+Hagerstown+MD+21740",
+    },
+  ],
 } as const;
 
 // Real clients only. CSRA is deliberately excluded (the artwork exists at
