@@ -737,10 +737,16 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 .svc-dek{color:rgba(255,255,255,.76);font-size:19px;line-height:1.6;margin-top:20px;max-width:62ch}
 .svc-cta{margin-top:34px}
 
-/* Pulled up over the hero so the still bridges the dark band and the page. */
-.svc-media{margin:-40px 0 0;border-radius:18px;overflow:hidden;position:relative;z-index:2;
-  box-shadow:0 30px 64px -34px rgba(10,19,34,.45);aspect-ratio:21/9;background:var(--tint)}
-.svc-media img,.svc-media video,.svc-glyph{width:100%;height:100%;object-fit:cover;display:block}
+/* Sits fully below the dark hero on the light page, not tucked under it. The
+   earlier negative margin overlapped the navy band and crowded the hero CTAs.
+   3:1 keeps it from dominating the fold. */
+.svc-media{margin:54px 0 0;border-radius:18px;overflow:hidden;position:relative;
+  box-shadow:0 26px 56px -34px rgba(10,19,34,.30);background:#fff;
+  border:1px solid var(--line)}
+/* no aspect-ratio on the container: each diagram sets its own height via its
+   viewBox, so a sparse motif does not get padded out with dead space */
+.svc-art{width:100%;height:auto;display:block}
+.svc-media img,.svc-media video{width:100%;height:auto;aspect-ratio:3/1;object-fit:cover;display:block}
 
 .svc-covers{margin:0;padding:0;display:grid;gap:0}
 .svc-covers > div{display:grid;grid-template-columns:238px 1fr;gap:24px;padding:18px 0;
@@ -771,6 +777,78 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 .svc-deliver li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;line-height:1.5;color:var(--ink-2)}
 .svc-deliver svg{flex:none;margin-top:3px;color:var(--blue)}
 
+/* technical read of the same thing, set apart from the plain-language lead */
+.svc-tech{margin-top:26px;padding:22px 24px;border-radius:14px;background:var(--tint);
+  border:1px solid var(--line)}
+.svc-tech-tag{display:inline-block;font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:10px}
+.svc-tech p{margin:0;font-size:15px;line-height:1.7;color:var(--ink-2)}
+
+.svc-note{font-size:14.5px;color:var(--ink-3);margin:-8px 0 22px;max-width:60ch}
+
+.svc-offer,.svc-cases{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.svc-offer article,.svc-cases article{padding:22px 22px 20px;border:1px solid var(--line);border-radius:14px;
+  background:#fff;display:flex;flex-direction:column;gap:7px}
+.svc-offer b,.svc-cases b{font-size:15.5px;font-weight:650;color:var(--ink);letter-spacing:-.01em}
+.svc-offer span,.svc-cases span{font-size:14.5px;line-height:1.6;color:var(--ink-2)}
+
+.svc-probs{display:flex;flex-direction:column;gap:14px}
+.svc-probs article{padding:20px 22px;border-left:3px solid var(--blue);border-radius:0 12px 12px 0;
+  background:var(--tint)}
+.svc-probs b{display:block;font-size:15.5px;font-weight:650;color:var(--ink);margin-bottom:7px;letter-spacing:-.01em}
+.svc-prob-m{color:var(--blue);margin-right:2px}
+.svc-probs span{font-size:14.5px;line-height:1.65;color:var(--ink-2)}
+
+.svc-stack{display:grid;grid-template-columns:1fr 1fr;gap:26px 32px}
+.svc-stack h3{font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 12px}
+.svc-stack ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:7px}
+.svc-stack li{font-size:13px;font-weight:550;color:var(--ink-2);padding:6px 11px;border-radius:999px;
+  border:1px solid var(--line);background:#fff}
+
+/* delivery flow diagram */
+.svc-flow{display:flex;gap:0;margin:0 0 34px;padding:22px 0;border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line)}
+.svc-flow-node{flex:1;position:relative;display:flex;flex-direction:column;gap:9px;padding-right:18px}
+.svc-flow-dot{width:32px;height:32px;border-radius:50%;border:2px solid;display:grid;place-items:center;
+  font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:600;color:var(--ink);background:#fff;
+  position:relative;z-index:2}
+.svc-flow-label{font-size:13px;line-height:1.4;font-weight:550;color:var(--ink-2);max-width:17ch}
+.svc-flow-line{position:absolute;left:32px;right:0;top:16px;height:1px;background:var(--line);z-index:1}
+
+/* learn section */
+.svc-learn{display:grid;gap:34px}
+.svc-road{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.svc-road article{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px 24px 22px}
+.svc-road h3{font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--blue);margin:0 0 14px}
+.svc-road ul,.svc-plain,.svc-links{list-style:none;margin:0;padding:0}
+.svc-road li,.svc-plain li{font-size:14px;line-height:1.55;color:var(--ink-2);padding-left:16px;position:relative;
+  margin-bottom:9px}
+.svc-road li::before,.svc-plain li::before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;
+  border-radius:50%;background:var(--blue);opacity:.5}
+.svc-res{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.svc-res article{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px 24px 20px}
+.svc-res h3{font-family:"Geist Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 14px}
+.svc-links li{margin-bottom:10px}
+.svc-links a{font-size:14px;line-height:1.5;color:var(--ink-2);transition:color .16s}
+.svc-links a:hover{color:var(--blue)}
+.svc-links .ext{opacity:.45;vertical-align:baseline}
+.svc-links a:hover .ext{opacity:.9}
+
+/* FAQs */
+.svc-faq{max-width:880px;border-top:1px solid var(--line)}
+.svc-faq details{border-bottom:1px solid var(--line)}
+.svc-faq summary{display:flex;align-items:center;justify-content:space-between;gap:20px;cursor:pointer;
+  padding:20px 2px;font-size:16.5px;font-weight:650;color:var(--ink);letter-spacing:-.01em;list-style:none}
+.svc-faq summary::-webkit-details-marker{display:none}
+.svc-faq summary svg{flex:none;color:var(--blue);transition:transform .22s}
+.svc-faq details[open] summary svg{transform:rotate(180deg)}
+.svc-faq p{margin:-4px 2px 22px;font-size:15px;line-height:1.7;color:var(--ink-2);max-width:72ch}
+
+.svc-card-cta{width:100%;justify-content:center;margin-top:22px}
+
 .svc-more{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
 .svc-more-card{display:flex;flex-direction:column;gap:7px;padding:24px 24px 22px;background:#fff;
   border:1px solid var(--line);border-radius:14px;transition:border-color .18s,transform .18s,box-shadow .18s}
@@ -785,8 +863,16 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 @media(max-width:980px){
   .svc-body{grid-template-columns:1fr;gap:44px}
   .svc-side{position:static}
-  .svc-media{aspect-ratio:16/9;margin-top:-28px}
+  .svc-media{margin-top:34px}
   .svc-hero{padding:108px 0 48px}
+  /* squashing a 4-6 step flow below this width makes it unreadable; the
+     numbered list underneath carries the same content */
+  .svc-flow{display:none}
+  .svc-road,.svc-res{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .svc-offer,.svc-cases,.svc-stack{grid-template-columns:1fr}
+  .svc-cta{display:flex;flex-wrap:wrap;gap:12px}
 }
 
 /* ============ LIFE AT CONSULT AMERICA ============ */

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { CONTACT } from "@/data/marketing";
+import { renderEnquiryEmail } from "@/lib/email/enquiry-template";
 
 export const runtime = "nodejs";
 
@@ -18,12 +19,12 @@ function clean(v: unknown, max: number) {
 }
 
 /**
- * Turn the form fields into a brief a specialist can act on without opening
- * the CRM. Uses Claude when ANTHROPIC_API_KEY is set; otherwise falls back to
- * a structured plain-text version of exactly the same facts, so the endpoint
- * never depends on the model being reachable.
+ * An optional routing brief a specialist can act on without opening the CRM.
+ * Uses Claude when ANTHROPIC_API_KEY is set. Returns no brief if the model is
+ * unreachable — the notification itself never depends on it, because the
+ * template already carries every submitted field.
  */
-async function draftEmail(e: Enquiry): Promise<{ body: string; drafted: "ai" | "template" }> {
+async function draftEmail(e: Enquiry): Promise<{ brief?: string; drafted: "ai" | "template" }> {
   const facts =
     `Name: ${e.name}\nEmail: ${e.email}\nCompany: ${e.company}\n` +
     `Phone: ${e.phone || "not given"}\nInterest: ${e.interest}\n\nMessage:\n${e.message}`;
@@ -54,7 +55,7 @@ async function draftEmail(e: Enquiry): Promise<{ body: string; drafted: "ai" | "
         const data = await res.json();
         const text = data?.content?.[0]?.text;
         if (typeof text === "string" && text.trim()) {
-          return { body: `${text.trim()}\n\n--- Raw submission ---\n${facts}`, drafted: "ai" };
+          return { brief: text.trim(), drafted: "ai" };
         }
       }
     } catch {
@@ -62,12 +63,7 @@ async function draftEmail(e: Enquiry): Promise<{ body: string; drafted: "ai" | "
     }
   }
 
-  return {
-    body:
-      `New enquiry from consultamerica.com\n\n${facts}\n\n` +
-      `Reply directly to ${e.email}.`,
-    drafted: "template",
-  };
+  return { drafted: "template" };
 }
 
 export async function POST(req: Request) {
@@ -94,8 +90,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "That email address doesn't look right." }, { status: 400 });
   }
 
-  const { body, drafted } = await draftEmail(enquiry);
-  const subject = `Enquiry: ${enquiry.company} — ${enquiry.interest}`;
+  const { brief, drafted } = await draftEmail(enquiry);
+  const { subject, html, text: body } = renderEnquiryEmail(enquiry, { brief });
 
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey) {
@@ -104,9 +100,11 @@ export async function POST(req: Request) {
       headers: { "content-type": "application/json", authorization: `Bearer ${resendKey}` },
       body: JSON.stringify({
         from: process.env.CONTACT_FROM || "Consult America <onboarding@resend.dev>",
-        to: [process.env.CONTACT_TO || CONTACT.email],
+        to: [process.env.CONTACT_TO || CONTACT.enquiries],
         reply_to: enquiry.email,
         subject,
+        html,
+        // plain-text alternative for clients that will not render HTML
         text: body,
       }),
     });

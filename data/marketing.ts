@@ -96,6 +96,10 @@ export const ECO = [
 export const CONTACT = {
   country: "United States",
   email: "hr@consultamerica.net",
+  // Where "Talk to an expert" submissions land. Separate from `email` (which is
+  // the general/careers address) because enquiries go to a different inbox.
+  // CONTACT_TO in the environment still overrides this at send time.
+  enquiries: "contact@consultamerica.com",
   // Ashburn is the headquarters, Hagerstown the second office. Both the footer
   // and the Life page render from here so the addresses can't drift. Order
   // matters: the first entry is the HQ.
