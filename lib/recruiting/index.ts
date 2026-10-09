@@ -7,6 +7,7 @@ import {
   seedCandidates,
   seedDepartments,
   seedLocations,
+  seedPositions,
   seedPostings,
   seedRequisitions,
 } from "@/data/recruiting/seed";
@@ -24,6 +25,7 @@ import type {
   JobDescriptionInput,
   JobDetail,
   JobListItem,
+  JobPublicationStatus,
   RecruitingApplicationQueueReads,
   RecruitingApplicationWrites,
   RecruitingCandidateReads,
@@ -38,6 +40,7 @@ import type {
   SubmitApplicationInput,
   SubmitApplicationResult,
   UpdateCandidateContactInfoInput,
+  UpdateJobRequisitionInput,
 } from "@/lib/recruiting/repository";
 import {
   APPLICATION_PIPELINE,
@@ -50,6 +53,7 @@ import {
   type JobRequisition,
   type Offer,
   type RecruitingActivity,
+  type RequisitionStatus,
 } from "@/types/recruiting";
 import { JobClosedError } from "@/lib/recruiting/errors";
 
@@ -58,6 +62,18 @@ function slugify(title: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+}
+
+/** Mirrors the Supabase repository: RequisitionStatus has no UNPUBLISHED/ARCHIVED. */
+const REQUISITION_STATUS_FOR: Record<JobPublicationStatus, RequisitionStatus> = {
+  PUBLISHED: "PUBLISHED",
+  UNPUBLISHED: "ON_HOLD",
+  ARCHIVED: "CANCELLED",
+  DRAFT: "DRAFT",
+};
+
+function byName(a: { name: string }, b: { name: string }): number {
+  return a.name.localeCompare(b.name);
 }
 
 /**
@@ -90,6 +106,10 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
   const offers: Offer[] = [];
   const activities: RecruitingActivity[] = [];
   const statusHistory: ApplicationStatusHistory[] = [];
+  // `benefits` is a migration-049 column, not part of the JobRequisition/Job
+  // domain model, so demo mode parks it beside the requisition rather than
+  // widening the shared types for a storage detail.
+  const benefitsByRequisition = new Map<string, string[]>();
 
   function departmentName(departmentId: string): string {
     return (
@@ -462,6 +482,23 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
       };
     },
 
+    async listDepartments() {
+      return seedDepartments.map((d) => ({ id: d.id, name: d.name })).sort(byName);
+    },
+
+    async listLocations() {
+      return seedLocations.map((l) => ({ id: l.id, name: l.name })).sort(byName);
+    },
+
+    async listPositions() {
+      // Positions are labelled `title` in the org model; the form wants `name`.
+      return seedPositions.map((p) => ({ id: p.id, name: p.title })).sort(byName);
+    },
+
+    async getJobBenefits(requisitionId: string) {
+      return benefitsByRequisition.get(requisitionId) ?? [];
+    },
+
     async createJobRequisition(input: CreateJobRequisitionInput) {
       const now = new Date().toISOString();
       const requisitionId = `req-${crypto.randomUUID()}`;
@@ -494,6 +531,7 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
         updatedAt: now,
       };
       requisitions.push(requisition);
+      if (input.benefits) benefitsByRequisition.set(requisitionId, input.benefits);
 
       let postingSlug: string | undefined;
       if (input.publishNow) {
@@ -503,32 +541,97 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
       return { requisitionId, postingSlug };
     },
 
+    async updateJobRequisition(requisitionId: string, input: UpdateJobRequisitionInput) {
+      const requisition = requisitions.find((r) => r.id === requisitionId);
+      if (!requisition) return { ok: false };
+
+      const now = new Date().toISOString();
+      Object.assign(requisition, {
+        title: input.title,
+        departmentId: input.departmentId,
+        positionId: input.positionId,
+        locationId: input.locationId,
+        employmentType: input.employmentType,
+        workplaceType: input.workplaceType,
+        careerArea: input.careerArea,
+        openings: input.openings,
+        salaryMin: input.salaryMin,
+        salaryMax: input.salaryMax,
+        description: input.description,
+        responsibilities: input.responsibilities,
+        qualifications: input.qualifications,
+        preferredQualifications: input.preferredQualifications,
+        updatedAt: now,
+      });
+      if (input.benefits) benefitsByRequisition.set(requisitionId, input.benefits);
+
+      // Content only — publication status and dates stay with setJobStatus.
+      const posting = postings.find((p) => p.requisitionId === requisitionId);
+      if (posting) {
+        Object.assign(posting, {
+          title: input.title,
+          summary: input.description,
+          description: input.description,
+          careerArea: input.careerArea,
+          departmentName: input.departmentName,
+          locationName: input.locationName,
+          workplaceType: input.workplaceType,
+          employmentType: input.employmentType,
+          responsibilities: input.responsibilities,
+          qualifications: input.qualifications,
+          preferredQualifications: input.preferredQualifications,
+          experienceLevel: input.experienceLevel || undefined,
+          applicationDeadline: input.applicationDeadline || undefined,
+          salaryMin: input.salaryMin,
+          salaryMax: input.salaryMax,
+          updatedAt: now,
+        });
+      }
+
+      return { ok: true };
+    },
+
     async publishJobRequisition(requisitionId: string) {
+      return publishRequisition(requisitionId);
+    },
+
+    async setJobStatus(requisitionId: string, status: JobPublicationStatus) {
+      if (status === "PUBLISHED") return publishRequisition(requisitionId);
+
       const requisition = requisitions.find((r) => r.id === requisitionId);
       if (!requisition) return undefined;
 
-      requisition.status = "PUBLISHED";
-      requisition.updatedAt = new Date().toISOString();
+      const now = new Date().toISOString();
+      requisition.status = REQUISITION_STATUS_FOR[status];
+      requisition.updatedAt = now;
 
-      const existingPosting = postings.find(
-        (p) => p.requisitionId === requisitionId,
-      );
-      if (existingPosting) {
-        existingPosting.status = "PUBLISHED";
-        existingPosting.publishedAt = requisition.updatedAt;
-        existingPosting.updatedAt = requisition.updatedAt;
-        return { postingSlug: existingPosting.slug };
+      // UNPUBLISHED / ARCHIVED / DRAFT are all outside LIVE_JOB_STATUSES, so
+      // isPubliclyOpen drops the posting from listPublishedPostings.
+      const posting = postings.find((p) => p.requisitionId === requisitionId);
+      if (posting) {
+        posting.status = status;
+        posting.closedAt = status === "DRAFT" ? undefined : now;
+        posting.updatedAt = now;
       }
 
-      const postingSlug = createPostingFor(requisition, {
-        departmentName: departmentName(requisition.departmentId),
-        locationName: locationName(requisition.locationId),
-        description: requisition.description,
-        responsibilities: requisition.responsibilities,
-        qualifications: requisition.qualifications,
-        preferredQualifications: requisition.preferredQualifications,
-      });
-      return { postingSlug };
+      return { postingSlug: posting?.slug };
+    },
+
+    async deleteJobRequisition(requisitionId: string) {
+      const blockedByApplications = applications.filter(
+        (a) => a.requisitionId === requisitionId,
+      ).length;
+      if (blockedByApplications > 0) return { ok: false, blockedByApplications };
+
+      const index = requisitions.findIndex((r) => r.id === requisitionId);
+      if (index === -1) return { ok: false };
+      requisitions.splice(index, 1);
+
+      const postingIndex = postings.findIndex((p) => p.requisitionId === requisitionId);
+      if (postingIndex !== -1) postings.splice(postingIndex, 1);
+      benefitsByRequisition.delete(requisitionId);
+
+      return { ok: true };
     },
 
     async submitApplication(
@@ -766,6 +869,36 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
     },
   };
 
+  /** Shared by publishJobRequisition and setJobStatus("PUBLISHED"). */
+  function publishRequisition(
+    requisitionId: string,
+  ): { postingSlug: string } | undefined {
+    const requisition = requisitions.find((r) => r.id === requisitionId);
+    if (!requisition) return undefined;
+
+    requisition.status = "PUBLISHED";
+    requisition.updatedAt = new Date().toISOString();
+
+    const existingPosting = postings.find((p) => p.requisitionId === requisitionId);
+    if (existingPosting) {
+      existingPosting.status = "PUBLISHED";
+      existingPosting.publishedAt = requisition.updatedAt;
+      existingPosting.closedAt = undefined;
+      existingPosting.updatedAt = requisition.updatedAt;
+      return { postingSlug: existingPosting.slug };
+    }
+
+    const postingSlug = createPostingFor(requisition, {
+      departmentName: departmentName(requisition.departmentId),
+      locationName: locationName(requisition.locationId),
+      description: requisition.description,
+      responsibilities: requisition.responsibilities,
+      qualifications: requisition.qualifications,
+      preferredQualifications: requisition.preferredQualifications,
+    });
+    return { postingSlug };
+  }
+
   function createPostingFor(
     requisition: JobRequisition,
     content: {
@@ -775,6 +908,8 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
       responsibilities: string[];
       qualifications: string[];
       preferredQualifications: string[];
+      experienceLevel?: string;
+      applicationDeadline?: string;
       publishAt?: string;
       expiresAt?: string;
     },
@@ -809,6 +944,10 @@ export function createMemoryRecruitingRepository(): RecruitingRepository &
       publishedAt: scheduled ? undefined : now,
       publishAt: content.publishAt,
       expiresAt: content.expiresAt,
+      applicationDeadline: content.applicationDeadline || undefined,
+      experienceLevel: content.experienceLevel || undefined,
+      salaryMin: requisition.salaryMin,
+      salaryMax: requisition.salaryMax,
       isDemo: false,
       createdAt: now,
       updatedAt: now,

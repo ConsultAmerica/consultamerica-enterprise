@@ -2666,3 +2666,260 @@ button.cmdk-item {
     text-align: right;
   }
 }
+
+/* ===== Recruiting jobs manager (list toolbar, row actions, empty states) ===== */
+.ws-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ws-toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The search box takes the slack; the status select stays its natural width. */
+.ws-toolbar-field:first-child {
+  flex: 1 1 280px;
+}
+
+.ws-toolbar-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ws-toolbar input,
+.ws-toolbar select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.ws-toolbar input:focus,
+.ws-toolbar select:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.ws-toolbar-count {
+  margin-left: auto;
+  padding-bottom: 11px;
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.ws-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-confirm {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.ws-btn-sm {
+  padding: 5px 10px;
+  font-size: 13px;
+  border-radius: 7px;
+}
+
+.ws-btn.danger {
+  border-color: rgba(161, 38, 38, 0.35);
+  color: #a12626;
+}
+
+.ws-btn.danger:hover {
+  background: #fdecec;
+}
+
+.ws-row-error {
+  margin-top: 8px;
+  max-width: 46ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #a12626;
+}
+
+/* Block-level so the recovery action sits on its own line, but only as wide as its label. */
+.ws-row-error .ws-btn {
+  display: flex;
+  width: fit-content;
+  margin-top: 8px;
+}
+
+.ws-table-caption {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* Publication state must not rely on colour alone. */
+.ws-pill.live::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+
+.ws-empty {
+  padding: 44px 20px;
+  text-align: center;
+}
+
+.ws-empty h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.ws-empty p {
+  max-width: 52ch;
+  margin: 0 auto 18px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .ws-toolbar-field,
+  .ws-toolbar-count {
+    flex: 1 1 100%;
+  }
+  .ws-toolbar-count {
+    margin-left: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* ===== Recruiting job form (create / edit a requisition) =====
+   Sections reuse .ws-panel for the frame and .apply-field for the controls, so
+   this block only adds the fieldset layout the long form needs. */
+
+/* A fieldset's default min-inline-size is min-content, which stops the grid
+   inside it from ever shrinking below its widest field. */
+.ws-form-fieldset {
+  min-inline-size: 0;
+}
+
+/* A <legend> is painted into the fieldset's top border, which would notch the
+   panel outline. Floating it full width returns it to normal flow. */
+.ws-form-legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ws-form-intro {
+  clear: both;
+  margin-bottom: 14px;
+  max-width: 70ch;
+}
+
+.ws-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* Row rhythm comes from .apply-field's own bottom margin, as in .apply-grid-2. */
+  gap: 0 16px;
+  /* Must clear the floated .ws-form-legend. Only .ws-form-intro cleared it, so
+     any fieldset without an intro had its grid shrink to zero width beside the
+     float and the columns computed as 0px 0px. */
+  clear: both;
+}
+
+.ws-form-span {
+  grid-column: 1 / -1;
+}
+
+.ws-form-hint {
+  margin-bottom: 12px;
+}
+
+.ws-form-required {
+  color: #a12626;
+}
+
+.ws-form-blocked {
+  margin: 0 0 12px;
+}
+
+.ws-form-error {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(161, 38, 38, 0.25);
+  border-radius: 8px;
+  background: #fdecec;
+  color: #a12626;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Focus is moved here when the action fails, so the region needs a visible ring
+   even though it is not otherwise interactive. */
+.ws-form-error:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.ws-form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ws-form-check input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--blue);
+}
+
+.ws-form-check-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.ws-form-check-text label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ws-form-check-text .ws-field-meta {
+  margin-top: 2px;
+  max-width: 60ch;
+}
+
+@media (max-width: 760px) {
+  .ws-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

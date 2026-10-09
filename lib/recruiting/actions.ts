@@ -197,10 +197,7 @@ async function fileApplication(
     });
     if (options.onApplied) await options.onApplied(result);
     revalidatePath(`/app/recruiting/candidates/${result.candidateId}`);
-    // Library résumés were parsed when they entered the library.
-    if (upload && result.resumeDocumentId && result.outcome !== "existing") {
-      scheduleResumeParse(result.candidateId, result.resumeDocumentId, upload.file.name, upload.bytes);
-    }
+    schedulePostSubmissionWork(input, result, upload, options.source);
     return {
       ok: true,
       candidateId: result.candidateId,
@@ -367,22 +364,103 @@ function scheduleUploadedResumeParse(
 }
 
 /**
- * Resume → profile parsing runs after the response is sent. It is enrichment:
- * the application is already complete, and a parse failure is recorded on the
- * resume profile and logged, never surfaced to the candidate.
+ * Everything that happens once the application is safely filed: résumé
+ * parsing and the two application emails. Both are enrichment — the
+ * application already exists — so they share one after() pass, each task is
+ * independently try/caught, and nothing here can change what the candidate
+ * was told or fail the submission.
  */
+function schedulePostSubmissionWork(
+  input: SubmitJobApplicationInput,
+  result: SubmitApplicationResult,
+  upload: UploadedResume | null,
+  source: string,
+) {
+  // Library résumés were parsed when they entered the library.
+  const resume =
+    upload && result.resumeDocumentId && result.outcome !== "existing"
+      ? { documentId: result.resumeDocumentId, fileName: upload.file.name, bytes: upload.bytes }
+      : null;
+  // Mail only an application this request created. "existing" and "recovered"
+  // both mean the row was already there: re-confirming is noise, and it would
+  // tell whoever typed the address that it had applied before.
+  const mail = result.outcome === "created";
+  if (!resume && !mail) return;
+
+  try {
+    after(async () => {
+      if (resume) await parseResumeDocument(result.candidateId, resume.documentId, resume.fileName, resume.bytes);
+      if (mail) await mailApplication(input, result, source);
+    });
+  } catch (error) {
+    // This is called inside fileApplication's try, so a throw from after()
+    // itself would turn a filed application into a retry message. Scheduling
+    // post-response work is never worth that.
+    console.error("[easy-apply]", {
+      event: "post-submission-scheduling-failed",
+      applicationId: result.applicationId,
+      error: error instanceof Error ? error.message : "unknown",
+    });
+  }
+}
+
+/**
+ * The internal notification and the candidate confirmation. Runs after the
+ * response, and every failure — unreachable mail provider, missing API key,
+ * rejected address — is logged and swallowed: a filed application must never
+ * be lost or reported as failed because an email did not go out.
+ */
+async function mailApplication(
+  input: SubmitJobApplicationInput,
+  result: SubmitApplicationResult,
+  source: string,
+) {
+  try {
+    const [{ sendApplicationEmails }, requisition] = await Promise.all([
+      import("@/lib/email/application-emails"),
+      // The apply forms never submit a job title, and client input would not
+      // be trustworthy anyway: read it off the requisition that was applied to.
+      recruitingRepository.getRequisitionById(input.requisitionId),
+    ]);
+    const sent = await sendApplicationEmails({
+      candidateName: `${input.firstName} ${input.lastName}`.trim(),
+      candidateEmail: input.email,
+      candidatePhone: input.phone,
+      jobTitle: requisition?.title || "Open position",
+      applicationId: result.applicationId,
+      applicationNumber: result.applicationNumber,
+      source,
+    });
+    console.info("[application-email]", { event: "sent", applicationId: result.applicationId, ...sent });
+  } catch (error) {
+    console.error("[application-email]", {
+      event: "send-failed",
+      applicationId: result.applicationId,
+      error: error instanceof Error ? error.message : "unknown",
+    });
+  }
+}
+
+/**
+ * Resume → profile parsing. Enrichment: the application is already complete,
+ * and a parse failure is recorded on the resume profile and logged, never
+ * surfaced to the candidate.
+ */
+async function parseResumeDocument(candidateId: string, documentId: string, fileName: string, bytes: Uint8Array) {
+  try {
+    const { parseAndStoreResume } = await import("@/lib/recruiting/resume-profiles-server");
+    const outcome = await parseAndStoreResume({ candidateId, documentId, fileName, bytes });
+    console.info("[resume-parser]", { event: "parsed", documentId, status: outcome.status });
+  } catch (error) {
+    console.error("[resume-parser]", {
+      event: "parse-failed",
+      documentId,
+      error: error instanceof Error ? error.message : "unknown",
+    });
+  }
+}
+
+/** Draft saves file no application, so their parse is scheduled on its own. */
 function scheduleResumeParse(candidateId: string, documentId: string, fileName: string, bytes: Uint8Array) {
-  after(async () => {
-    try {
-      const { parseAndStoreResume } = await import("@/lib/recruiting/resume-profiles-server");
-      const outcome = await parseAndStoreResume({ candidateId, documentId, fileName, bytes });
-      console.info("[resume-parser]", { event: "parsed", documentId, status: outcome.status });
-    } catch (error) {
-      console.error("[resume-parser]", {
-        event: "parse-failed",
-        documentId,
-        error: error instanceof Error ? error.message : "unknown",
-      });
-    }
-  });
+  after(() => parseResumeDocument(candidateId, documentId, fileName, bytes));
 }

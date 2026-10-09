@@ -13,6 +13,8 @@ import type {
   JobDescriptionInput,
   JobDetail,
   JobListItem,
+  JobPublicationStatus,
+  LookupOption,
   RecruitingApplicationQueueReads,
   RecruitingApplicationWrites,
   RecruitingCandidateReads,
@@ -27,6 +29,7 @@ import type {
   SubmitApplicationInput,
   SubmitApplicationResult,
   UpdateCandidateContactInfoInput,
+  UpdateJobRequisitionInput,
 } from "@/lib/recruiting/repository";
 import {
   APPLICATION_PIPELINE,
@@ -294,6 +297,81 @@ function slugify(title: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
+
+type SupabaseClient = NonNullable<ReturnType<typeof getSupabaseServiceClient>>;
+type PostgrestErrorish = { code?: string; message?: string } | null;
+
+/**
+ * `benefits` only exists once db/schema/049_job_benefits.sql has been applied.
+ * Postgres reports an unknown column as 42703; PostgREST rejects it earlier
+ * from its cached schema as PGRST204. Either way the deployment simply has no
+ * place to put benefits yet.
+ */
+function isMissingBenefitsColumn(error: PostgrestErrorish): boolean {
+  if (!error) return false;
+  if (error.code === "42703" || error.code === "PGRST204") return true;
+  const message = error.message ?? "";
+  return /benefits/i.test(message) && /column|schema cache/i.test(message);
+}
+
+/**
+ * Benefits are written as their own statement so the requisition/posting row
+ * is already committed when it runs. Before migration 049 this is a no-op
+ * with a warning rather than a failed save — losing a supplementary list must
+ * not cost the recruiter the job they just wrote.
+ */
+async function writeBenefits(
+  client: SupabaseClient,
+  table: "job_requisitions" | "jobs",
+  match: Record<string, string>,
+  benefits: string[] | undefined,
+): Promise<void> {
+  if (!benefits) return;
+  const { error } = await client.from(table).update({ benefits }).match(match);
+  if (!error) return;
+  if (isMissingBenefitsColumn(error)) {
+    console.warn("[recruiting-jobs]", {
+      event: "benefits-column-missing",
+      table,
+      hint: "apply db/schema/049_job_benefits.sql",
+    });
+    return;
+  }
+  console.error("[recruiting-jobs]", { event: "benefits-write-failed", table, code: error.code });
+}
+
+/** Lookup read that degrades to an empty dropdown instead of failing the form. */
+async function readLookup(
+  table: "departments" | "locations" | "positions",
+  nameColumn: "name" | "title",
+): Promise<LookupOption[]> {
+  const client = getSupabaseServiceClient();
+  if (!client) return [];
+  const { data, error } = await client
+    .from(table)
+    .select(`id, ${nameColumn}`)
+    .order(nameColumn, { ascending: true });
+  if (error) {
+    console.warn("[recruiting-jobs]", { event: "lookup-failed", table, code: error.code });
+    return [];
+  }
+  return (data ?? [])
+    .map((row) => ({ id: row.id as string, name: (row as Record<string, unknown>)[nameColumn] as string }))
+    .filter((option) => Boolean(option.id && option.name));
+}
+
+/**
+ * RequisitionStatus (types/recruiting.ts) has no UNPUBLISHED or ARCHIVED, so
+ * the posting state a recruiter picks maps onto the nearest requisition state.
+ * ON_HOLD and CANCELLED are both outside countOpenRequisitions' APPROVED/
+ * PUBLISHED filter, which is what "no longer an open role" should mean.
+ */
+const REQUISITION_STATUS_FOR: Record<JobPublicationStatus, string> = {
+  PUBLISHED: "PUBLISHED",
+  UNPUBLISHED: "ON_HOLD",
+  ARCHIVED: "CANCELLED",
+  DRAFT: "DRAFT",
+};
 
 export function createSupabaseRecruitingRepository(): RecruitingRepository &
   RecruitingDashboardReads &
@@ -1035,6 +1113,42 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
       };
     },
 
+    async listDepartments() {
+      return readLookup("departments", "name");
+    },
+
+    async listLocations() {
+      return readLookup("locations", "name");
+    },
+
+    async listPositions() {
+      // `positions` labels its rows `title`, not `name` (see types/organization Position).
+      return readLookup("positions", "title");
+    },
+
+    async getJobBenefits(requisitionId: string) {
+      const client = getSupabaseServiceClient();
+      if (!client) return [];
+      const { data, error } = await client
+        .from("job_requisitions")
+        .select("benefits")
+        .eq("id", requisitionId)
+        .maybeSingle();
+      if (error) {
+        if (isMissingBenefitsColumn(error)) {
+          console.warn("[recruiting-jobs]", {
+            event: "benefits-column-missing",
+            table: "job_requisitions",
+            hint: "apply db/schema/049_job_benefits.sql",
+          });
+        } else {
+          console.warn("[recruiting-jobs]", { event: "benefits-read-failed", requisitionId, code: error.code });
+        }
+        return [];
+      }
+      return Array.isArray(data?.benefits) ? (data.benefits as string[]) : [];
+    },
+
     async createJobRequisition(input: CreateJobRequisitionInput) {
       const client = getSupabaseServiceClient();
       if (!client) {
@@ -1075,6 +1189,7 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
       if (requisitionError) {
         throw new Error(`Requisition insert failed (${requisitionError.code}): ${requisitionError.message}`);
       }
+      await writeBenefits(client, "job_requisitions", { id: requisitionId }, input.benefits);
 
       let postingSlug: string | undefined;
       if (input.publishNow) {
@@ -1090,12 +1205,173 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
           responsibilities: input.responsibilities,
           qualifications: input.qualifications,
           preferredQualifications: input.preferredQualifications,
+          benefits: input.benefits,
+          experienceLevel: input.experienceLevel,
+          applicationDeadline: input.applicationDeadline,
           publishAt: input.publishAt,
           expiresAt: input.expiresAt,
         });
       }
 
       return { requisitionId, postingSlug };
+    },
+
+    async updateJobRequisition(requisitionId: string, input: UpdateJobRequisitionInput) {
+      const client = getSupabaseServiceClient();
+      if (!client) throw new Error("Supabase is not configured");
+
+      const now = new Date().toISOString();
+      const { data: updated, error } = await client
+        .from("job_requisitions")
+        .update({
+          title: input.title,
+          department_id: input.departmentId,
+          position_id: input.positionId,
+          location_id: input.locationId,
+          employment_type: input.employmentType,
+          workplace_type: input.workplaceType,
+          career_area: input.careerArea,
+          openings: input.openings,
+          salary_min: input.salaryMin ?? null,
+          salary_max: input.salaryMax ?? null,
+          description: input.description,
+          responsibilities: input.responsibilities,
+          qualifications: input.qualifications,
+          preferred_qualifications: input.preferredQualifications,
+          updated_at: now,
+        })
+        .eq("id", requisitionId)
+        .select("id");
+      if (error) throw new Error(`requisition update failed (${error.code})`);
+      if (!updated?.length) return { ok: false };
+      await writeBenefits(client, "job_requisitions", { id: requisitionId }, input.benefits);
+
+      // Mirror onto the posting when one exists. Status and publication dates
+      // are untouched here: editing a live job must not silently republish or
+      // retract it — that is setJobStatus' job.
+      const { error: postingError } = await client
+        .from("jobs")
+        .update({
+          title: input.title,
+          summary: input.description,
+          description: input.description,
+          career_area: input.careerArea,
+          department_name: input.departmentName,
+          location_name: input.locationName,
+          workplace_type: input.workplaceType,
+          employment_type: input.employmentType,
+          responsibilities: input.responsibilities,
+          qualifications: input.qualifications,
+          preferred_qualifications: input.preferredQualifications,
+          experience_level: input.experienceLevel || null,
+          application_deadline: input.applicationDeadline || null,
+          salary_min: input.salaryMin ?? null,
+          salary_max: input.salaryMax ?? null,
+          updated_at: now,
+        })
+        .eq("requisition_id", requisitionId);
+      if (postingError) throw new Error(`posting update failed (${postingError.code})`);
+      await writeBenefits(client, "jobs", { requisition_id: requisitionId }, input.benefits);
+
+      return { ok: true };
+    },
+
+    async setJobStatus(requisitionId: string, status: JobPublicationStatus) {
+      const client = getSupabaseServiceClient();
+      if (!client) throw new Error("Supabase is not configured");
+
+      if (status === "PUBLISHED") {
+        // One publish path, so a job published from the list and one published
+        // from the detail page produce the same posting.
+        return publishRequisition(client, requisitionId);
+      }
+
+      const now = new Date().toISOString();
+      const { data: updated, error } = await client
+        .from("job_requisitions")
+        .update({ status: REQUISITION_STATUS_FOR[status], updated_at: now })
+        .eq("id", requisitionId)
+        .select("id");
+      if (error) throw new Error(`requisition status update failed (${error.code})`);
+      if (!updated?.length) return undefined;
+
+      // None of UNPUBLISHED / ARCHIVED / DRAFT is in LIVE_JOB_STATUSES
+      // (lib/jobs/eligibility.ts) or in listPublishedPostings' status filter,
+      // so the posting drops off /jobs and /careers immediately.
+      const { data: posting, error: postingError } = await client
+        .from("jobs")
+        .update({
+          status,
+          closed_at: status === "DRAFT" ? null : now,
+          updated_at: now,
+        })
+        .eq("requisition_id", requisitionId)
+        .select("slug")
+        .maybeSingle();
+      if (postingError) throw new Error(`posting status update failed (${postingError.code})`);
+
+      return { postingSlug: (posting?.slug as string) ?? undefined };
+    },
+
+    async deleteJobRequisition(requisitionId: string) {
+      const client = getSupabaseServiceClient();
+      if (!client) throw new Error("Supabase is not configured");
+
+      const { count, error: countError } = await client
+        .from("applications")
+        .select("id", { count: "exact", head: true })
+        .eq("requisition_id", requisitionId);
+      if (countError) throw new Error(`application count failed (${countError.code})`);
+      if ((count ?? 0) > 0) return { ok: false, blockedByApplications: count ?? 0 };
+
+      const { data: posting } = await client
+        .from("jobs")
+        .select("id")
+        .eq("requisition_id", requisitionId)
+        .maybeSingle();
+      const postingId = (posting?.id as string) ?? null;
+
+      // Rows that reference the requisition without ON DELETE CASCADE. A
+      // requisition with no applications carries no candidate history, so
+      // clearing these loses nothing a recruiter can act on. Tables absent in
+      // a given deployment are skipped, not fatal.
+      const cleanup: Array<() => PromiseLike<{ error: PostgrestErrorish }>> = [
+        () => client.from("recruiting_activities").delete().eq("requisition_id", requisitionId),
+        () => client.from("recruiting_notes").delete().eq("requisition_id", requisitionId),
+        () => client.from("job_requisition_approvals").delete().eq("requisition_id", requisitionId),
+        () =>
+          client
+            .from("email_intake_events")
+            .update({ requisition_id: null })
+            .eq("requisition_id", requisitionId),
+        () =>
+          client
+            .from("email_intake_messages")
+            .update({ linked_requisition_id: null })
+            .eq("linked_requisition_id", requisitionId),
+        // jd_analysis.job_id holds the requisition id in this codebase
+        // (listLatestMatchScoresForPairs filters it by requisition), but the
+        // column is declared against jobs(id) — clear both spellings.
+        () => client.from("jd_analysis").update({ job_id: null }).eq("job_id", requisitionId),
+        ...(postingId
+          ? [
+              () => client.from("jd_analysis").update({ job_id: null }).eq("job_id", postingId),
+              () => client.from("email_intake_messages").update({ linked_job_id: null }).eq("linked_job_id", postingId),
+            ]
+          : []),
+      ];
+      for (const step of cleanup) {
+        const { error } = await step();
+        if (error) console.warn("[recruiting-jobs]", { event: "delete-cleanup-skipped", requisitionId, code: error.code });
+      }
+
+      const { error: postingError } = await client.from("jobs").delete().eq("requisition_id", requisitionId);
+      if (postingError) throw new Error(`posting delete failed (${postingError.code})`);
+
+      const { error: requisitionError } = await client.from("job_requisitions").delete().eq("id", requisitionId);
+      if (requisitionError) throw new Error(`requisition delete failed (${requisitionError.code})`);
+
+      return { ok: true };
     },
 
     async getPostingForRequisition(requisitionId: string) {
@@ -1147,65 +1423,7 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
     async publishJobRequisition(requisitionId: string) {
       const client = getSupabaseServiceClient();
       if (!client) return undefined;
-
-      const now = new Date().toISOString();
-
-      const { data: requisitionRow } = await client
-        .from("job_requisitions")
-        .select("*")
-        .eq("id", requisitionId)
-        .maybeSingle();
-      if (!requisitionRow) return undefined;
-
-      await client
-        .from("job_requisitions")
-        .update({ status: "PUBLISHED", updated_at: now })
-        .eq("id", requisitionId);
-
-      const { data: existingPosting } = await client
-        .from("jobs")
-        .select("slug")
-        .eq("requisition_id", requisitionId)
-        .maybeSingle();
-
-      if (existingPosting) {
-        await client
-          .from("jobs")
-          .update({ status: "PUBLISHED", published_at: now, updated_at: now })
-          .eq("requisition_id", requisitionId);
-        return { postingSlug: existingPosting.slug as string };
-      }
-
-      const requisition = mapRequisition(requisitionRow);
-      const [{ data: departmentRow }, { data: locationRow }] =
-        await Promise.all([
-          client
-            .from("departments")
-            .select("name")
-            .eq("id", requisition.departmentId)
-            .maybeSingle(),
-          client
-            .from("locations")
-            .select("name")
-            .eq("id", requisition.locationId)
-            .maybeSingle(),
-        ]);
-
-      const postingSlug = await insertPosting(client, {
-        requisitionId,
-        title: requisition.title,
-        careerArea: requisition.careerArea,
-        departmentName: (departmentRow?.name as string) ?? "—",
-        locationName: (locationRow?.name as string) ?? "—",
-        workplaceType: requisition.workplaceType,
-        employmentType: requisition.employmentType,
-        description: requisition.description,
-        responsibilities: requisition.responsibilities,
-        qualifications: requisition.qualifications,
-        preferredQualifications: requisition.preferredQualifications,
-      });
-
-      return { postingSlug };
+      return publishRequisition(client, requisitionId);
     },
 
     async submitApplication(
@@ -1401,8 +1619,71 @@ export function createSupabaseRecruitingRepository(): RecruitingRepository &
   };
 }
 
+/**
+ * Marks the requisition PUBLISHED and makes sure a public posting exists for
+ * it — reusing the existing posting (reactivating it) rather than minting a
+ * second row, so the public URL of a job that was unpublished survives being
+ * published again. Shared by publishJobRequisition and setJobStatus.
+ */
+async function publishRequisition(
+  client: SupabaseClient,
+  requisitionId: string,
+): Promise<{ postingSlug: string } | undefined> {
+  const now = new Date().toISOString();
+
+  const { data: requisitionRow } = await client
+    .from("job_requisitions")
+    .select("*")
+    .eq("id", requisitionId)
+    .maybeSingle();
+  if (!requisitionRow) return undefined;
+
+  await client
+    .from("job_requisitions")
+    .update({ status: "PUBLISHED", updated_at: now })
+    .eq("id", requisitionId);
+
+  const { data: existingPosting } = await client
+    .from("jobs")
+    .select("slug")
+    .eq("requisition_id", requisitionId)
+    .maybeSingle();
+
+  if (existingPosting) {
+    await client
+      .from("jobs")
+      .update({ status: "PUBLISHED", published_at: now, closed_at: null, updated_at: now })
+      .eq("requisition_id", requisitionId);
+    return { postingSlug: existingPosting.slug as string };
+  }
+
+  const requisition = mapRequisition(requisitionRow);
+  const [{ data: departmentRow }, { data: locationRow }] = await Promise.all([
+    client.from("departments").select("name").eq("id", requisition.departmentId).maybeSingle(),
+    client.from("locations").select("name").eq("id", requisition.locationId).maybeSingle(),
+  ]);
+
+  const postingSlug = await insertPosting(client, {
+    requisitionId,
+    title: requisition.title,
+    careerArea: requisition.careerArea,
+    departmentName: (departmentRow?.name as string) ?? "—",
+    locationName: (locationRow?.name as string) ?? "—",
+    workplaceType: requisition.workplaceType,
+    employmentType: requisition.employmentType,
+    description: requisition.description,
+    responsibilities: requisition.responsibilities,
+    qualifications: requisition.qualifications,
+    preferredQualifications: requisition.preferredQualifications,
+    salaryMin: requisition.salaryMin,
+    salaryMax: requisition.salaryMax,
+  });
+
+  return { postingSlug };
+}
+
 async function insertPosting(
-  client: NonNullable<ReturnType<typeof getSupabaseServiceClient>>,
+  client: SupabaseClient,
   posting: {
     requisitionId: string;
     title: string;
@@ -1415,6 +1696,11 @@ async function insertPosting(
     responsibilities: string[];
     qualifications: string[];
     preferredQualifications: string[];
+    benefits?: string[];
+    experienceLevel?: string;
+    applicationDeadline?: string;
+    salaryMin?: number;
+    salaryMax?: number;
     publishAt?: string;
     expiresAt?: string;
   },
@@ -1452,6 +1738,10 @@ async function insertPosting(
     responsibilities: posting.responsibilities,
     qualifications: posting.qualifications,
     preferred_qualifications: posting.preferredQualifications,
+    experience_level: posting.experienceLevel || null,
+    application_deadline: posting.applicationDeadline || null,
+    salary_min: posting.salaryMin ?? null,
+    salary_max: posting.salaryMax ?? null,
     status: scheduled ? "SCHEDULED" : "PUBLISHED",
     published_at: scheduled ? null : now,
     publish_at: posting.publishAt ?? null,
@@ -1460,6 +1750,9 @@ async function insertPosting(
     created_at: now,
     updated_at: now,
   });
+
+  // Separate statement: benefits is gated on migration 049.
+  await writeBenefits(client, "jobs", { requisition_id: posting.requisitionId }, posting.benefits);
 
   return slug;
 }

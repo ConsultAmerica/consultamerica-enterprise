@@ -21,20 +21,23 @@ export type Enquiry = {
   message: string;
 };
 
-const NAVY = "#0e1726";
-const NAVY_2 = "#162440";
-const BLUE = "#1d6fe0";
-const INK = "#15213a";
-const INK_2 = "#4a5a73";
-const INK_3 = "#7b8aa3";
-const LINE = "#e4eaf2";
-const TINT = "#f5f8fc";
+// Palette and the small render helpers below are exported so every
+// transactional email (see lib/email/application-emails.ts) is built from the
+// same values and renders as one system. Behaviour is unchanged by exporting.
+export const NAVY = "#0e1726";
+export const NAVY_2 = "#162440";
+export const BLUE = "#1d6fe0";
+export const INK = "#15213a";
+export const INK_2 = "#4a5a73";
+export const INK_3 = "#7b8aa3";
+export const LINE = "#e4eaf2";
+export const TINT = "#f5f8fc";
 
-const SITE = "https://consultamerica.com";
-const LOGO = `${SITE}/logo-mark3.png`;
+export const SITE = "https://consultamerica.com";
+export const LOGO = `${SITE}/logo-mark3.png`;
 
 /** Escape for HTML text nodes and quoted attribute values. */
-function esc(s: string): string {
+export function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -44,17 +47,17 @@ function esc(s: string): string {
 }
 
 /** Escape for use inside a URL (mailto/tel), then escape for the attribute. */
-function escUrl(s: string): string {
+export function escUrl(s: string): string {
   return esc(encodeURI(s));
 }
 
 /** Digits only, so tel: links work regardless of how the number was typed. */
-function telHref(phone: string): string {
+export function telHref(phone: string): string {
   const digits = phone.replace(/[^\d+]/g, "");
   return digits ? `tel:${digits}` : "";
 }
 
-function formatStamp(now: Date): string {
+export function formatStamp(now: Date): string {
   // Eastern: both offices are in that zone, so the timestamp matches the
   // reader's working day rather than UTC.
   const date = new Intl.DateTimeFormat("en-US", {
@@ -73,7 +76,7 @@ function formatStamp(now: Date): string {
   return `${date} at ${time}`;
 }
 
-function field(label: string, valueHtml: string): string {
+export function field(label: string, valueHtml: string): string {
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
       <tr>
@@ -85,12 +88,12 @@ function field(label: string, valueHtml: string): string {
     </table>`;
 }
 
-function link(href: string, text: string): string {
+export function link(href: string, text: string): string {
   return `<a href="${href}" style="color:${BLUE};text-decoration:none;font-weight:600;">${esc(text)}</a>`;
 }
 
 /** Two cells side by side, stacking on narrow screens via the media query. */
-function row(left: string, right: string): string {
+export function row(left: string, right: string): string {
   return `
     <tr>
       <td class="col" style="padding:16px 14px 16px 0;vertical-align:top;width:50%;">${left}</td>

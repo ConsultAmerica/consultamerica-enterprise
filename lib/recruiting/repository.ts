@@ -234,15 +234,77 @@ export type CreateJobRequisitionInput = {
   responsibilities: string[];
   qualifications: string[];
   preferredQualifications: string[];
+  /**
+   * Stored behind migration 049 (db/schema/049_job_benefits.sql). Optional
+   * because non-form callers (email intake drafts) build this input without
+   * it, and because implementations must stay writable before 049 is applied.
+   */
+  benefits?: string[];
+  experienceLevel?: string;
+  /** ISO timestamp; after it passes the posting stops being publicly open. */
+  applicationDeadline?: string;
   publishNow: boolean;
   publishAt?: string;
   expiresAt?: string;
 };
 
+/**
+ * Full replace of a requisition's recruiter-editable fields. Deliberately
+ * excludes status: publication moves go through setJobStatus so there is one
+ * place that keeps the requisition and its public posting in step.
+ */
+export type UpdateJobRequisitionInput = {
+  title: string;
+  departmentId: string;
+  departmentName: string;
+  positionId: string;
+  locationId: string;
+  locationName: string;
+  employmentType: EmploymentType;
+  workplaceType: WorkplaceType;
+  careerArea: CareerArea;
+  openings: number;
+  salaryMin?: number;
+  salaryMax?: number;
+  description: string;
+  responsibilities: string[];
+  qualifications: string[];
+  preferredQualifications: string[];
+  benefits?: string[];
+  experienceLevel?: string;
+  applicationDeadline?: string;
+};
+
+/** One option in a create/edit form dropdown backed by an FK lookup table. */
+export type LookupOption = { id: string; name: string };
+
+/**
+ * Publication states a recruiter can drive from the workspace. These are
+ * posting (`jobs`) statuses; implementations map each one onto the narrower
+ * RequisitionStatus set as well. Only PUBLISHED is public — see setJobStatus.
+ */
+export type JobPublicationStatus = "PUBLISHED" | "UNPUBLISHED" | "ARCHIVED" | "DRAFT";
+
 /** Reads backing the ATS Jobs / Requisitions workspace. */
 export type RecruitingJobReads = {
   listJobSummaries(): Promise<JobListItem[]>;
   getJobDetail(requisitionId: string): Promise<JobDetail | undefined>;
+  /**
+   * FK lookups for the job form's dropdowns. job_requisitions has NOT NULL
+   * references to all three, so a create form cannot be filled without them.
+   * Implementations return [] rather than throwing when a lookup fails: an
+   * empty dropdown the form can report beats a 500 on the whole page.
+   */
+  listDepartments(): Promise<LookupOption[]>;
+  listLocations(): Promise<LookupOption[]>;
+  listPositions(): Promise<LookupOption[]>;
+  /**
+   * Read-back for the edit form. Separate from JobDetail because `benefits`
+   * is a migration-049 storage column, not part of the JobRequisition/Job
+   * domain model — and because it must answer [] on a database where 049 has
+   * not been applied instead of failing the page.
+   */
+  getJobBenefits(requisitionId: string): Promise<string[]>;
 };
 
 /** Recruiter edits to a job description (requisition + its posting). Never changes status. */
@@ -268,6 +330,29 @@ export type RecruitingJobWrites = {
   publishJobRequisition(
     requisitionId: string,
   ): Promise<{ postingSlug: string } | undefined>;
+  /** Full replace of the editable fields, mirrored onto the posting when one exists. */
+  updateJobRequisition(
+    requisitionId: string,
+    input: UpdateJobRequisitionInput,
+  ): Promise<{ ok: boolean }>;
+  /**
+   * The single publication switch. PUBLISHED creates the public posting when
+   * the requisition has none; UNPUBLISHED/ARCHIVED/DRAFT all leave the job out
+   * of the public listings (lib/jobs/eligibility LIVE_JOB_STATUSES admits only
+   * PUBLISHED and OPEN). Returns undefined when the requisition is unknown.
+   */
+  setJobStatus(
+    requisitionId: string,
+    status: JobPublicationStatus,
+  ): Promise<{ postingSlug?: string } | undefined>;
+  /**
+   * Hard delete, refused while applications reference the requisition —
+   * removing it would orphan candidate records. Archive is the right move
+   * for a job that has already been applied to.
+   */
+  deleteJobRequisition(
+    requisitionId: string,
+  ): Promise<{ ok: boolean; blockedByApplications?: number }>;
 };
 
 export type SubmitApplicationInput = {
