@@ -879,7 +879,12 @@ export function EnterpriseHome() {
             <button type="button" className="btn btn-primary" onClick={() => setExpertOpen(true)}>
               Talk to an expert {ARROW_BTN}
             </button>
-            <a href="#" className="btn btn-ghost">
+            <a
+              href="https://calendly.com/contact-consultamerica/30min"
+              className="btn btn-ghost"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Book a 30-min call
             </a>
           </div>
