@@ -20,20 +20,20 @@ export type PrimaryNavItem = {
 };
 
 export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
-  { label: "About", href: "/life" },
+  // One entry for /life, not an "About" plus a "Life at Consult America" both
+  // landing on the same page.
+  { label: "Life at Consult America", href: "/life" },
   { label: "Capabilities", href: "/#capabilities", anchor: "#capabilities", mega: "capabilities" },
   { label: "Industries", href: "/#industries", anchor: "#industries", mega: "industries" },
   // Products has no destination of its own yet (the homepage mega panel lists
   // the live products; the trigger itself falls through to Contact). Kept as-is
   // until a Products section or page is approved.
   { label: "Products", href: "/#contact", anchor: "#contact", mega: "products" },
-  // The "AI" item was removed from the nav. The #ai section is still on the
-  // homepage and still linked from the Capabilities mega panel.
-  // Was "Insights" (which pointed at the articles section). Renamed to
-  // Services and repointed at #capabilities, since that is the section that
-  // actually lists the service lines. The articles are still reachable from
-  // the homepage section and the footer.
-  { label: "Services", href: "/#capabilities", anchor: "#capabilities" },
+  // "AI", "Insights" and "Services" were all removed from the nav. Their
+  // destinations are still reachable: the #ai and #insights sections from the
+  // homepage and footer, and every service page from the Capabilities mega
+  // panel — which is where the service lines belong, so a second top-level
+  // entry pointing at the same section was redundant.
   // One plain link for both pages: /careers, also current on /jobs and job detail
   // pages. Jobs is reached from the Careers page CTAs.
   { label: "Careers", href: "/careers", alsoActiveOn: ["/jobs"] },
