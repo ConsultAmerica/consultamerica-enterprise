@@ -1,34 +1,110 @@
 /**
- * URL ALIAS ONLY — this is not a separate admin sign-in.
+ * Admin sign-in for the Neon-backed recruitment system.
  *
- * /admin/login is a requested URL shape. The real staff sign-in lives at
- * /login (app/login/page.tsx). Keep this file a redirect: there must only ever
- * be one staff login page. See app/admin/README.md.
+ * This file used to be a 308 redirect to /login (the Supabase staff sign-in,
+ * which still exists and still works for /app/recruiting). It is now a real
+ * page: /admin/* is its own system with its own user table, its own session
+ * cookie and its own guard (lib/neon/auth.ts). The old sign-in is untouched.
  *
- * No auth check here on purpose — /login is the auth entry point itself.
+ * OPERATIONAL NOTE: because the previous version answered with a *permanent*
+ * redirect, browsers that visited /admin/login before this change will keep
+ * sending themselves to /login from cache until that entry expires. A hard
+ * reload or a fresh profile clears it.
  *
- * permanentRedirect (308): /login is the canonical staff sign-in and is
- * referenced directly by lib/auth/recruiting.ts and proxy.ts, so it is not
- * expected to move.
+ * Deliberately a server component. The form posts to a server action and the
+ * result comes back as a `?notice=` code (post/redirect/get), which keeps the
+ * `robots: noindex` metadata below possible, ships no client JavaScript for
+ * the sign-in itself, and means the form still works with scripting disabled.
  *
- * Query strings are forwarded so ?error= and ?returnTo= survive the hop. Note
- * that /login runs ?returnTo= through sanitizeReturnTo, which only approves the
- * /app prefix — a returnTo pointing at /admin/* is dropped and the user lands
- * on the default post-login destination. That is intentional (no open
- * redirects); translating /admin/* back to /app/recruiting/* here would put the
- * alias mapping in two places.
+ * The markup reuses the classes the staff sign-in already uses — `jobs-shell`,
+ * `wrap login-page`, `apply-eyebrow`, `login-lead`, `apply-panel`,
+ * `apply-field`, `apply-error`, `apply-trust`, `btn btn-primary` — so this is
+ * the same page as app/login/page.tsx wearing a different label, not a second
+ * design language.
  */
-import { permanentRedirect } from "next/navigation";
+import type { Metadata } from "next";
+import Link from "next/link";
 
-const DESTINATION = "/login";
+import { MarketingHeader } from "@/components/marketing/MarketingHeader";
+import { AUTH_NOTICES, isAuthNotice, sanitizeAdminReturnTo } from "@/lib/neon/auth";
+
+import { signIn } from "./actions";
+
+export const metadata: Metadata = {
+  title: "Admin sign in",
+  // A staff login has nothing to offer a search engine and everything to lose
+  // by being indexed.
+  robots: { index: false, follow: false },
+};
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-export default async function AdminLoginAlias({ searchParams }: Props) {
-  const query = new URLSearchParams(
-    Object.entries(await searchParams).flatMap(([key, value]): [string, string][] =>
-      value === undefined ? [] : Array.isArray(value) ? value.map((v) => [key, v]) : [[key, value]],
-    ),
-  ).toString();
-  permanentRedirect(query ? `${DESTINATION}?${query}` : DESTINATION);
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+export default async function AdminLoginPage({ searchParams }: Props) {
+  const params = await searchParams;
+
+  const noticeKey = one(params.notice);
+  const notice = isAuthNotice(noticeKey) ? AUTH_NOTICES[noticeKey] : null;
+  // Re-sanitized here as well as in the action. The value in the URL is
+  // attacker-supplied, and it is about to be written into a form field that
+  // the action will read back.
+  const returnTo = sanitizeAdminReturnTo(one(params.returnTo));
+  // Echoed back so a wrong password does not cost the user their email. React
+  // escapes it; the length cap stops an oversized URL being reflected.
+  const email = (one(params.email) ?? "").slice(0, 254);
+
+  return (
+    <>
+      <MarketingHeader />
+      <main className="jobs-shell">
+        <div className="wrap login-page">
+          <p className="apply-eyebrow">Consult America</p>
+          <h1>Recruitment admin</h1>
+          <p className="login-lead">Sign in with your Consult America admin account.</p>
+          <div className="apply-panel">
+            <form action={signIn} className="login-form" noValidate>
+              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
+              <div className="apply-field">
+                <label htmlFor="admin-email">Email</label>
+                <input
+                  id="admin-email"
+                  type="email"
+                  name="email"
+                  autoComplete="username"
+                  defaultValue={email}
+                  required
+                />
+              </div>
+              <div className="apply-field">
+                <label htmlFor="admin-password">Password</label>
+                <input
+                  id="admin-password"
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+              {notice ? (
+                <p className={notice.tone === "error" ? "apply-error" : "ws-flash ok"} role="alert">
+                  {notice.message}
+                </p>
+              ) : null}
+              <div className="apply-actions apply-actions-end">
+                <button type="submit" className="btn btn-primary">
+                  Sign in
+                </button>
+              </div>
+            </form>
+            <p className="apply-trust">
+              <Link href="/admin/forgot-password">Forgotten your password?</Link>
+              <br />
+              Accounts are created by a Consult America administrator. There is no self sign-up.
+            </p>
+          </div>
+        </div>
+      </main>
+    </>
+  );
 }
