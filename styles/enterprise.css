@@ -107,19 +107,22 @@ header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -
 .has-mega::after{content:"";position:absolute;left:-8px;right:-8px;top:100%;height:40px}
 .mega-inner{max-width:1200px;margin:0 auto;padding:34px 40px 38px;display:grid;grid-template-columns:1fr 1fr 1fr 312px;gap:26px 40px;align-items:start}
 .mega-col{min-width:0}
-/* Capabilities panel: five equal columns, no feature card. 25 service links do
-   not fit the icon-and-description layout the other two panels use. */
-.mega-inner.mega-svc{grid-template-columns:repeat(5,1fr);gap:0 32px}
-/* min-height reserves the second line, so "Enterprise Transformation" wrapping
-   does not push its column's links out of step with the other four. */
-.mega-svc .mega-h-link{display:flex;align-items:flex-start;gap:7px;min-height:48px;color:var(--ink);transition:color .16s}
-.mega-svc .mega-h-link svg{color:var(--blue);flex:none}
-.mega-svc .mega-h-link:hover{color:var(--blue)}
-.msub{list-style:none;margin:0;padding:0}
-.msub a{display:block;padding:7px 9px;margin:0 -9px;border-radius:8px;font-size:13.5px;line-height:1.35;
+/* Capabilities panel: capability list, the hovered capability's services, then
+   the feature card. */
+.mega-inner.mega-svc{grid-template-columns:352px 1fr 312px}
+/* the row sitting under the cursor, so it is clear which list is showing */
+.mega-svc a.mitem.on{background:var(--tint)}
+.mega-svc a.mitem.on .mt{color:var(--blue)}
+.mega-svc a.mitem{align-items:center}
+.mega-svc .mi-go{flex:none;margin-left:auto;color:var(--ink-3);opacity:0;transform:translateX(-3px);
+  transition:opacity .16s,transform .16s}
+.mega-svc a.mitem.on .mi-go{opacity:1;transform:none;color:var(--blue)}
+.mega-svc-col{border-left:1px solid var(--line);padding-left:36px}
+.msub{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:start}
+.msub a{display:block;padding:8px 9px;margin:0 -9px;border-radius:8px;font-size:13.5px;line-height:1.35;
   color:var(--ink-2);transition:background .16s,color .16s}
 .msub a:hover{background:var(--tint);color:var(--blue)}
-@media(max-width:1180px){.mega-inner.mega-svc{grid-template-columns:repeat(3,1fr);gap:22px 32px}}
+@media(max-width:1180px){.mega-inner.mega-svc{grid-template-columns:300px 1fr}.mega-svc .mega-feature{display:none}}
 .mega-h{font-family:"Geist Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);padding-bottom:11px;margin-bottom:7px;border-bottom:1px solid var(--line)}
 .mega a.mitem{display:flex;gap:13px;align-items:flex-start;padding:11px 10px;margin:0 -10px;border-radius:11px;transition:background .16s}
 .mega a.mitem:hover{background:var(--tint)}

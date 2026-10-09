@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD } from "@/data/marketing";
 
 /**
@@ -97,30 +99,71 @@ export function MegaPanel({
   );
 }
 
+/** One-line summaries for the capability list, in CAPS order. */
+const CAP_SHORT = [
+  "Cloud-native builds, platforms, integrations",
+  "GenAI, assistants, and automation in production",
+  "Migrate and modernize ERP, HCM, SCM on OCI",
+  "Reshape operations around a modern digital core",
+  "SLAs, monitoring, and continuous improvement",
+] as const;
+
 /**
- * Capabilities gets its own panel shape: one column per capability, with that
- * capability's service lines listed under it. Five columns of plain text links
- * rather than the three icon-and-description columns the other panels use —
- * 25 items would not fit in that layout.
+ * Capabilities is a two-level panel: the five capabilities on the left, and
+ * the service lines for whichever one is hovered on the right. Showing all 25
+ * services at once made the panel a wall of text, so the second level only
+ * appears on hover.
  */
 export function CapabilitiesMegaPanel({ base = "" }: { base?: "" | "/" }) {
+  const [sel, setSel] = useState(0);
+  const href = `${base}#capabilities`;
+
   return (
     <div className="mega-inner mega-svc">
-      {CAPS.map(([name], i) => (
-        <div className="mega-col" key={name}>
-          <a className="mega-h mega-h-link" href={`${base}#capabilities`}>
-            <PathIcon d={CAP_ICONS[i]} size={15} />
-            {name}
+      <div className="mega-col">
+        <div className="mega-h">Capabilities</div>
+        {CAPS.map(([name], i) => (
+          <a
+            key={name}
+            className={`mitem${i === sel ? " on" : ""}`}
+            href={href}
+            onMouseEnter={() => setSel(i)}
+            onFocus={() => setSel(i)}
+          >
+            {/* CAP_ICONS are /img/sectors pictograms, so they render bare at
+                34px like MegaItem does, not as SVG path data in a chip. */}
+            <span className="mi mi-pict">
+              <img src={CAP_ICONS[i]} alt="" />
+            </span>
+            <span className="mtx">
+              <span className="mt">{name}</span>
+              <span className="md">{CAP_SHORT[i]}</span>
+            </span>
+            <svg className="mi-go" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="m9 6 6 6-6 6" />
+            </svg>
           </a>
-          <ul className="msub">
-            {CAP_SERVICES[i].map((service) => (
-              <li key={service}>
-                <a href={`${base}#capabilities`}>{service}</a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      <div className="mega-col mega-svc-col">
+        <div className="mega-h">{CAPS[sel][0]}</div>
+        <ul className="msub">
+          {CAP_SERVICES[sel].map((service) => (
+            <li key={service}>
+              <a href={href}>{service}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <MegaFeature
+        img="/img/meeting.jpg"
+        label="How we work"
+        title="Design, build, run"
+        desc="One team from assessment through production and managed operations."
+        href={`${base}#why`}
+      />
     </div>
   );
 }
