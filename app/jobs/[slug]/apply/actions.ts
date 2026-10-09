@@ -11,7 +11,7 @@
  *   3. Resolve the job.       PUBLISHED only; submitApplication re-checks it
  *                             inside the transaction, so a role unpublished
  *                             between these two steps is still refused.
- *   4. Store the resume.      Blob being down must not cost us the application.
+ *   4. Store the resume.      Mandatory: a failure here rejects the submission.
  *   5. File it.               One transaction: candidate, application,
  *                             APPLIED activity, Zoho outbox row.
  *   6. after(): notify.       Emails and the inline CRM push, post-response.
@@ -223,25 +223,46 @@ export async function submitApplicationAction(
     return { ok: false, error: "This position is no longer accepting applications." };
   }
 
-  // Step 4. Two different failures, handled differently on purpose:
+  // Step 4. The resume is mandatory and the upload must succeed. An earlier
+  // version filed the application anyway when storage failed, reasoning that
+  // the application was worth more than the attachment. That was wrong for a
+  // staffing firm: it produced applications a recruiter cannot act on, and the
+  // candidate was told they had succeeded, so they never reapplied. Four such
+  // rows reached the database before this was caught.
   //
-  //   - The file is wrong (not a PDF/DOCX, too big, empty). The candidate
-  //     caused it and can fix it in ten seconds, so say so and stop. Filing a
-  //     resume-less application for a staffing firm would be filing a dead one.
-  //   - Storage is unavailable or the token is missing. Nothing the candidate
-  //     can do, and the application is worth more than the attachment: log it
-  //     and carry on with resume_url null.
+  // Now every failure stops the submission and says so, so the candidate can
+  // retry rather than silently falling into a queue nobody can work.
   let stored: StoredResume | null = null;
   try {
     stored = await uploadResume(resume, job.reference);
   } catch (error) {
     if (error instanceof ResumeValidationError) {
+      // The candidate's file is wrong and they can fix it in seconds.
       return { ok: false, error: error.message };
     }
     logServerError("apply.resume-upload", error, {
       jobReference: job.reference,
       size: resume.size,
     });
+    return {
+      ok: false,
+      error: "We could not store your resume just now. Please try again in a moment.",
+    };
+  }
+
+  // uploadResume returns null rather than throwing when storage is not
+  // configured at all. That is a deployment fault, not a candidate fault, but
+  // the outcome for them is identical: no resume, so no application.
+  if (!stored?.url) {
+    logServerError(
+      "apply.resume-missing",
+      new Error("Resume upload returned no stored URL; refusing to file the application."),
+      { jobReference: job.reference },
+    );
+    return {
+      ok: false,
+      error: "We could not store your resume just now. Please try again in a moment.",
+    };
   }
 
   // Step 5. The transaction. Everything above is preparation; this is the
@@ -258,9 +279,9 @@ export async function submitApplicationAction(
         location: location || null,
         linkedinUrl: linkedinUrl || null,
       },
-      resumeUrl: stored?.url ?? null,
-      resumeFilename: stored?.filename ?? null,
-      resumeSizeBytes: stored?.size ?? null,
+      resumeUrl: stored.url,
+      resumeFilename: stored.filename,
+      resumeSizeBytes: stored.size,
       relevantExperience: relevantExperience || null,
       additionalInfo: additionalInfo || null,
       source: "careers",

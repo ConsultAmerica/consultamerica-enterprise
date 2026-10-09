@@ -15,6 +15,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ResumeLink } from "@/components/admin/ResumeLink";
 import { countApplicationsByStatus, listApplications } from "@/lib/neon/applications";
 import { requireAdmin } from "@/lib/neon/auth";
 import { NeonConfigError, isUuid } from "@/lib/neon/client";
@@ -237,6 +238,7 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
                     <tr>
                       <th>Applicant</th>
                       <th>Role applied for</th>
+                      <th>Resume</th>
                       <th>Stage</th>
                       <th>Applied</th>
                       <th>Assigned recruiter</th>
@@ -260,6 +262,21 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
                           <td>
                             {row.job_title}
                             <div className="ws-muted">{row.job_reference}</div>
+                          </td>
+                          <td className="ca-resume-cell">
+                            {/* No extra query per row: listApplications already
+                                selects a.resume_url, a.resume_filename and
+                                a.resume_size_bytes, so the whole column is paid
+                                for by the list read that was happening anyway.
+                                Size is suppressed to keep rows one line tall;
+                                the detail page shows it. */}
+                            <ResumeLink
+                              applicationId={row.id}
+                              resumeUrl={row.resume_url}
+                              filename={row.resume_filename}
+                              sizeBytes={row.resume_size_bytes}
+                              showSize={false}
+                            />
                           </td>
                           <td>
                             <span className={`ws-pill ${stageTone(row.status)}`.trim()}>

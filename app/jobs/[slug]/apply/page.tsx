@@ -5,17 +5,22 @@ import { notFound } from "next/navigation";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { getJobBySlug } from "@/lib/neon/jobs";
-import type { EmploymentType, JobRow, WorkplaceType } from "@/lib/neon/types";
+import { toPublicJob } from "@/lib/neon/public-jobs";
 
 import { ApplyForm, type ApplyFormJob } from "./ApplyForm";
 
 /**
  * The public Easy Apply page, reading from Neon.
  *
- * Both the page and submitApplicationAction resolve the role by slug from
- * `jobs` and gate on status === "PUBLISHED". Keeping the two gates identical
- * matters: a page that renders a form the action will refuse is a candidate
- * typing out an application for nothing.
+ * Two deliberate choices:
+ *
+ * It reads the raw row through lib/neon/jobs.ts rather than
+ * getPublicJobBySlug, because that helper collapses "no such role" and "not
+ * published" into one null and this page has to tell them apart: a wrong URL
+ * is a 404, while a role that closed deserves the panel below, which explains
+ * itself and links on. The row then goes through the same toPublicJob mapping
+ * the listing and detail pages use, so labels and the open/closed rule cannot
+ * drift between the page that shows the apply button and the page it leads to.
  *
  * There is no EXTERNAL branch any more. The Supabase posting model carried an
  * application_type and an external_apply_url; the Neon `jobs` table has
@@ -27,55 +32,29 @@ type ApplyPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-// Display labels for the Neon enums. Deliberately local rather than reusing
-// types/organization.ts, whose maps are typed against the Supabase enums and
-// have no INTERNSHIP entry, so indexing them with a Neon value would not
-// typecheck.
-const WORKPLACE_LABEL: Record<WorkplaceType, string> = {
-  REMOTE: "Remote",
-  HYBRID: "Hybrid",
-  ONSITE: "On-site",
-};
-
-const EMPLOYMENT_LABEL: Record<EmploymentType, string> = {
-  FULL_TIME: "Full Time",
-  PART_TIME: "Part Time",
-  CONTRACT: "Contract",
-  TEMPORARY: "Temporary",
-  INTERNSHIP: "Internship",
-};
-
-/** Single-tenant ATS: every role in Neon is a Consult America role. */
-const COMPANY = "Consult America";
-
-function toFormJob(job: JobRow): ApplyFormJob {
-  return {
-    slug: job.slug,
-    title: job.title,
-    company: COMPANY,
-    location: job.location,
-    employmentType: EMPLOYMENT_LABEL[job.employment_type],
-    workplaceType: WORKPLACE_LABEL[job.workplace_type],
-    reference: job.reference,
-  };
-}
-
 export async function generateMetadata({ params }: ApplyPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const job = await getJobBySlug(slug);
-  if (!job) return { title: "Apply" };
+  const row = await getJobBySlug(slug);
+  if (!row) return { title: "Apply" };
+  const job = toPublicJob(row);
   return {
     title: `Apply · ${job.title}`,
-    description: `Easy Apply for ${job.title} at ${COMPANY}`,
+    description: `Easy Apply for ${job.title} at ${job.company}`,
   };
 }
 
 export default async function JobApplyPage({ params }: ApplyPageProps) {
   const { slug } = await params;
-  const job = await getJobBySlug(slug);
-  if (!job) notFound();
+  const row = await getJobBySlug(slug);
+  if (!row) notFound();
 
-  if (job.status !== "PUBLISHED") {
+  const job = toPublicJob(row);
+
+  // PUBLISHED plus a deadline that has not passed, which is exactly what
+  // /jobs/[slug] uses to decide whether to show an apply button at all.
+  const open = row.status === "PUBLISHED" && job.acceptingApplications;
+
+  if (!open) {
     return (
       <>
         <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
@@ -104,11 +83,21 @@ export default async function JobApplyPage({ params }: ApplyPageProps) {
     );
   }
 
+  const formJob: ApplyFormJob = {
+    slug: job.slug,
+    title: job.title,
+    company: job.company,
+    location: job.location,
+    employmentType: job.employmentType,
+    workplaceType: job.workplaceType,
+    reference: job.referenceNumber,
+  };
+
   return (
     <>
       <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
       <main>
-        <ApplyForm job={toFormJob(job)} />
+        <ApplyForm job={formJob} />
       </main>
       <MarketingFooter />
     </>

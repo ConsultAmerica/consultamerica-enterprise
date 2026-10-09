@@ -3520,3 +3520,55 @@ ul.adm-steps {
     flex: 1 1 100%;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Résumé links and the per-job applicants table.
+
+   Appended, and scoped to classes that exist nowhere else, so none of the
+   shared .ws-* vocabulary above changes behaviour. The table itself is a plain
+   .ws-table — these rules only stop two cells from fighting the layout.
+   --------------------------------------------------------------------------- */
+
+/* Filename and size stack, so the size never widens the column on its own. */
+.ca-resume-link {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ca-resume-size {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* A résumé filename is candidate-chosen and can be long. In a table cell it is
+   truncated rather than allowed to stretch the row; the full name stays
+   readable via the link's title attribute and on the detail page. */
+.ca-resume-cell .ca-resume-link {
+  max-width: 22ch;
+}
+
+.ca-resume-cell .ca-resume-link > a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The applicant total, inline with the panel heading: it is a count, not a
+   second heading, so it is sized and weighted down out of the h2. */
+.ca-applicants-count {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+
+/* .ws-empty styles an h2, but this panel's empty state already sits under one,
+   so its heading is an h3. Given its own class rather than a `.ws-empty h3`
+   descendant rule, which would reach into every other empty state on the site. */
+.ca-applicants-empty-title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+}

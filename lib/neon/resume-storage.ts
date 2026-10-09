@@ -41,11 +41,6 @@ export type ResumeMimeType =
   | "application/pdf"
   | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-export const RESUME_MIME_LABEL: Record<ResumeMimeType, string> = {
-  "application/pdf": "PDF",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DOCX",
-};
-
 export type ResumeRejectionCode = "EMPTY" | "TOO_LARGE" | "UNSUPPORTED_TYPE";
 
 /**

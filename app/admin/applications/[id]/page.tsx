@@ -23,6 +23,7 @@ import {
   ApplicationRecruiterSelect,
   ApplicationStageControl,
 } from "@/components/admin/ApplicationStageControl";
+import { ResumeLink } from "@/components/admin/ResumeLink";
 import { listAdminUsers } from "@/lib/neon/admin-users";
 import { getApplicationDetail } from "@/lib/neon/applications";
 import { requireAdmin } from "@/lib/neon/auth";
@@ -167,9 +168,12 @@ function telHref(phone: string): string | null {
 }
 
 /**
- * Only http(s) URLs become links. resume_url is written by our own upload path,
- * but linkedin_url and portfolio_url are typed by the candidate, and a
- * `javascript:` or `data:` href in a recruiter's browser is a stored XSS.
+ * Only http(s) URLs become links. linkedin_url and portfolio_url are typed by
+ * the candidate, and a `javascript:` or `data:` href in a recruiter's browser is
+ * a stored XSS.
+ *
+ * resume_url deliberately does NOT go through here any more. It is a private
+ * blob URL, so it was never clickable regardless of protocol — see ResumeLink.
  */
 function httpUrl(value: string | null): string | null {
   if (!value) return null;
@@ -189,13 +193,6 @@ function zohoContactUrl(zohoContactId: string): string | null {
       // redirects a signed-in user to their own region.
       `https://crm.zoho.com/crm/tab/Contacts/${zohoContactId}`
     : null;
-}
-
-function fileSize(bytes: number | null): string | null {
-  if (bytes === null || bytes <= 0) return null;
-  if (bytes < 1024) return `${bytes} bytes`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default async function AdminApplicationDetailPage({ params }: Props) {
@@ -252,8 +249,6 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
   const phone = candidate.phone ? telHref(candidate.phone) : null;
   const linkedin = httpUrl(candidate.linkedin_url);
   const portfolio = httpUrl(candidate.portfolio_url);
-  const resume = httpUrl(application.resume_url);
-  const resumeSize = fileSize(application.resume_size_bytes);
   const zoho = candidate.zoho_contact_id ? zohoContactUrl(candidate.zoho_contact_id) : null;
 
   const recruiters = loaded.admins.map((admin) => ({
@@ -388,21 +383,15 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
               </dd>
               <dt>Résumé</dt>
               <dd>
-                {resume ? (
-                  <>
-                    <a href={resume} target="_blank" rel="noopener noreferrer">
-                      {application.resume_filename || "Open résumé"}
-                    </a>
-                    {resumeSize ? <div className="ws-muted">{resumeSize}</div> : null}
-                  </>
-                ) : (
-                  <span className="ws-muted">
-                    No résumé is attached to this application.
-                    {application.resume_url
-                      ? " The stored file link is not a usable web address."
-                      : ""}
-                  </span>
-                )}
+                {/* This used to href the stored blob URL directly, which always
+                    returned 403: the blob is private. It now goes through the
+                    session-checked signing route. See components/admin/ResumeLink.tsx. */}
+                <ResumeLink
+                  applicationId={application.id}
+                  resumeUrl={application.resume_url}
+                  filename={application.resume_filename}
+                  sizeBytes={application.resume_size_bytes}
+                />
               </dd>
             </dl>
 

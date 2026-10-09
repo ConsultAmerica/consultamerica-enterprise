@@ -1,0 +1,40 @@
+{
+  "deletedAt": "2026-10-09T20:48:28.573Z",
+  "reason": "Verified test submissions created while building and verifying the Neon apply flow.",
+  "criteria": "RFC-2606 reserved domains (@example.com/.org), *.test@ addresses, or the owner's own address — AND resume_url IS NULL.",
+  "applications": [
+    {
+      "reference": "APP-2026-0001",
+      "name": "Mohammad Shafay Joyo",
+      "email": "shafay11august@gmail.com",
+      "appliedAt": "2026-10-09T19:35:17.333Z"
+    },
+    {
+      "reference": "APP-2026-0002",
+      "name": "Nadia Okonkwo",
+      "email": "nadia.okonkwo.test@example.com",
+      "appliedAt": "2026-10-09T19:35:32.202Z"
+    },
+    {
+      "reference": "APP-2026-0003",
+      "name": "Nadia Okonkwo",
+      "email": "priya.raman.test@example.com",
+      "appliedAt": "2026-10-09T19:46:10.906Z"
+    },
+    {
+      "reference": "APP-2026-0004",
+      "name": "Tomas Alvarez",
+      "email": "tomas.alvarez.test@example.com",
+      "appliedAt": "2026-10-09T20:11:17.172Z"
+    }
+  ],
+  "rowsRemoved": {
+    "applications": 4,
+    "candidates": 4,
+    "activities": 13,
+    "notes": 0,
+    "interviews": 0,
+    "zohoQueue": 4
+  },
+  "preserved": "Any application with a stored resume, and any candidate still holding another application."
+}
