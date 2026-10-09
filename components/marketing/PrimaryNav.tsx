@@ -208,12 +208,12 @@ export function NavMegaPanel({ mega, base = "" }: { mega: keyof typeof MEGA_IDS;
       groups={[
         ["AI products", [pi(1), pi(2), pi(4), pi(5)]],
         ["Commerce & retail", [pi(6), pi(10), pi(3), pi(7), pi(9)]],
-        ["Platforms", [pi(0), pi(8)]],
+        ["Platforms", [pi(0), pi(8), pi(11)]],
       ]}
       feature={{
         img: "/img/ai.jpg",
         label: "Built by Consult America",
-        title: "11 live products",
+        title: "12 live products",
         desc: "Real, deployed apps across AI, commerce, healthcare, and booking.",
         href: a("#contact"),
       }}

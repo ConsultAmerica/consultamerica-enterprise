@@ -71,6 +71,7 @@ export const PROD = [
   ["AppointEase", "Booking platform", "https://appointease-hlohx8tz2-n-sfds-projects.vercel.app/", "/img/products/appointease.png"],
   ["Smart Appliances", "Home-service booking", "https://smartappliances.co/", "/img/products/smart-appliances.png"],
   ["Romeah", "Quiet-luxury fashion", "https://romeah.com/", "/img/products/romeah.png"],
+  ["Agentomatix", "Digital product studio", "https://agentomatix.com/", "/img/products/agentomatix.png"],
   // Append only. The Products mega-menu picks entries by index (pi(n) in
   // EnterpriseHome), so inserting mid-array silently repoints every column.
 ] as const;
