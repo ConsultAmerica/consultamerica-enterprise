@@ -20,9 +20,6 @@ export type PrimaryNavItem = {
 };
 
 export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
-  // One entry for /life, not an "About" plus a "Life at Consult America" both
-  // landing on the same page.
-  { label: "Life at Consult America", href: "/life" },
   { label: "Capabilities", href: "/#capabilities", anchor: "#capabilities", mega: "capabilities" },
   { label: "Industries", href: "/#industries", anchor: "#industries", mega: "industries" },
   // Products has no destination of its own yet (the homepage mega panel lists
@@ -37,6 +34,9 @@ export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
   // One plain link for both pages: /careers, also current on /jobs and job detail
   // pages. Jobs is reached from the Careers page CTAs.
   { label: "Careers", href: "/careers", alsoActiveOn: ["/jobs"] },
+  // Sits after Careers because it is careers-adjacent: the page is about what
+  // working here is like. One entry for /life — there is no separate "About".
+  { label: "Life at Consult America", href: "/life" },
 ];
 
 /** Cross-page calls to action between the two Careers pages. */
