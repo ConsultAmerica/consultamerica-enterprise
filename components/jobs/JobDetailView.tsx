@@ -222,6 +222,9 @@ export function JobDetailView({ job, compact = false, related = [], panelExtra }
       {compact ? null : (
         <>
           <ListSection title="Preferred qualifications" items={s.preferred} />
+          {/* Admin-entered perks. ListSection renders nothing for an empty
+              list, so jobs without benefits are unchanged. */}
+          <ListSection title="Benefits" items={job.benefits ?? []} />
           {s.skills.length > 0 ? (
             <section className="job-section">
               <h2>Technical and functional skills</h2>

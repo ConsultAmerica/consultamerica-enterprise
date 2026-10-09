@@ -5,9 +5,9 @@ import { CAPABILITIES, HIRING_STEPS, PHASES } from "@/components/marketing/compa
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { SEARCH_OPEN_JOBS } from "@/components/marketing/nav-config";
-import { assertProductionSupabaseConfigured } from "@/app/lib/supabase/server";
-import { getOpenJobs } from "@/lib/jobs";
 import type { Job } from "@/lib/jobs/public-model";
+import { listPublicJobs } from "@/lib/neon/public-jobs";
+import { logServerError } from "@/lib/observability/logger";
 
 export const metadata: Metadata = {
   title: "Careers",
@@ -15,10 +15,17 @@ export const metadata: Metadata = {
     "Careers at Consult America — engineers, data scientists, and consultants shipping real systems for real enterprises.",
 };
 
-// Featured openings come from the same repository + eligibility filter as /jobs.
+// Featured openings come from the same Neon source + eligibility filter as /jobs.
 export const dynamic = "force-dynamic";
 
 const FEATURED_LIMIT = 6;
+
+/**
+ * Shown when the roles cannot be read at all. Deliberately says nothing about
+ * why: a visitor cannot act on a connection string, and NeonConfigError's own
+ * message names environment variables.
+ */
+const UNAVAILABLE_MESSAGE = "Open roles are unavailable right now.";
 
 const ARROW = (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -28,11 +35,18 @@ const ARROW = (
 
 async function loadFeaturedJobs(): Promise<{ jobs: Job[]; error?: string }> {
   try {
-    assertProductionSupabaseConfigured();
-    const jobs = await getOpenJobs();
-    return { jobs: jobs.slice(0, FEATURED_LIMIT) };
-  } catch {
-    return { jobs: [], error: "Open roles are unavailable right now." };
+    const jobs = await listPublicJobs();
+    return {
+      // Roles past their application deadline are still published (so their
+      // links keep working) but have no place in "Current opportunities".
+      jobs: jobs.filter((job) => job.acceptingApplications).slice(0, FEATURED_LIMIT),
+    };
+  } catch (error) {
+    // A careers page that renders "no openings right now" is recoverable; one
+    // that 500s costs the candidate and tells them nothing. Log the real cause
+    // server-side and show the neutral line.
+    logServerError("careers.loadFeaturedJobs", error);
+    return { jobs: [], error: UNAVAILABLE_MESSAGE };
   }
 }
 

@@ -1,16 +1,64 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
-import { EasyApplyForm } from "@/components/jobs/EasyApplyForm";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
-import { getJobBySlug } from "@/lib/jobs";
-import { safeExternalApplyUrl } from "@/lib/jobs/portal";
+import { getJobBySlug } from "@/lib/neon/jobs";
+import type { EmploymentType, JobRow, WorkplaceType } from "@/lib/neon/types";
+
+import { ApplyForm, type ApplyFormJob } from "./ApplyForm";
+
+/**
+ * The public Easy Apply page, reading from Neon.
+ *
+ * Both the page and submitApplicationAction resolve the role by slug from
+ * `jobs` and gate on status === "PUBLISHED". Keeping the two gates identical
+ * matters: a page that renders a form the action will refuse is a candidate
+ * typing out an application for nothing.
+ *
+ * There is no EXTERNAL branch any more. The Supabase posting model carried an
+ * application_type and an external_apply_url; the Neon `jobs` table has
+ * neither, because every role in it is an internal Easy Apply role. Reinstate
+ * the redirect when, and only when, those columns exist.
+ */
 
 type ApplyPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+// Display labels for the Neon enums. Deliberately local rather than reusing
+// types/organization.ts, whose maps are typed against the Supabase enums and
+// have no INTERNSHIP entry, so indexing them with a Neon value would not
+// typecheck.
+const WORKPLACE_LABEL: Record<WorkplaceType, string> = {
+  REMOTE: "Remote",
+  HYBRID: "Hybrid",
+  ONSITE: "On-site",
+};
+
+const EMPLOYMENT_LABEL: Record<EmploymentType, string> = {
+  FULL_TIME: "Full Time",
+  PART_TIME: "Part Time",
+  CONTRACT: "Contract",
+  TEMPORARY: "Temporary",
+  INTERNSHIP: "Internship",
+};
+
+/** Single-tenant ATS: every role in Neon is a Consult America role. */
+const COMPANY = "Consult America";
+
+function toFormJob(job: JobRow): ApplyFormJob {
+  return {
+    slug: job.slug,
+    title: job.title,
+    company: COMPANY,
+    location: job.location,
+    employmentType: EMPLOYMENT_LABEL[job.employment_type],
+    workplaceType: WORKPLACE_LABEL[job.workplace_type],
+    reference: job.reference,
+  };
+}
 
 export async function generateMetadata({ params }: ApplyPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -18,7 +66,7 @@ export async function generateMetadata({ params }: ApplyPageProps): Promise<Meta
   if (!job) return { title: "Apply" };
   return {
     title: `Apply · ${job.title}`,
-    description: `Easy Apply for ${job.title} at ${job.company}`,
+    description: `Easy Apply for ${job.title} at ${COMPANY}`,
   };
 }
 
@@ -27,7 +75,7 @@ export default async function JobApplyPage({ params }: ApplyPageProps) {
   const job = await getJobBySlug(slug);
   if (!job) notFound();
 
-  if (!job.acceptingApplications) {
+  if (job.status !== "PUBLISHED") {
     return (
       <>
         <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
@@ -56,17 +104,11 @@ export default async function JobApplyPage({ params }: ApplyPageProps) {
     );
   }
 
-  if (job.applicationType === "EXTERNAL") {
-    const external = safeExternalApplyUrl(job.externalApplyUrl);
-    if (external) redirect(external);
-    redirect(`/jobs/${job.slug}`);
-  }
-
   return (
     <>
       <MarketingHeader assistantContext={{ page: "job", jobSlug: job.slug }} />
       <main>
-        <EasyApplyForm job={job} />
+        <ApplyForm job={toFormJob(job)} />
       </main>
       <MarketingFooter />
     </>

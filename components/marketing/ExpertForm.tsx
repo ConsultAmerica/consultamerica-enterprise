@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { TurnstileWidget, type TurnstileHandle } from "@/components/security/TurnstileWidget";
 import { CONTACT } from "@/data/marketing";
 
 const INTERESTS = [
@@ -19,6 +20,7 @@ export function ExpertForm({ open, onClose }: { open: boolean; onClose: () => vo
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const panelRef = useRef<HTMLDivElement>(null);
   const firstRef = useRef<HTMLInputElement>(null);
+  const captchaRef = useRef<TurnstileHandle>(null);
 
   // Reset to idle when the dialog is reopened, so a previous "sent" or error
   // state is not still showing. Done during render rather than in an effect:
@@ -63,6 +65,12 @@ export function ExpertForm({ open, onClose }: { open: boolean; onClose: () => vo
       setStatus({ state: "sent", via: data.via });
     } catch (err) {
       setStatus({ state: "error", message: err instanceof Error ? err.message : "Something went wrong." });
+    } finally {
+      // The submitted Turnstile token is now spent whatever the outcome, so
+      // trade it for a fresh one. Without this a retry after an error would
+      // post a used token and fail for a reason the visitor cannot see. No-op
+      // when Turnstile is not configured, since the widget renders nothing.
+      captchaRef.current?.reset();
     }
   }
 
@@ -139,6 +147,14 @@ export function ExpertForm({ open, onClose }: { open: boolean; onClose: () => vo
                   placeholder="Current systems, what you're trying to change, and any timing that matters."
                 />
               </label>
+
+              {/*
+                Supplies the hidden `turnstileToken` field that the FormData
+                serialisation above already sweeps up. Renders nothing at all
+                while no site key is configured, and is invisible to most real
+                visitors once one is.
+              */}
+              <TurnstileWidget ref={captchaRef} action="contact" />
 
               {status.state === "error" ? <p className="xf-err">{status.message}</p> : null}
 

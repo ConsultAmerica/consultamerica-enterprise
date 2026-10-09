@@ -50,6 +50,35 @@ export class NeonConfigError extends Error {
  * refuses to start: the candidate gets a confirmation and the role gets no
  * applicant, and nobody finds out for weeks.
  */
+/** The environment variables a connection string is accepted from, in priority
+ *  order. One list, so the reader and the health check cannot disagree. */
+const CONNECTION_STRING_VARS = ["DATABASE_URL", "POSTGRES_URL"] as const;
+
+export type ConnectionStringSource = (typeof CONNECTION_STRING_VARS)[number];
+
+/**
+ * Whether a connection string is configured, and which variable supplied it —
+ * and NEVER the value itself.
+ *
+ * Exists for app/api/admin/health/route.ts. The distinction it reports is the
+ * one that cost an hour of production debugging: "DATABASE_URL is absent" and
+ * "DATABASE_URL is present but Neon is unreachable" produce the identical
+ * user-facing message at the sign-in form, and nothing short of this could tell
+ * them apart from outside the function. The variable NAME is safe to return
+ * (it is in this file, in .env.example and in the README); the value is a
+ * credential and must never be returned, logged or echoed.
+ */
+export function connectionStringStatus(): {
+  present: boolean;
+  source: ConnectionStringSource | null;
+} {
+  for (const name of CONNECTION_STRING_VARS) {
+    const value = process.env[name];
+    if (value && value.trim() !== "") return { present: true, source: name };
+  }
+  return { present: false, source: null };
+}
+
 function requireConnectionString(): string {
   const value = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
 

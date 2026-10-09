@@ -26,7 +26,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
-import { AUTH_NOTICES, isAuthNotice, sanitizeAdminReturnTo } from "@/lib/neon/auth";
+import { noticeFor, sanitizeAdminReturnTo } from "@/lib/neon/auth";
 
 import { signIn } from "./actions";
 
@@ -44,8 +44,13 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 export default async function AdminLoginPage({ searchParams }: Props) {
   const params = await searchParams;
 
-  const noticeKey = one(params.notice);
-  const notice = isAuthNotice(noticeKey) ? AUTH_NOTICES[noticeKey] : null;
+  // `ref` is the correlation id the sign-in action attaches when it logged an
+  // exception, and noticeFor appends it to the copy as "(ref: a3f9)" so the
+  // administrator can quote something that finds the log line. It is validated
+  // there against four lowercase hex characters before being interpolated —
+  // this value comes out of the query string, so an unchecked one would let
+  // anyone put their own text inside our error panel.
+  const notice = noticeFor(one(params.notice), one(params.ref));
   // Re-sanitized here as well as in the action. The value in the URL is
   // attacker-supplied, and it is about to be written into a form field that
   // the action will read back.

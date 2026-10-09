@@ -19,6 +19,7 @@
     "@neondatabase/serverless": "^1.2.0",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.109.0",
+    "@vercel/blob": "^2.8.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "mammoth": "^1.13.0",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CONTACT } from "@/data/marketing";
 import { renderEnquiryEmail } from "@/lib/email/enquiry-template";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 export const runtime = "nodejs";
 
@@ -88,6 +89,27 @@ export async function POST(req: Request) {
   }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(enquiry.email)) {
     return NextResponse.json({ error: "That email address doesn't look right." }, { status: 400 });
+  }
+
+  // Bot check sits here deliberately: after the free local validation, and
+  // BEFORE draftEmail() — the only reason this endpoint needs protecting is
+  // that it spends Anthropic credit on whatever is posted to it. Checking
+  // afterwards would protect nothing. Running it after validation also avoids
+  // burning a single-use token on a request we were going to 400 anyway.
+  //
+  // verifyTurnstile is a no-op until both keys are set, so with none configured
+  // this adds no network call and cannot reject anybody.
+  const remoteIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip")?.trim() ||
+    undefined;
+  const captcha = await verifyTurnstile(clean(raw.turnstileToken, 4096) || null, remoteIp);
+  if (!captcha.ok) {
+    console.warn("[contact] turnstile rejected submission", { reason: captcha.reason });
+    return NextResponse.json(
+      { error: "We couldn't confirm that you're a person. Please reload the page and try again." },
+      { status: 403 },
+    );
   }
 
   const { brief, drafted } = await draftEmail(enquiry);

@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 
 import { query } from "@/lib/neon/client";
+import { isErrorRef } from "@/lib/observability/logger";
 
 /**
  * Session, cookie and token handling for the Neon-backed admin area
@@ -431,6 +432,41 @@ export const AUTH_NOTICES: Record<AuthNotice, { tone: "error" | "ok"; message: s
 
 export function isAuthNotice(value: string | null | undefined): value is AuthNotice {
   return !!value && Object.prototype.hasOwnProperty.call(AUTH_NOTICES, value);
+}
+
+/**
+ * Resolve a `?notice=` code to the copy to render, with the correlation ref
+ * appended when the URL carried one.
+ *
+ * WHY THE REF IS IN THE MESSAGE AT ALL. "Sign-in is temporarily unavailable"
+ * is, on its own, unactionable for everyone involved: the administrator cannot
+ * tell a Neon outage from an unset DATABASE_URL, and whoever they report it to
+ * has no way to find the corresponding log line among every other request. The
+ * ref is the join key — logServerError writes it next to the exception's name,
+ * message, code and stack, so the user quotes four characters and the operator
+ * greps `server-error` for them.
+ *
+ * WHY IT IS SAFE. The ref is 16 bits from Math.random, generated after the
+ * failure, bound to nothing. It identifies a log record, not an account, a
+ * session or a row, and it is minted identically whatever the failure was, so
+ * it cannot signal to an attacker which failure they triggered. The exception
+ * text, stack and connection string stay server-side; four hex characters
+ * cross the boundary.
+ *
+ * It is validated with isErrorRef before being interpolated. The value arrives
+ * in the query string, so it is attacker-controlled: without the shape check
+ * this would be a path for putting arbitrary text inside our own error panel,
+ * which is the cheap half of a convincing phishing page. Anything not matching
+ * four lowercase hex characters is dropped and the plain message is returned.
+ */
+export function noticeFor(
+  noticeKey: string | null | undefined,
+  ref?: string | null,
+): { tone: "error" | "ok"; message: string } | null {
+  if (!isAuthNotice(noticeKey)) return null;
+  const notice = AUTH_NOTICES[noticeKey];
+  if (!isErrorRef(ref)) return notice;
+  return { tone: notice.tone, message: `${notice.message} (ref: ${ref})` };
 }
 
 // ------------------------------------------------------------- the rate limiter

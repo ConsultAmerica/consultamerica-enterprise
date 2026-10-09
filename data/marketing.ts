@@ -101,10 +101,10 @@ export const CONTACT = {
   // the general/careers address) because enquiries go to a different inbox.
   // CONTACT_TO in the environment still overrides this at send time.
   enquiries: "contact@consultamerica.com",
-  // Where job applications land. A third inbox on purpose: this one is hosted
-  // on Microsoft 365, unlike contact@consultamerica.com which is Zoho, so the
-  // two can never be merged or aliased. RECRUITING_TO overrides it at send time.
-  recruiting: "jobs@consultamerica.net",
+  // Where job applications land. On the .com domain, so it shares the Zoho
+  // mailbox family with contact@ rather than sitting in the Microsoft 365
+  // inbox that serves .net. RECRUITING_TO overrides it at send time.
+  recruiting: "jobs@consultamerica.com",
   // Ashburn is the headquarters, Hagerstown the second office. Both the footer
   // and the Life page render from here so the addresses can't drift. Order
   // matters: the first entry is the HQ.

@@ -40,6 +40,13 @@ export type Job = {
   skills: string[];
   categories: { id: string; label: string }[];
   verified: boolean;
+  /**
+   * What the role offers. Optional because the Supabase-era schema has no
+   * column for it; jobs created in the admin populate it. Without this the
+   * benefits an admin types in are stored and then never shown to anyone,
+   * which is the worst of both.
+   */
+  benefits?: string[];
 };
 
 export type JobFilters = {
