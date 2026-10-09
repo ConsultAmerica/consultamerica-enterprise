@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD } from "@/data/marketing";
+import { serviceHref } from "@/data/services";
 
 /**
  * The Capabilities / Industries / Products mega-menus, shared by sub-page
@@ -151,7 +152,8 @@ export function CapabilitiesMegaPanel({ base = "" }: { base?: "" | "/" }) {
         <ul className="msub">
           {CAP_SERVICES[sel].map((service) => (
             <li key={service}>
-              <a href={href}>{service}</a>
+              {/* falls back to the section anchor if a service has no page yet */}
+              <a href={serviceHref(service) ?? href}>{service}</a>
             </li>
           ))}
         </ul>

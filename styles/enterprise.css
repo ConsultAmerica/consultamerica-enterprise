@@ -728,6 +728,67 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 }
 @media(prefers-reduced-motion:reduce){.xf-panel,.xf-scrim{animation:none}}
 
+/* ============ SERVICE PAGES ============ */
+.svc-hero{background:var(--navy);color:#fff;padding:132px 0 56px}
+.svc-hero .art-crumbs{color:rgba(255,255,255,.6)}
+.svc-hero .art-crumbs a{color:rgba(255,255,255,.72)}
+.svc-hero .art-crumbs a:hover{color:var(--cyan)}
+.svc-hero h1{font-size:clamp(34px,5vw,60px);font-weight:600;letter-spacing:-.02em;margin:22px 0 0;max-width:18ch}
+.svc-dek{color:rgba(255,255,255,.76);font-size:19px;line-height:1.6;margin-top:20px;max-width:62ch}
+.svc-cta{margin-top:34px}
+
+/* Pulled up over the hero so the still bridges the dark band and the page. */
+.svc-media{margin:-40px 0 0;border-radius:18px;overflow:hidden;position:relative;z-index:2;
+  box-shadow:0 30px 64px -34px rgba(10,19,34,.45);aspect-ratio:21/9;background:var(--tint)}
+.svc-media img,.svc-media video,.svc-glyph{width:100%;height:100%;object-fit:cover;display:block}
+
+.svc-covers{margin:0;padding:0;display:grid;gap:0}
+.svc-covers > div{display:grid;grid-template-columns:238px 1fr;gap:24px;padding:18px 0;
+  border-top:1px solid var(--line)}
+.svc-covers > div:last-child{border-bottom:1px solid var(--line)}
+.svc-covers dt{font-size:15px;font-weight:650;color:var(--ink);letter-spacing:-.01em}
+.svc-covers dd{margin:0;font-size:14.5px;line-height:1.6;color:var(--ink-2)}
+@media(max-width:700px){.svc-covers > div{grid-template-columns:1fr;gap:6px}}
+
+.svc-body{display:grid;grid-template-columns:1fr 352px;gap:64px;align-items:start}
+.svc-sec + .svc-sec{margin-top:60px}
+.svc-sec h2{font-size:clamp(26px,3.2vw,38px);font-weight:600;letter-spacing:-.015em;margin:0 0 22px}
+.svc-lead{font-size:18px;line-height:1.7;color:var(--ink-2);max-width:68ch}
+
+.svc-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:26px}
+.svc-steps li{display:flex;gap:20px;align-items:flex-start}
+.svc-step-n{flex:none;font-family:"Geist Mono",monospace;font-size:12px;font-weight:600;color:var(--blue);
+  padding-top:3px;letter-spacing:.06em}
+.svc-steps b{display:block;font-size:16.5px;font-weight:650;color:var(--ink);margin-bottom:5px;letter-spacing:-.01em}
+.svc-steps span{display:block;font-size:15px;line-height:1.65;color:var(--ink-2);max-width:62ch}
+
+/* sticky so the deliverables stay beside the method while it is read */
+.svc-side{position:sticky;top:112px}
+.svc-card{border:1px solid var(--line);border-radius:16px;padding:28px 26px;background:#fff}
+.svc-card h3{font-family:"Geist Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 18px}
+.svc-deliver{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.svc-deliver li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;line-height:1.5;color:var(--ink-2)}
+.svc-deliver svg{flex:none;margin-top:3px;color:var(--blue)}
+
+.svc-more{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.svc-more-card{display:flex;flex-direction:column;gap:7px;padding:24px 24px 22px;background:#fff;
+  border:1px solid var(--line);border-radius:14px;transition:border-color .18s,transform .18s,box-shadow .18s}
+.svc-more-card:hover{border-color:rgba(29,111,224,.42);transform:translateY(-2px);
+  box-shadow:0 18px 38px -26px rgba(10,19,34,.4)}
+.svc-more-card b{font-size:16px;font-weight:650;color:var(--ink);letter-spacing:-.01em}
+.svc-more-card span{font-size:14px;line-height:1.55;color:var(--ink-3)}
+.svc-more-card svg{margin-top:4px;color:var(--blue);opacity:0;transform:translateX(-4px);
+  transition:opacity .18s,transform .18s}
+.svc-more-card:hover svg{opacity:1;transform:none}
+
+@media(max-width:980px){
+  .svc-body{grid-template-columns:1fr;gap:44px}
+  .svc-side{position:static}
+  .svc-media{aspect-ratio:16/9;margin-top:-28px}
+  .svc-hero{padding:108px 0 48px}
+}
+
 /* ============ LIFE AT CONSULT AMERICA ============ */
 .life{background:#fff}
 .life-hero{background:var(--navy);color:#fff;padding:150px 0 80px;position:relative;overflow:hidden}
