@@ -107,7 +107,7 @@ export default function LifePage() {
         <section className="band tintbg">
           <div className="wrap">
             <div className="sec-head">
-              <span className="eyebrow">Where you'd fit</span>
+              <span className="eyebrow">Where you&rsquo;d fit</span>
               <h2>The disciplines we hire into.</h2>
             </div>
             <ul className="life-disc">

@@ -20,9 +20,18 @@ export function ExpertForm({ open, onClose }: { open: boolean; onClose: () => vo
   const panelRef = useRef<HTMLDivElement>(null);
   const firstRef = useRef<HTMLInputElement>(null);
 
+  // Reset to idle when the dialog is reopened, so a previous "sent" or error
+  // state is not still showing. Done during render rather than in an effect:
+  // this is React's documented way to adjust state when a prop changes, and it
+  // avoids the extra commit-then-rerender an effect would cause.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setStatus({ state: "idle" });
+  }
+
   useEffect(() => {
     if (!open) return;
-    setStatus({ state: "idle" });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

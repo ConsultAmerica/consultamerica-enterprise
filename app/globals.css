@@ -2945,3 +2945,578 @@ button.cmdk-item {
 .jd-bot-soon svg {
   opacity: 0.6;
 }
+
+/* ===== Recruitment admin (/admin) — Neon-backed shell and overview =====
+   Appended, never edited into the .ws- block above: /admin and /app/recruiting
+   are two separate systems that deliberately share one visual language, so this
+   section only adds what the admin overview needs that the workspace did not
+   already have. Everything else on those pages uses the existing .ws- classes.
+   Compound selectors (.ws-panel.adm-alert) are used where a .ws- value is being
+   replaced, so the override is explicit about what it is overriding instead of
+   relying on source order. The "database not configured" panel is deliberately
+   NOT redefined here: /admin/jobs and /admin/applications already style that
+   exact condition as .adm-config (further down this file), and one condition
+   should not have two looks. */
+
+/* Role chip beside the signed-in name in the header bar. Mono and cyan to match
+   .ws-brand small, so "who am I" and "what is this" read as one unit. Hidden
+   with its sibling name under 900px by the existing .ws-user span rule, which is
+   the workspace's own choice and not worth fighting on a phone-width header. */
+.adm-role {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  font-family: "Geist Mono", monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  vertical-align: middle;
+}
+
+/* The six pipeline stages. A grid rather than .ws-stats because these sit
+   inside a .ws-panel (white on white needs the tinted fill to read as cells)
+   and because six columns do not divide into that four-column grid. */
+.adm-pipeline {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.adm-pipeline a {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  height: 100%;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.adm-pipeline a:hover {
+  background: #fff;
+  border-color: var(--blue);
+}
+
+.adm-pipeline strong {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Guidance, not a failure: a blue left edge, the same accent the workspace uses
+   for anything informational. */
+.ws-panel.adm-onboard {
+  border-color: rgba(29, 111, 224, 0.32);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+/* Something is wrong with the environment, not with the data. Red edge, and the
+   heading carries the colour so it is not the border alone doing the work. */
+.ws-panel.adm-alert {
+  border-color: rgba(161, 38, 38, 0.3);
+  box-shadow: inset 3px 0 0 #a12626;
+}
+
+.ws-panel.adm-alert h2 {
+  color: #a12626;
+}
+
+/* Body copy inside those two panels. A named class rather than a descendant
+   `p` selector, so it cannot reach into .ws-muted or any future child and
+   quietly restyle it. */
+.adm-note {
+  max-width: 78ch;
+  margin-bottom: 12px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+.adm-steps {
+  max-width: 78ch;
+  margin: 0 0 18px;
+  padding-left: 22px;
+  display: grid;
+  gap: 10px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+/* Tailwind's preflight strips list markers, and the admin steps are a sequence
+   worth numbering, so the markers are put back explicitly. */
+ol.adm-steps {
+  list-style: decimal;
+}
+
+ul.adm-steps {
+  list-style: disc;
+}
+
+.adm-steps li::marker {
+  color: var(--ink-3);
+}
+
+.adm-steps strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 1080px) {
+  .adm-pipeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .adm-pipeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ===== Admin jobs manager (/admin/jobs, Neon-backed) =====
+   Self-contained and uniquely prefixed `.adm-`, because this block is appended
+   to the end of this file alongside other agents' blocks. Nothing above is
+   modified. The screens deliberately reuse the existing workspace vocabulary —
+   .ws-main, .ws-head, .ws-panel, .ws-table, .ws-pill, .ws-btn, .ws-toolbar,
+   .ws-empty, .ws-dl, .ws-list, .ws-form-* and .apply-field — so /admin/jobs is
+   the recruiting workspace wearing a different label rather than a second
+   design language. These rules only add what that vocabulary has no answer
+   for. */
+
+/* The right-hand side of .ws-head on a job's own page: the status actions,
+   which wrap onto their own lines rather than stretching the header. */
+.adm-head-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* .ws-toolbar aligns its children on flex-end, and a .ws-toolbar-field is a
+   label stacked over a control. The Apply and Clear buttons have no label, so
+   they need the label's height back to sit on the same baseline as the inputs
+   rather than floating above them. */
+.adm-toolbar-submit {
+  justify-content: flex-end;
+}
+
+.adm-toolbar-submit .ws-btn {
+  height: 40px;
+}
+
+/* A real <caption>, so the rule about which statuses are public is announced
+   as the table's description instead of being a paragraph that happens to sit
+   nearby. Browsers centre captions by default; left-align it to the table. */
+.adm-table-caption {
+  caption-side: top;
+  text-align: left;
+  padding-bottom: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.adm-table-caption strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+/* NeonConfigError: DATABASE_URL is unset. A panel rather than a 500, because
+   the fix is a named environment variable and the person reading this is the
+   one who can set it. Amber, not red: nothing is broken or lost. */
+.adm-config {
+  border-color: #e0b94e;
+  background: #fffaf0;
+}
+
+.adm-config h2 {
+  margin-bottom: 8px;
+}
+
+.adm-config p {
+  max-width: 76ch;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.adm-config code {
+  font-family: "Geist Mono", monospace;
+  font-size: 13px;
+  background: var(--tint);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* The driver's own message, kept but demoted: useful to whoever is fixing it,
+   not the headline. */
+.adm-config-detail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.adm-public-link {
+  color: var(--blue);
+  font-weight: 500;
+}
+
+.adm-public-link:hover {
+  text-decoration: underline;
+}
+
+/* The description is stored exactly as it was typed and its line breaks are
+   the only structure it has, so they must survive rendering. */
+.adm-prose {
+  white-space: pre-wrap;
+  max-width: 76ch;
+  font-size: 14.5px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  /* At this width .ws-head has already wrapped, so pinning the actions to the
+     right edge would leave them orphaned from the heading they belong to. */
+  .adm-head-actions {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .adm-toolbar-submit {
+    flex: 0 0 auto;
+  }
+}
+
+/* ===== Recruitment CRM (/admin/applications, /admin/candidates) =====
+   Self-contained and uniquely prefixed `.ca-crm-`, because this block is
+   appended to the end of this file alongside other agents' blocks and modifies
+   nothing above it. The screens are built from the existing workspace
+   vocabulary — .ws-main, .ws-head, .ws-panel, .ws-table, .ws-pill, .ws-btn,
+   .ws-toolbar, .ws-dl, .ws-list, .ws-empty, .ws-note — so these rules only add
+   what that vocabulary has no answer for: the stage pipeline, the note
+   composer, and the activity timeline. */
+
+/* Contextual record links on the right of .ws-head (Candidate record, Back to
+   queue). Section navigation is the layout's job; these are per-record. */
+.ca-crm-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* .ws-toolbar aligns its children on flex-end and a .ws-toolbar-field is a
+   label stacked over a control. The Filter and Clear buttons have no label, so
+   they need the control's height to land on the same line as the inputs
+   instead of floating above them. */
+.ca-crm-toolbar-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.ca-crm-toolbar-actions .ws-btn {
+  height: 40px;
+}
+
+/* The stage panel sits above the two-column grid, and .ws-panel + .ws-panel
+   cannot see across that boundary. */
+.ca-crm-grid {
+  margin-top: 16px;
+}
+
+/* ---------------------------------------------------------- the stage pipeline
+   The rail IS the control: each of the six stages is a button, so the position
+   a recruiter reads and the thing they click are the same object. State is
+   carried on data-state rather than by a colour class, so "done", "current" and
+   "ahead" stay legible to anyone reading the DOM, and the current step also
+   carries aria-current="step" for anyone who cannot see the colour at all. */
+.ca-crm-rail {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.ca-crm-rail li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* Equal share of the row, but never narrower than a readable label. */
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+/* The connector between steps. Decoration only, so it is a pseudo-element and
+   never reaches the accessibility tree. */
+.ca-crm-rail li + li::before {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 2px;
+  background: var(--line);
+}
+
+.ca-crm-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ca-crm-step:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--ink);
+}
+
+.ca-crm-step:disabled {
+  /* Not "progress": the current stage is disabled because it is where we are,
+     which is a statement rather than a refusal. */
+  cursor: default;
+}
+
+.ca-crm-step-n {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ca-crm-step-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ca-crm-step[data-state="done"] {
+  background: var(--surface);
+}
+
+.ca-crm-step[data-state="done"] .ca-crm-step-n {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+  color: #fff;
+}
+
+/* The one cell that must be unmistakable. Border, fill and a filled numeral all
+   change, so it does not depend on colour alone. */
+.ca-crm-step[data-state="current"] {
+  border-color: var(--blue);
+  background: rgba(29, 111, 224, 0.09);
+  color: var(--blue-d);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+.ca-crm-step[data-state="current"] .ca-crm-step-n {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+/* Closed as rejected or withdrawn: no step is current, so the rail explains
+   itself rather than looking like an application stuck at stage one. */
+.ca-crm-closed {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(161, 38, 38, 0.25);
+  border-radius: 8px;
+  background: #fdecec;
+  color: #a12626;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.ca-crm-closed strong {
+  font-weight: 700;
+}
+
+/* Terminal actions are separated from the rail by a rule: they are exits, not a
+   seventh step. */
+.ca-crm-terminal {
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------- recruiter assignment
+   The select reuses .ws-toolbar-field for the label-over-control stack, but the
+   input styling in that block is scoped to .ws-toolbar, so the control needs
+   its own. */
+.ca-crm-assign select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.ca-crm-assign select:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.ca-crm-assign select:disabled {
+  background: var(--surface);
+  cursor: progress;
+}
+
+/* -------------------------------------------------------------------- notes */
+.ca-crm-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ca-crm-note-form label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ca-crm-note-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.ca-crm-note-form textarea:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+/* .ws-actions carries a 16px top margin meant for a panel footer; inside the
+   composer the gap above the button only needs to match the field rhythm. */
+.ca-crm-note-form .ws-actions {
+  margin-top: 4px;
+}
+
+.ca-crm-note-empty {
+  margin-top: 14px;
+}
+
+.ca-crm-notes {
+  margin-top: 6px;
+}
+
+.ca-crm-note-meta {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.ca-crm-note-meta strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+/* A note is stored exactly as it was typed and its line breaks are the only
+   structure it has, so they have to survive rendering. */
+.ca-crm-note-body {
+  white-space: pre-wrap;
+  margin-top: 4px;
+  max-width: 76ch;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* ---------------------------------------------------------- activity timeline
+   Read-only: application_activities is append-only, so there is nothing here to
+   style as an action. */
+
+/* Each entry is up to three paragraphs (what happened, the detail, who and
+   when). Tailwind's preflight strips paragraph margins, so the rhythm inside an
+   entry is set here rather than left to collapse into one block. */
+.ca-crm-timeline li {
+  display: grid;
+  gap: 3px;
+}
+
+.ca-crm-timeline-head {
+  font-size: 14px;
+}
+
+.ca-crm-timeline-head strong {
+  font-weight: 600;
+}
+
+.ca-crm-timeline-detail {
+  margin-top: 2px;
+  max-width: 76ch;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+/* Candidate free text (relevant experience, additional information, an
+   interview summary). Same reasoning as .ca-crm-note-body. */
+.ca-crm-prose {
+  white-space: pre-wrap;
+  max-width: 76ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  /* One step per row below this width. The 150px basis would otherwise pack two
+     steps into a line and the connector would read as a divider between pairs. */
+  .ca-crm-rail li {
+    flex: 1 1 100%;
+  }
+
+  .ca-crm-rail li + li::before {
+    display: none;
+  }
+
+  .ca-crm-toolbar-actions {
+    flex: 1 1 100%;
+  }
+}
