@@ -2923,3 +2923,25 @@ button.cmdk-item {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ConsultHire "coming soon" chip. Not a disabled button: a disabled control
+   reads as an action being refused, whereas this is a statement that the
+   feature is not here yet. Rendered by ConsultHireBotLink when
+   CONSULTHIRE_BOT.enabled is false. */
+.jd-bot-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px dashed var(--line);
+  background: var(--tint);
+  color: var(--ink-3);
+  font-size: 14px;
+  font-weight: 550;
+  cursor: default;
+}
+
+.jd-bot-soon svg {
+  opacity: 0.6;
+}

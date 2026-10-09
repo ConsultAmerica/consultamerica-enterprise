@@ -8,9 +8,19 @@
 import type { Job } from "@/lib/jobs/public-model";
 import { findSkills } from "@/lib/recruiting/skill-taxonomy";
 
-/** The ConsultHire bot. Opened in a new tab; no candidate data is ever put in this URL. */
+/**
+ * The ConsultHire bot.
+ *
+ * Turned off for now: `enabled` false renders a non-interactive "Coming soon"
+ * chip instead of a link, and the explanatory note is not shown at all. The
+ * href is kept so re-enabling is a one-word change rather than a rebuild.
+ *
+ * When live it opens in a new tab and no candidate data is ever put in the URL.
+ */
 export const CONSULTHIRE_BOT = {
-  label: "Try Our New Bot",
+  enabled: false,
+  label: "AI interview",
+  comingSoonLabel: "AI interview — coming soon",
   href: "https://consulthire.vercel.app/",
   note: "Opens ConsultHire, our AI interview assistant, in a new tab. It doesn't submit an application for this role.",
 } as const;

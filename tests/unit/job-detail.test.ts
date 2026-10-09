@@ -145,14 +145,24 @@ describe("Try Our New Bot replaces the Detailed application CTA", () => {
       expect(html).not.toContain("/apply/detailed");
       const easy = anchors(html).find((a) => a.includes(`href="/jobs/${job().slug}/apply"`));
       expect(easy).toContain("btn-primary");
+
       const bot = anchors(html).filter((a) => a.includes(CONSULTHIRE_BOT.href));
-      expect(bot).toHaveLength(1);
-      expect(bot[0]).toContain(`href="${CONSULTHIRE_BOT.href}"`); // exact URL: no query string, nothing about the visitor
-      expect(bot[0]).toContain('target="_blank"');
-      expect(bot[0]).toContain('rel="noopener noreferrer"');
-      expect(bot[0]).not.toContain("btn-primary");
-      expect(html).toContain("Try Our New Bot");
-      expect(html).toContain("doesn&#x27;t submit an application");
+      if (CONSULTHIRE_BOT.enabled) {
+        expect(bot).toHaveLength(1);
+        expect(bot[0]).toContain(`href="${CONSULTHIRE_BOT.href}"`); // exact URL: no query string, nothing about the visitor
+        expect(bot[0]).toContain('target="_blank"');
+        expect(bot[0]).toContain('rel="noopener noreferrer"');
+        expect(bot[0]).not.toContain("btn-primary");
+        expect(html).toContain(CONSULTHIRE_BOT.label);
+        expect(html).toContain("doesn&#x27;t submit an application");
+      } else {
+        // Turned off: no link to ConsultHire at all, a plain "coming soon"
+        // chip instead, and the note suppressed — it explains a button that is
+        // not on the page.
+        expect(bot).toHaveLength(0);
+        expect(html).toContain(CONSULTHIRE_BOT.comingSoonLabel);
+        expect(html).not.toContain("doesn&#x27;t submit an application");
+      }
     });
   }
 

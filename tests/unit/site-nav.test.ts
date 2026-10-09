@@ -12,7 +12,16 @@ import {
 
 describe("shared marketing navigation", () => {
   it("keeps every destination, with one combined Careers link", () => {
-    expect(PRIMARY_NAV.map((i) => i.label)).toEqual(["About", "Capabilities", "Industries", "Products", "AI", "Talent", "Insights", "Careers"]);
+    // AI, Talent and Insights were removed from the top level, and About was
+    // renamed to the page it actually opens. Their destinations remain reachable
+    // from the homepage sections, the footer and the Capabilities mega panel.
+    expect(PRIMARY_NAV.map((i) => i.label)).toEqual([
+      "Capabilities",
+      "Industries",
+      "Products",
+      "Careers",
+      "Life at Consult America",
+    ]);
     const careers = PRIMARY_NAV.find((i) => i.label === "Careers")!;
     expect(careers).toEqual({ label: "Careers", href: "/careers", alsoActiveOn: ["/jobs"] });
     expect(careers.mega).toBeUndefined();
@@ -33,7 +42,7 @@ describe("shared marketing navigation", () => {
     const capabilities = PRIMARY_NAV.find((i) => i.label === "Capabilities")!;
     expect(navHref(capabilities, true)).toBe("#capabilities");
     expect(navHref(capabilities, false)).toBe("/#capabilities");
-    for (const label of ["About", "Careers"]) {
+    for (const label of ["Life at Consult America", "Careers"]) {
       const item = PRIMARY_NAV.find((i) => i.label === label)!;
       expect(navHref(item, true)).toBe(item.href);
     }
@@ -46,8 +55,9 @@ describe("shared marketing navigation", () => {
     }
     expect(isNavItemActive("/jobsearch", careers)).toBe(false);
     expect(isNavItemActive("/about", careers)).toBe(false);
-    const insights = PRIMARY_NAV.find((i) => i.label === "Insights")!;
-    expect(isNavItemActive("/jobs", insights)).toBe(false);
+    const life = PRIMARY_NAV.find((i) => i.label === "Life at Consult America")!;
+    expect(isNavItemActive("/jobs", life)).toBe(false);
+    expect(isNavItemActive("/life", life)).toBe(true);
   });
 
   it("isActivePath matches a page and its children only", () => {

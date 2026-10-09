@@ -38,8 +38,25 @@ const EXTERNAL_ICON = (
   </svg>
 );
 
-/** Secondary CTA to the ConsultHire bot. A plain link: nothing about the visitor is added to the URL. */
+/**
+ * Secondary CTA to the ConsultHire bot. A plain link: nothing about the visitor
+ * is added to the URL.
+ *
+ * While CONSULTHIRE_BOT.enabled is false this renders a non-interactive
+ * "coming soon" chip rather than a disabled <button>. A disabled button still
+ * reads as an action the visitor is being refused; a plain chip reads as a
+ * statement about the feature, which is what we mean.
+ */
 export function ConsultHireBotLink({ className = "btn btn-dark jd-bot" }: { className?: string }) {
+  if (!CONSULTHIRE_BOT.enabled) {
+    return (
+      <span className="jd-bot-soon">
+        {BOT_ICON}
+        {CONSULTHIRE_BOT.comingSoonLabel}
+      </span>
+    );
+  }
+
   return (
     <a
       href={CONSULTHIRE_BOT.href}
@@ -79,7 +96,10 @@ function ApplyActions({ job }: { job: Job }) {
         </a>
       ) : null}
       <ConsultHireBotLink />
-      <p className="jd-bot-note">{CONSULTHIRE_BOT.note}</p>
+      {/* The note only makes sense next to a working link. While the bot is
+          off, "it doesn't submit an application" explains a button that isn't
+          there. */}
+      {CONSULTHIRE_BOT.enabled ? <p className="jd-bot-note">{CONSULTHIRE_BOT.note}</p> : null}
     </div>
   );
 }
