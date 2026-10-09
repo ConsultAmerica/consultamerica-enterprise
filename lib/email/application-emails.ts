@@ -49,6 +49,8 @@ export type ApplicationEmailInput = {
   applicationNumber: string;
   /** Which flow filed it ("Careers Site"...). Internal notification only. */
   source?: string;
+  /** Original filename of the uploaded CV, shown on the internal notification. */
+  resumeFilename?: string | null;
 };
 
 type Rendered = { subject: string; html: string; text: string };
@@ -198,7 +200,13 @@ export function renderApplicationNotification(
   const stamp = formatStamp(opts.now ?? new Date());
   const subject = `New Application — ${input.jobTitle} | ${input.candidateName}`;
 
-  const dashboardUrl = escUrl(`${origin()}/app/recruiting/applications/${input.applicationId}`);
+  const dashboardUrl = escUrl(`${origin()}/admin/applications/${input.applicationId}`);
+  // Authenticated route that mints a signed URL; the blob itself is private,
+  // so a raw link would 403 and the CV cannot be attached to the mail either.
+  const resumeUrl = escUrl(`${origin()}/admin/applications/${input.applicationId}/resume`);
+  const resumeHtml = input.resumeFilename
+    ? link(resumeUrl, input.resumeFilename)
+    : `<span style="color:${INK_3};font-weight:500;">Not provided</span>`;
   const replySubject = encodeURIComponent(
     `Your application to Consult America — ${input.jobTitle} (${input.applicationNumber})`,
   );
@@ -233,6 +241,7 @@ ${button(dashboardUrl, "View in dashboard")}
               ${row(field("Candidate", esc(input.candidateName)), field("Email", link(mailtoHref, input.candidateEmail)))}
               ${row(field("Phone", phoneHtml), field("Role", `<span style="display:inline-block;background:${TINT};border:1px solid ${LINE};border-radius:6px;padding:4px 10px;font-size:14px;color:${INK};">${esc(input.jobTitle)}</span>`))}
               ${row(field("Reference", esc(input.applicationNumber)), field("Source", `<span style="font-weight:500;color:${INK_2};">${esc(input.source || "Careers Site")}</span>`))}
+              ${row(field("Resume", resumeHtml), field("", ""))}
             </table>
             <div style="border-top:1px solid ${LINE};"></div>
           </td>
@@ -263,7 +272,8 @@ ${footer("Reply-to is set to<br />the candidate&rsquo;s address")}`;
     `Source:    ${input.source || "Careers Site"}`,
     "----------------------------------------",
     "",
-    `View in dashboard: ${origin()}/app/recruiting/applications/${input.applicationId}`,
+    `View in dashboard: ${origin()}/admin/applications/${input.applicationId}`,
+    `Resume (sign-in required): ${origin()}/admin/applications/${input.applicationId}/resume`,
     "",
     `Reply directly to ${input.candidateEmail}.`,
     "",

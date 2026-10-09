@@ -306,6 +306,7 @@ export async function submitApplicationAction(
     jobTitle: job.title,
     candidateName: `${firstName} ${lastName}`,
     candidateEmail: email,
+    resumeFilename: stored.filename,
     candidatePhone: phone,
   });
 
@@ -324,6 +325,8 @@ type NotificationInput = {
   candidateName: string;
   candidateEmail: string;
   candidatePhone: string;
+  /** Shown on the recruiter notification, with a link to the signed download. */
+  resumeFilename: string | null;
 };
 
 /**
@@ -361,6 +364,7 @@ async function mailApplication(input: NotificationInput): Promise<void> {
       applicationId: input.applicationId,
       applicationNumber: input.reference,
       source: "Careers Site",
+      resumeFilename: input.resumeFilename,
     });
     console.info("[application-email]", { event: "sent", reference: input.reference, ...sent });
   } catch (error) {

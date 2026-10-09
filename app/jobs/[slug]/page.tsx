@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { SaveJobButton } from "@/components/candidate/SaveJobButton";
 import { JobDetailView } from "@/components/jobs/JobDetailView";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
@@ -158,18 +157,11 @@ export default async function JobSlugPage({ params }: JobPageProps) {
                   __html: JSON.stringify(jobPostingJsonLd(job)),
                 }}
               />
-              <JobDetailView
-                job={job}
-                related={related}
-                panelExtra={
-                  <SaveJobButton
-                    requisitionId={requisitionId}
-                    initiallySaved={saved}
-                    signedIn={Boolean(session)}
-                    returnTo={`/jobs/${job.slug}`}
-                  />
-                }
-              />
+              {/* No Save-job control: it belongs to the Supabase candidate
+                  portal, which this Neon-backed page is not part of. Offering
+                  "Sign in to save" with no account to sign into is worse than
+                  not offering it. */}
+              <JobDetailView job={job} related={related} />
             </>
           ) : (
             <div className="jobs-empty" style={{ textAlign: "left", padding: 0 }}>
