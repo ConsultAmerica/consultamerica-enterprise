@@ -65,7 +65,7 @@ export const PROD = [
   ["MediGuide AI", "Healthcare AI", "https://mediguide-ai-woad.vercel.app/", "/img/products/mediguide.png"],
   ["ImportNest", "AI shopping", "https://importnest.com/", "/img/products/importnest.png"],
   ["SmartWrite AI", "Writing assistant", "https://smartwrite-tau.vercel.app/", "/img/products/smartwrite.png"],
-  ["JobLens", "Resume & jobs", "https://joblens-seven.vercel.app/", "/img/products/joblens.png"],
+  ["JobLens", "Resume & jobs", "https://joblens-lime-three.vercel.app/", "/img/products/joblens.png"],
   ["Bosiano", "Fashion e-commerce", "https://bosiano.com/", "/img/products/bosiano.png"],
   ["Sarco Appliances", "Sales & service", "https://sarco.global/", "/img/products/sarco.png"],
   ["AppointEase", "Booking platform", "https://appointease-hlohx8tz2-n-sfds-projects.vercel.app/", "/img/products/appointease.png"],
