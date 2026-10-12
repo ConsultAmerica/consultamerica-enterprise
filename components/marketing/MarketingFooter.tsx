@@ -31,14 +31,17 @@ export function MarketingFooter() {
             <Link href="/careers">Careers</Link>
             <Link href="/jobs">Jobs</Link>
           </div>
-          <div className="foot-col">
-            <h4>Support</h4>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Use</a>
-            <a href="#">Cookie Policy</a>
-            <a href="#">Accessibility</a>
-            <a href="#">Site Map</a>
-          </div>
+          {/*
+            The Support column is gone. It listed Privacy Policy, Terms of Use,
+            Cookie Policy, Accessibility and Site Map, and every one of them was
+            href="#" with no page behind it. Five links that look like legal
+            documents and go nowhere are worse than no links: a visitor looking
+            for a privacy policy concludes the company is hiding one rather than
+            that the page was never written.
+
+            When those documents exist, add the column back pointing at real
+            routes.
+          */}
           <div className="foot-contact">
             <div className="office">
               <h5>Locations</h5>

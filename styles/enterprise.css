@@ -415,7 +415,9 @@ section{position:relative}
 /* ============ FOOTER ============ */
 footer{background:#ffffff;color:var(--ink-2);padding:60px 0 0;border-top:1px solid var(--line);position:relative}
 footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(29,111,224,.32),transparent)}
-.foot-top{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1.5fr;gap:36px 44px;padding-bottom:36px}
+/* Four link columns plus contact. Was five-plus-contact until the Support
+   column was removed for pointing at pages that do not exist. */
+.foot-top{display:grid;grid-template-columns:1fr 1fr 1fr 1.5fr;gap:36px 44px;padding-bottom:36px}
 @media(max-width:1000px){.foot-top{grid-template-columns:1fr 1fr 1fr;gap:40px 32px}.foot-contact{grid-column:1/-1;border-left:0;padding-left:0}}
 @media(max-width:620px){.foot-top{grid-template-columns:1fr 1fr}}
 .foot-contact{border-left:1px solid var(--line);padding-left:30px;display:flex;flex-direction:column;gap:18px}
