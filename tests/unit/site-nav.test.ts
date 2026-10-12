@@ -38,10 +38,33 @@ describe("shared marketing navigation", () => {
     expect(hrefs).not.toContain("/jobs");
   });
 
-  it("uses in-page anchors only on the homepage; Careers always links to its page", () => {
-    const capabilities = PRIMARY_NAV.find((i) => i.label === "Capabilities")!;
-    expect(navHref(capabilities, true)).toBe("#capabilities");
-    expect(navHref(capabilities, false)).toBe("/#capabilities");
+  it("uses in-page anchors only where the destination really is a section", () => {
+    // Industries is still a homepage section and nothing else, so it keeps the
+    // anchor: on the homepage it scrolls, elsewhere it links back.
+    const industries = PRIMARY_NAV.find((i) => i.label === "Industries")!;
+    expect(navHref(industries, true)).toBe("#industries");
+    expect(navHref(industries, false)).toBe("/#industries");
+
+    /*
+      Capabilities and Products are pages now and must NOT scroll, on the
+      homepage or anywhere else.
+
+      This previously asserted the opposite, and the behaviour it was pinning
+      was the bug: Capabilities scrolled to a section listing five headings,
+      and Products scrolled to the contact form — clicking "Products" showed
+      you a form rather than a product. An `anchor` on either would silently
+      bring that back on the homepage only, which is the hardest version to
+      notice, so it is asserted here rather than left to a reviewer.
+    */
+    for (const label of ["Capabilities", "Products"]) {
+      const item = PRIMARY_NAV.find((i) => i.label === label)!;
+      expect(item.anchor).toBeUndefined();
+      expect(navHref(item, true)).toBe(item.href);
+      expect(navHref(item, false)).toBe(item.href);
+      expect(item.href.startsWith("/")).toBe(true);
+      expect(item.href).not.toContain("#");
+    }
+
     for (const label of ["Life at Consult America", "Careers"]) {
       const item = PRIMARY_NAV.find((i) => i.label === label)!;
       expect(navHref(item, true)).toBe(item.href);

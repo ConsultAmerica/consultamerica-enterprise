@@ -5350,3 +5350,231 @@ ul.adm-steps {
     transition: none;
   }
 }
+
+/* ============================================================================
+   PRODUCTS AND CAPABILITIES PAGES
+   (app/products/page.tsx, app/capabilities/page.tsx)
+   ============================================================================
+   Both of these exist because their nav links had no destination: Capabilities
+   scrolled to a homepage section listing five headings, and Products scrolled
+   to the contact form. The twelve products and twenty-five service pages were
+   reachable only by hovering a desktop mega panel, so on a phone they could
+   not be found at all.
+   ========================================================================== */
+
+.prod-hero {
+  padding: clamp(96px, 13vw, 150px) 0 clamp(36px, 5vw, 64px);
+}
+
+.prod-hero h1 {
+  margin-top: 14px;
+  font-size: clamp(34px, 5.4vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.prod-hero p {
+  margin-top: 18px;
+  max-width: 62ch;
+  font-size: clamp(15px, 1.5vw, 17.5px);
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+/* ------------------------------------------------------------ product grid */
+
+.prod-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+}
+
+.prod-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  height: 100%;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 0.2s;
+}
+
+.prod-card:hover {
+  transform: translateY(-2px);
+  border-color: #cfd9e6;
+  box-shadow: 0 2px 4px rgba(16, 30, 54, 0.06), 0 14px 30px -14px rgba(16, 30, 54, 0.3);
+}
+
+.prod-card:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+/* A fixed, padded tile so twelve logos of different shapes and aspect ratios
+   line up. Without it the row heights follow the artwork and the grid looks
+   broken rather than varied. */
+.prod-logo {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: none;
+  padding: 9px;
+  border-radius: 13px;
+  background: var(--tint);
+}
+
+.prod-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.prod-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.prod-body strong {
+  display: block;
+  font-size: 16.5px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.prod-tag {
+  display: block;
+  margin-top: 3px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.prod-go {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--ink-3);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.prod-card:hover .prod-go {
+  background: #eaf2fe;
+  color: var(--blue);
+  transform: translate(2px, -2px);
+}
+
+/* ------------------------------------------------------- capability areas */
+
+.cap-area-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.cap-area-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: none;
+  padding: 10px;
+  border-radius: 15px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.cap-area-icon img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.cap-area-head h2 {
+  font-size: clamp(22px, 2.6vw, 30px);
+  letter-spacing: -0.03em;
+}
+
+.cap-area-head p {
+  margin-top: 8px;
+  max-width: 68ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.cap-services {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.cap-services a,
+.cap-service-soon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14.5px;
+  font-weight: 550;
+  color: var(--ink);
+  transition: border-color 0.18s, background 0.18s, transform 0.18s;
+}
+
+.cap-services a svg {
+  flex: none;
+  color: var(--ink-3);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1), color 0.2s;
+}
+
+.cap-services a:hover {
+  border-color: var(--blue);
+  background: #f7faff;
+  transform: translateY(-1px);
+}
+
+.cap-services a:hover svg {
+  color: var(--blue);
+  transform: translateX(3px);
+}
+
+.cap-services a:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* A service with no page yet. Styled as a label, not a link: it is still part
+   of the capability and worth naming, but nothing happens if you press it. */
+.cap-service-soon {
+  color: var(--ink-3);
+  border-style: dashed;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prod-card,
+  .prod-go,
+  .cap-services a,
+  .cap-services a svg {
+    transition: none;
+  }
+}

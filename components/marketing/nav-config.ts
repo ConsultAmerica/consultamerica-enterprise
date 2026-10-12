@@ -20,12 +20,25 @@ export type PrimaryNavItem = {
 };
 
 export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
-  { label: "Capabilities", href: "/#capabilities", anchor: "#capabilities", mega: "capabilities" },
+  /*
+    Capabilities and Products are real pages now, and deliberately have no
+    `anchor`.
+
+    Both used to scroll instead of navigate. Capabilities jumped to a homepage
+    section that names the five areas and nothing else, and Products jumped to
+    the contact form — clicking the word "Products" showed you a form rather
+    than any product. The twenty-five service pages and twelve products existed
+    only inside the desktop hover panels, which is to say they did not exist on
+    a phone at all.
+
+    Dropping `anchor` is the point: with one set, the homepage renders the
+    in-page scroll instead of the link, which is the behaviour being fixed. The
+    mega panels still open on hover on desktop; the label is now also something
+    you can click.
+  */
+  { label: "Capabilities", href: "/capabilities", mega: "capabilities", alsoActiveOn: ["/services"] },
   { label: "Industries", href: "/#industries", anchor: "#industries", mega: "industries" },
-  // Products has no destination of its own yet (the homepage mega panel lists
-  // the live products; the trigger itself falls through to Contact). Kept as-is
-  // until a Products section or page is approved.
-  { label: "Products", href: "/#contact", anchor: "#contact", mega: "products" },
+  { label: "Products", href: "/products", mega: "products" },
   // "AI", "Insights" and "Services" were all removed from the nav. Their
   // destinations are still reachable: the #ai and #insights sections from the
   // homepage and footer, and every service page from the Capabilities mega
