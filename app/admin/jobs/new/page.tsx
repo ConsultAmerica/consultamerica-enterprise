@@ -49,7 +49,7 @@ export default async function AdminNewJobPage() {
           <main className="ws-main">
             <div className="ws-head">
               <div>
-                <p className="ws-eyebrow">Consult America admin</p>
+                <p className="ws-eyebrow">Consult America / Recruitment</p>
                 <h1>New job</h1>
               </div>
             </div>

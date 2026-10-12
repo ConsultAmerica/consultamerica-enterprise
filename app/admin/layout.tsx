@@ -3,8 +3,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { AdminNav } from "@/components/admin/AdminNav";
+import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { type AdminRole, getSessionUser } from "@/lib/neon/auth";
-import { NeonConfigError } from "@/lib/neon/client";
+import { NeonConfigError, query } from "@/lib/neon/client";
 
 /**
  * Shell for the Neon-backed recruitment admin (/admin/*).
@@ -60,12 +61,6 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-const ROLE_LABELS: Record<AdminRole, string> = {
-  OWNER: "Owner",
-  ADMIN: "Admin",
-  RECRUITER: "Recruiter",
-};
-
 /**
  * The signed-in admin, or null when no chrome should be drawn.
  *
@@ -80,6 +75,39 @@ const ROLE_LABELS: Record<AdminRole, string> = {
  * an outage is deliberate, and so is not quietly rendering a signed-out shell
  * for someone who may well be signed in.
  */
+const ROLE_LABELS: Record<AdminRole, string> = {
+  OWNER: "Owner",
+  ADMIN: "Admin",
+  RECRUITER: "Recruiter",
+};
+
+/**
+ * Applications waiting on a first review, for the badge in the nav.
+ *
+ * NEW and SCREENING only, the same definition the Recruitment Overview uses,
+ * so the badge and the "Needs review" card can never disagree. An application
+ * at interview or offer is mid-process with dates in the diary; counting it as
+ * unreviewed would inflate the one number that is supposed to mean "nobody has
+ * looked at this yet".
+ *
+ * RETURNS NULL ON ANY FAILURE, AND NULL IS NOT ZERO. A nav that renders "0"
+ * during a database outage tells a recruiter there is no work waiting, and
+ * that is a wrong answer somebody acts on. No number means no claim. One
+ * indexed COUNT per page load is a fair price for a figure that is visible
+ * from every screen.
+ */
+async function reviewCount(): Promise<number | null> {
+  try {
+    const rows = await query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM applications WHERE status = ANY($1::text[])`,
+      [["NEW", "SCREENING"]],
+    );
+    return rows[0]?.n ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function chromeUser() {
   try {
     const user = await getSessionUser();
@@ -97,32 +125,31 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     return <>{children}</>;
   }
 
+  const waiting = await reviewCount();
+
   return (
     <div className="ws">
-      <header className="ws-bar">
-        <div className="ws-bar-inner">
-          <Link href="/admin/dashboard" className="ws-brand">
-            {/* Same mark and cache-buster as the old workspace header, so the
-                two admin areas read as one company rather than two products. */}
+      <header className="nv-bar">
+        <div className="nv-bar-inner">
+          <Link href="/admin/dashboard" className="nv-brand">
+            {/* Same mark and cache-buster as the marketing header, so the
+                admin and the site read as one company, not two products. */}
             <img src="/logo-mark3.png?v=m1" alt="" aria-hidden />
-            Consult America <small>Recruiting</small>
-          </Link>
-          <AdminNav />
-          <div className="ws-user">
-            <span>
-              {user.fullName}
-              <span className="adm-role">{ROLE_LABELS[user.role]}</span>
+            <span className="nv-brand-text">
+              <span className="nv-brand-name">Consult America</span>
+              <span className="nv-brand-tag">Recruiting</span>
             </span>
-            {/*
-              A form, not a link. /admin/logout is POST-only: a GET sign-out can
-              be fired by any third-party page that embeds
-              <img src=".../admin/logout">, and an <a> would make being signed
-              out a one-click cross-site trick. The handler also checks Origin.
-            */}
-            <form method="post" action="/admin/logout">
-              <button type="submit">Sign out</button>
-            </form>
-          </div>
+          </Link>
+
+          {/* The badge count is read per request and passed down: AdminNav is
+              a client component and must not query anything itself. */}
+          <AdminNav reviewCount={waiting} />
+
+          <AdminUserMenu
+            fullName={user.fullName}
+            email={user.email}
+            roleLabel={ROLE_LABELS[user.role]}
+          />
         </div>
       </header>
       {/*

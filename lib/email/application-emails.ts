@@ -51,6 +51,23 @@ export type ApplicationEmailInput = {
   source?: string;
   /** Original filename of the uploaded CV, shown on the internal notification. */
   resumeFilename?: string | null;
+  /**
+   * The résumé itself, base64, attached to the recruiting notification.
+   *
+   * WHY ATTACH IT. The notification links to the dashboard, and the dashboard
+   * needs a signed-in session, so reading a CV from a phone meant logging into
+   * the admin first. A recruiting inbox should be able to open the document it
+   * is being told about. The link stays as well: it is the only way to reach
+   * the live record, and an attachment is a snapshot of one moment.
+   *
+   * Only ever on the notification to the internal inbox. The candidate is not
+   * sent their own CV back, which tells them nothing and doubles the bytes.
+   */
+  resumeAttachment?: { filename: string; contentBase64: string } | null;
+  /** City/State as typed. Easy Apply collects it, so the recruiter should see it. */
+  candidateLocation?: string | null;
+  /** LinkedIn profile, optional on the form. */
+  candidateLinkedIn?: string | null;
 };
 
 type Rendered = { subject: string; html: string; text: string };
@@ -204,6 +221,17 @@ export function renderApplicationNotification(
   // Authenticated route that mints a signed URL; the blob itself is private,
   // so a raw link would 403 and the CV cannot be attached to the mail either.
   const resumeUrl = escUrl(`${origin()}/admin/applications/${input.applicationId}/resume`);
+  // Every field the candidate filled in appears here. A recruiter should not
+  // have to open the dashboard to see something they already typed.
+  const locationHtml = input.candidateLocation
+    ? esc(input.candidateLocation)
+    : `<span style="color:${INK_3};font-weight:500;">Not provided</span>`;
+  // Only http(s) becomes a link: this string came from a public form.
+  const linkedInHtml = input.candidateLinkedIn && /^https?:\/\//i.test(input.candidateLinkedIn)
+    ? link(escUrl(input.candidateLinkedIn), input.candidateLinkedIn.replace(/^https?:\/\//i, ""))
+    : input.candidateLinkedIn
+      ? esc(input.candidateLinkedIn)
+      : `<span style="color:${INK_3};font-weight:500;">Not provided</span>`;
   const resumeHtml = input.resumeFilename
     ? link(resumeUrl, input.resumeFilename)
     : `<span style="color:${INK_3};font-weight:500;">Not provided</span>`;
@@ -241,6 +269,7 @@ ${button(dashboardUrl, "View in dashboard")}
               ${row(field("Candidate", esc(input.candidateName)), field("Email", link(mailtoHref, input.candidateEmail)))}
               ${row(field("Phone", phoneHtml), field("Role", `<span style="display:inline-block;background:${TINT};border:1px solid ${LINE};border-radius:6px;padding:4px 10px;font-size:14px;color:${INK};">${esc(input.jobTitle)}</span>`))}
               ${row(field("Reference", esc(input.applicationNumber)), field("Source", `<span style="font-weight:500;color:${INK_2};">${esc(input.source || "Careers Site")}</span>`))}
+              ${row(field("Location", locationHtml), field("LinkedIn", linkedInHtml))}
               ${row(field("Resume", resumeHtml), field("", ""))}
             </table>
             <div style="border-top:1px solid ${LINE};"></div>
@@ -270,6 +299,9 @@ ${footer("Reply-to is set to<br />the candidate&rsquo;s address")}`;
     `Role:      ${input.jobTitle}`,
     `Reference: ${input.applicationNumber}`,
     `Source:    ${input.source || "Careers Site"}`,
+    `Location:  ${input.candidateLocation || "Not provided"}`,
+    `LinkedIn:  ${input.candidateLinkedIn || "Not provided"}`,
+    `Resume:    ${input.resumeFilename || "Not provided"}`,
     "----------------------------------------",
     "",
     `View in dashboard: ${origin()}/admin/applications/${input.applicationId}`,
@@ -424,6 +456,26 @@ export async function sendApplicationEmails(
       subject: notification.subject,
       html: notification.html,
       text: notification.text,
+      /*
+        The résumé travels with the notification, so recruiting can read it
+        without signing in. Omitted entirely rather than sent empty when there
+        is nothing to attach: Resend rejects a zero-length attachment, and
+        losing the whole notification over a missing file would be a far worse
+        outcome than an email with no attachment.
+
+        Résumés are capped at 5 MB by uploadResume and Resend accepts 40 MB, so
+        the size limit cannot be reached from this path.
+      */
+      ...(input.resumeAttachment
+        ? {
+            attachments: [
+              {
+                filename: input.resumeAttachment.filename,
+                content: input.resumeAttachment.contentBase64,
+              },
+            ],
+          }
+        : {}),
     }),
     post(apiKey, "confirmation", {
       from,

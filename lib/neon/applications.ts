@@ -255,8 +255,74 @@ export interface ListApplicationsFilters {
    */
   q?: string;
   assignedRecruiterId?: string;
+  /**
+   * Which column to order by. A key, never a fragment of SQL: the value
+   * arrives from a query string and is mapped through APPLICATION_SORTS below,
+   * so an unknown key falls back to the default instead of reaching Postgres.
+   */
+  sort?: ApplicationSort;
+  /** Ascending or descending. Anything else is treated as the default. */
+  dir?: "asc" | "desc";
   limit?: number;
   offset?: number;
+}
+
+/** The columns a recruiter may order the queue by. */
+export type ApplicationSort = "applied" | "candidate" | "role" | "stage";
+
+/**
+ * Sort keys mapped to ORDER BY fragments.
+ *
+ * A FIXED LOOKUP, NOT STRING INTERPOLATION. Column names cannot be
+ * parameterised in Postgres, so the only safe way to make ORDER BY dynamic is
+ * to never let user input become SQL: the query string selects a key, this
+ * object owns the text, and a key that is not here cannot produce a query.
+ *
+ * Every fragment ends with a tiebreak on applied_at so paging is stable.
+ * Without it, two applications with the same stage can swap places between
+ * requests and a recruiter paging through sees one twice and another never.
+ *
+ * `stage` orders by the pipeline, not alphabetically: sorting hiring stages
+ * A-to-Z puts Hired before Interview before New, which is meaningless. The
+ * CASE spells out the real order.
+ */
+const APPLICATION_SORTS: Record<ApplicationSort, { asc: string; desc: string }> = {
+  applied: {
+    asc: "a.applied_at ASC",
+    desc: "a.applied_at DESC",
+  },
+  candidate: {
+    asc: "lower(c.first_name || ' ' || c.last_name) ASC, a.applied_at DESC",
+    desc: "lower(c.first_name || ' ' || c.last_name) DESC, a.applied_at DESC",
+  },
+  role: {
+    asc: "lower(j.title) ASC, a.applied_at DESC",
+    desc: "lower(j.title) DESC, a.applied_at DESC",
+  },
+  stage: {
+    asc: "stage_rank ASC, a.applied_at DESC",
+    desc: "stage_rank DESC, a.applied_at DESC",
+  },
+};
+
+/** The pipeline order, as a sortable integer. Mirrors PIPELINE in the admin UI. */
+const STAGE_RANK_SQL = `CASE a.status
+        WHEN 'NEW' THEN 1
+        WHEN 'SCREENING' THEN 2
+        WHEN 'INTERVIEW' THEN 3
+        WHEN 'SHORTLISTED' THEN 4
+        WHEN 'OFFER' THEN 5
+        WHEN 'HIRED' THEN 6
+        WHEN 'REJECTED' THEN 7
+        WHEN 'WITHDRAWN' THEN 8
+        ELSE 9
+      END`;
+
+/** The ORDER BY text for a (possibly unknown) sort key and direction. */
+export function applicationOrderBy(sort?: string, dir?: string): string {
+  const key = (sort ?? "") as ApplicationSort;
+  const entry = APPLICATION_SORTS[key] ?? APPLICATION_SORTS.applied;
+  return dir === "asc" ? entry.asc : entry.desc;
 }
 
 export async function listApplications(
@@ -277,7 +343,8 @@ export async function listApplications(
             j.title      AS job_title,
             j.reference  AS job_reference,
             j.slug       AS job_slug,
-            r.full_name  AS assigned_recruiter_name
+            r.full_name  AS assigned_recruiter_name,
+            ${STAGE_RANK_SQL} AS stage_rank
        FROM applications a
        JOIN candidates c ON c.id = a.candidate_id
        JOIN jobs j       ON j.id = a.job_id
@@ -289,7 +356,7 @@ export async function listApplications(
              c.email ILIKE $4 OR c.first_name ILIKE $4 OR c.last_name ILIKE $4 OR
              (c.first_name || ' ' || c.last_name) ILIKE $4 OR
              a.reference ILIKE $4 OR j.title ILIKE $4 OR j.reference ILIKE $4)
-      ORDER BY a.applied_at DESC
+      ORDER BY ${applicationOrderBy(filters.sort, filters.dir)}
       LIMIT $5 OFFSET $6`,
     [
       status,

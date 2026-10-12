@@ -53,6 +53,9 @@ const NOT_CONFIGURED =
 /** Long enough for a real handover note, short enough that a paste bomb is capped. */
 const NOTE_MAX_LENGTH = 10_000;
 
+/** The list page renders at most 100 rows, so a larger bulk did not come from it. */
+const BULK_MAX = 100;
+
 type Authorized = { ok: true; actor: AdminSessionUser } | { ok: false; error: string };
 
 /**
@@ -143,6 +146,75 @@ export async function setStageAction(
   } catch (error) {
     return toFailure("setStageAction", error);
   }
+}
+
+/**
+ * Move several applications to the same stage in one go.
+ *
+ * PER-APPLICATION, NOT ONE BULK UPDATE STATEMENT. A single UPDATE ... WHERE id
+ * = ANY($1) would be one round trip, and it would be wrong: setApplicationStatus
+ * writes a STATUS_CHANGED activity row and enqueues a Zoho sync job inside its
+ * own transaction, and a bulk UPDATE skips both. The audit trail is the one
+ * view that has to stay trustworthy, so twelve stage changes must leave twelve
+ * entries whether they were made one at a time or together.
+ *
+ * SEQUENTIAL, NOT Promise.all. The Neon HTTP driver opens a connection per
+ * statement; firing fifty transactions at once is how a serverless function
+ * exhausts the pool and turns a bulk action into a partial one for reasons
+ * nobody can reconstruct afterwards. Fifty sequential writes is a slow click,
+ * not a broken feature.
+ *
+ * PARTIAL SUCCESS IS REPORTED, NOT HIDDEN. If three of ten fail because
+ * somebody deleted them in another tab, the caller is told exactly that. A
+ * bulk action that silently half-applies is worse than one that refuses.
+ */
+export async function setStageBulkAction(
+  applicationIds: string[],
+  status: string,
+): Promise<CrmActionResult & { moved?: number; failed?: number }> {
+  const auth = await authorize();
+  if (!auth.ok) return auth;
+
+  if (!Array.isArray(applicationIds) || applicationIds.length === 0) {
+    return { ok: false, error: BAD_REQUEST };
+  }
+  if (!isApplicationStatus(status)) {
+    return { ok: false, error: BAD_REQUEST };
+  }
+  // De-duplicated and capped. The page shows at most 100 rows, so anything
+  // larger did not come from the UI and there is no reason to serve it.
+  const ids = Array.from(new Set(applicationIds));
+  if (ids.length > BULK_MAX || ids.some((id) => !isUuid(id))) {
+    return { ok: false, error: BAD_REQUEST };
+  }
+
+  let moved = 0;
+  let failed = 0;
+  const touchedCandidates = new Set<string>();
+
+  for (const id of ids) {
+    try {
+      const application = await setApplicationStatus(id, status, auth.actor.id);
+      moved += 1;
+      if (application.candidate_id) touchedCandidates.add(application.candidate_id);
+    } catch (error) {
+      // One failure must not abandon the rest: the recruiter asked for ten
+      // moves and nine of them are still correct and still wanted.
+      failed += 1;
+      console.error("[admin-crm] setStageBulkAction failed for one application", error);
+    }
+  }
+
+  revalidatePath("/admin/applications");
+  revalidatePath("/admin/dashboard");
+  for (const candidateId of touchedCandidates) {
+    revalidatePath(`/admin/candidates/${candidateId}`);
+  }
+
+  if (moved === 0) {
+    return { ok: false, error: "None of those applications could be moved. Reload the page." };
+  }
+  return { ok: true, moved, failed };
 }
 
 /**

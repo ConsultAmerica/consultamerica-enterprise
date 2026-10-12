@@ -24,6 +24,7 @@ import {
   ApplicationStageControl,
 } from "@/components/admin/ApplicationStageControl";
 import { ResumeLink } from "@/components/admin/ResumeLink";
+import { ResumePreview } from "@/components/admin/ResumePreview";
 import { listAdminUsers } from "@/lib/neon/admin-users";
 import { getApplicationDetail } from "@/lib/neon/applications";
 import { requireAdmin } from "@/lib/neon/auth";
@@ -220,7 +221,7 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
       <main className="ws-main">
         <div className="ws-head">
           <div>
-            <p className="ws-eyebrow">Recruitment</p>
+            <p className="ws-eyebrow">Consult America / Recruitment</p>
             <h1>Application</h1>
           </div>
         </div>
@@ -383,9 +384,13 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
               </dd>
               <dt>Résumé</dt>
               <dd>
-                {/* This used to href the stored blob URL directly, which always
-                    returned 403: the blob is private. It now goes through the
-                    session-checked signing route. See components/admin/ResumeLink.tsx. */}
+                {/* The document itself is previewed in its own panel below.
+                    This row stays because the facts list is what someone scans
+                    for "is there one, and what is it called".
+
+                    Never hrefs the stored blob URL: the blob is private and a
+                    direct link always returned 403. It goes through the
+                    session-checked signing route. See ResumeLink.tsx. */}
                 <ResumeLink
                   applicationId={application.id}
                   resumeUrl={application.resume_url}
@@ -407,6 +412,22 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
                 <p className="ca-crm-prose">{application.additional_info}</p>
               </>
             ) : null}
+          </section>
+
+          {/*
+            The résumé, in the workspace rather than behind a link. Placed
+            immediately under the application facts and above the notes,
+            because the order someone works in is: what did they apply for,
+            what does the CV say, what do I think.
+          */}
+          <section className="ws-panel">
+            <h2>Résumé</h2>
+            <ResumePreview
+              applicationId={application.id}
+              resumeUrl={application.resume_url}
+              filename={application.resume_filename}
+              sizeBytes={application.resume_size_bytes}
+            />
           </section>
 
           <section className="ws-panel">

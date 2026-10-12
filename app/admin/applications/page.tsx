@@ -15,7 +15,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ResumeLink } from "@/components/admin/ResumeLink";
+import {
+  ApplicationsTable,
+  type ApplicationRowView,
+} from "@/components/admin/ApplicationsTable";
 import { countApplicationsByStatus, listApplications } from "@/lib/neon/applications";
 import { requireAdmin } from "@/lib/neon/auth";
 import { NeonConfigError, isUuid } from "@/lib/neon/client";
@@ -60,6 +63,13 @@ function asDate(value: Date | string | null | undefined): Date | null {
   return date && !Number.isNaN(date.getTime()) ? date : null;
 }
 
+/** The full timestamp, for the cell's title attribute. */
+function isoDate(value: Date | string | null): string | undefined {
+  if (!value) return undefined;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 function fmtDate(value: Date | string | null): string {
   const date = asDate(value);
   return date ? DATE.format(date) : "—";
@@ -91,6 +101,40 @@ function stageTone(status: ApplicationStatus): string {
 /** Every status in the schema is one word, so a label is a case change. */
 const stageLabel = (status: string) => status.charAt(0) + status.slice(1).toLowerCase();
 
+/*
+  The same tone and label data as the helpers above, as plain objects.
+  ApplicationsTable is a client component and a function cannot cross that
+  boundary, so the mapping is materialised once here rather than duplicated
+  there — one source, so the list and the bulk control cannot disagree about
+  what colour "Interview" is.
+*/
+const STAGE_TONES = Object.fromEntries(
+  APPLICATION_STATUSES.map((status) => [status, stageTone(status)]),
+) as Record<ApplicationStatus, string>;
+
+const STAGE_LABELS = Object.fromEntries(
+  APPLICATION_STATUSES.map((status) => [status, stageLabel(status)]),
+) as Record<ApplicationStatus, string>;
+
+/*
+  The stages a bulk move may target, in pipeline order. REJECTED is included
+  because declining a batch is a real and common action; WITHDRAWN is not,
+  because only a candidate withdraws and recording it on their behalf in bulk
+  would put words in several people's mouths at once.
+*/
+const BULK_STAGES: ReadonlyArray<{ value: ApplicationStatus; label: string }> = [
+  "NEW",
+  "SCREENING",
+  "INTERVIEW",
+  "SHORTLISTED",
+  "OFFER",
+  "HIRED",
+  "REJECTED",
+].map((status) => ({
+  value: status as ApplicationStatus,
+  label: stageLabel(status),
+}));
+
 export default async function AdminApplicationsPage({ searchParams }: Props) {
   const params = await searchParams;
 
@@ -103,11 +147,25 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
   // hand-edited URL into a 500.
   const jobParam = one(params.job);
   const jobId = isUuid(jobParam) ? jobParam : undefined;
+  /*
+    Sort is read here and handed to Postgres, not applied to the array below.
+    The page caps at 100 rows of what may be thousands; sorting the page and
+    calling it the queue is wrong in exactly the case that matters, a backlog
+    longer than one page. listApplications maps these through a fixed lookup
+    (APPLICATION_SORTS), so an unknown value degrades to the default rather
+    than reaching the database.
+  */
+  const sortParam = one(params.sort);
+  const sort =
+    sortParam === "candidate" || sortParam === "role" || sortParam === "stage"
+      ? sortParam
+      : "applied";
+  const dir = one(params.dir) === "asc" ? "asc" : "desc";
 
   type Loaded = Awaited<ReturnType<typeof load>>;
   async function load() {
     const [rows, jobs, counts] = await Promise.all([
-      listApplications({ status: stage, jobId, q: q || undefined, limit: 100 }),
+      listApplications({ status: stage, jobId, q: q || undefined, sort, dir, limit: 100 }),
       // The filter dropdown lists every role, including drafts: an application
       // can exist against a role that has since been unpublished, and the
       // recruiter still has to be able to filter down to it.
@@ -148,7 +206,7 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
     <main className="ws-main">
       <div className="ws-head">
         <div>
-          <p className="ws-eyebrow">Recruitment</p>
+          <p className="ws-eyebrow">Consult America / Recruitment</p>
           <h1>Applications</h1>
           <p>
             Every application submitted through the Consult America careers site, newest first.
@@ -232,69 +290,40 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
             )
           ) : (
             <>
-              <div className="ws-table-wrap">
-                <table className="ws-table">
-                  <thead>
-                    <tr>
-                      <th>Applicant</th>
-                      <th>Role applied for</th>
-                      <th>Resume</th>
-                      <th>Stage</th>
-                      <th>Applied</th>
-                      <th>Assigned recruiter</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.rows.map((row) => {
-                      // first_name and last_name are NOT NULL but may be '' —
-                      // the sparse re-application upsert depends on that — so
-                      // the email is the fallback label rather than a blank cell.
-                      const name =
-                        `${row.candidate_first_name} ${row.candidate_last_name}`.trim() ||
-                        row.candidate_email;
-                      return (
-                        <tr key={row.id}>
-                          <td>
-                            <Link href={`/admin/applications/${row.id}`}>{name}</Link>
-                            <div className="ws-muted">{row.candidate_email}</div>
-                            <div className="ws-muted">{row.reference}</div>
-                          </td>
-                          <td>
-                            {row.job_title}
-                            <div className="ws-muted">{row.job_reference}</div>
-                          </td>
-                          <td className="ca-resume-cell">
-                            {/* No extra query per row: listApplications already
-                                selects a.resume_url, a.resume_filename and
-                                a.resume_size_bytes, so the whole column is paid
-                                for by the list read that was happening anyway.
-                                Size is suppressed to keep rows one line tall;
-                                the detail page shows it. */}
-                            <ResumeLink
-                              applicationId={row.id}
-                              resumeUrl={row.resume_url}
-                              filename={row.resume_filename}
-                              sizeBytes={row.resume_size_bytes}
-                              showSize={false}
-                            />
-                          </td>
-                          <td>
-                            <span className={`ws-pill ${stageTone(row.status)}`.trim()}>
-                              {stageLabel(row.status)}
-                            </span>
-                          </td>
-                          <td className="ws-muted">{fmtDate(row.applied_at)}</td>
-                          <td>
-                            {row.assigned_recruiter_name ?? (
-                              <span className="ws-muted">Unassigned</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {/*
+                Rows are mapped to a flat view model here rather than handed to
+                the table raw. The table is a client component, so everything
+                crossing that boundary is serialized: passing the whole row
+                would ship resume_url (a private blob URL), zoho ids and
+                internal notes to the browser for no reason. This sends only
+                what is rendered.
+              */}
+              <ApplicationsTable
+                rows={data.rows.map<ApplicationRowView>((row) => ({
+                  id: row.id,
+                  reference: row.reference,
+                  status: row.status,
+                  appliedLabel: fmtDate(row.applied_at),
+                  appliedIso: isoDate(row.applied_at),
+                  // first_name and last_name are NOT NULL but may be '' — the
+                  // sparse re-application upsert depends on that — so the email
+                  // is the fallback label rather than a blank cell.
+                  candidateName:
+                    `${row.candidate_first_name} ${row.candidate_last_name}`.trim() ||
+                    row.candidate_email,
+                  candidateEmail: row.candidate_email,
+                  jobTitle: row.job_title,
+                  jobReference: row.job_reference,
+                  // Presence only. ResumeLink gates on it and never hrefs it;
+                  // the signing route is the only way the bytes are reached.
+                  resumeUrl: row.resume_url ? "stored" : null,
+                  resumeFilename: row.resume_filename,
+                  resumeSizeBytes: row.resume_size_bytes,
+                }))}
+                stages={BULK_STAGES}
+                stageTone={STAGE_TONES}
+                stageLabel={STAGE_LABELS}
+              />
               {data.rows.length === 100 ? (
                 <p className="ws-table-caption">
                   Showing the 100 most recent matches. Narrow the search or the stage filter to

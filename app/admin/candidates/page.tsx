@@ -17,6 +17,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Avatar } from "@/components/admin/Avatar";
+
 import { requireAdmin } from "@/lib/neon/auth";
 import { listCandidates } from "@/lib/neon/candidates";
 import { NeonConfigError } from "@/lib/neon/client";
@@ -88,7 +90,7 @@ export default async function AdminCandidatesPage({ searchParams }: Props) {
     <main className="ws-main">
       <div className="ws-head">
         <div>
-          <p className="ws-eyebrow">Recruitment</p>
+          <p className="ws-eyebrow">Consult America / Recruitment</p>
           <h1>Candidates</h1>
           <p>
             One record per person, keyed on their email address, so a second application does
@@ -190,14 +192,22 @@ export default async function AdminCandidatesPage({ searchParams }: Props) {
                       return (
                         <tr key={candidate.id}>
                           <td>
-                            <Link href={`/admin/candidates/${candidate.id}`}>{name}</Link>
-                            <div className="ws-muted">
-                              {email ? (
-                                <a href={email}>{candidate.email}</a>
-                              ) : (
-                                candidate.email
-                              )}
-                            </div>
+                            {/* Seeded on email, not name: the same person is
+                                the same colour here, in the queue and on the
+                                overview. See components/admin/Avatar.tsx. */}
+                            <span className="ws-who">
+                              <Avatar name={name} seed={candidate.email} />
+                              <span className="ws-who-text">
+                                <Link href={`/admin/candidates/${candidate.id}`}>{name}</Link>
+                                <div className="ws-muted">
+                                  {email ? (
+                                    <a href={email}>{candidate.email}</a>
+                                  ) : (
+                                    candidate.email
+                                  )}
+                                </div>
+                              </span>
+                            </span>
                           </td>
                           <td>
                             {candidate.phone ? (

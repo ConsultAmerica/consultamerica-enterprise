@@ -157,8 +157,10 @@ export function ApplyForm({ job }: { job: ApplyFormJob }) {
       return;
     }
 
-    const ok = window.confirm(`Submit your application for\n${job.title}?`);
-    if (!ok) return;
+    // No confirmation step. The candidate filled in the form and pressed
+    // Submit; asking again adds friction to the most important conversion on
+    // the site. window.confirm would also block the page, which is why the
+    // dashboard uses inline two-step confirms for destructive actions.
 
     setSubmitting(true);
     try {

@@ -298,6 +298,25 @@ export async function submitApplicationAction(
 
   const reference = filed.application.reference;
 
+  /*
+    The résumé bytes, for the recruiting notification's attachment.
+
+    Read from the same File that was just uploaded rather than fetched back
+    from Blob storage: the bytes are already here, and a round trip would mean
+    minting a signed URL to download a file this process read moments ago.
+
+    Failure is swallowed to null. The attachment is a convenience; the
+    application is filed, the row is stored, and a notification without a
+    document attached is still worth far more than no notification at all.
+  */
+  let resumeAttachment: { filename: string; contentBase64: string } | null = null;
+  try {
+    const buffer = Buffer.from(await resume.arrayBuffer());
+    resumeAttachment = { filename: stored.filename, contentBase64: buffer.toString("base64") };
+  } catch (error) {
+    logServerError("apply.resume-attachment", error, { reference });
+  }
+
   // Step 6. Everything from here is notification, and the candidate has
   // already been told their application is in.
   scheduleNotifications({
@@ -307,6 +326,9 @@ export async function submitApplicationAction(
     candidateName: `${firstName} ${lastName}`,
     candidateEmail: email,
     resumeFilename: stored.filename,
+    resumeAttachment,
+    candidateLocation: location || null,
+    candidateLinkedIn: linkedinUrl || null,
     candidatePhone: phone,
   });
 
@@ -327,6 +349,16 @@ type NotificationInput = {
   candidatePhone: string;
   /** Shown on the recruiter notification, with a link to the signed download. */
   resumeFilename: string | null;
+  /**
+   * The résumé bytes, base64, so the notification can carry the document
+   * itself. Read once from the uploaded File and held until after() runs;
+   * null when the bytes could not be read, which must never block the email.
+   */
+  resumeAttachment: { filename: string; contentBase64: string } | null;
+  /** City/State as typed on the form. */
+  candidateLocation: string | null;
+  /** LinkedIn profile, already normalised to an absolute URL or empty. */
+  candidateLinkedIn: string | null;
 };
 
 /**
@@ -365,6 +397,9 @@ async function mailApplication(input: NotificationInput): Promise<void> {
       applicationNumber: input.reference,
       source: "Careers Site",
       resumeFilename: input.resumeFilename,
+      resumeAttachment: input.resumeAttachment,
+      candidateLocation: input.candidateLocation,
+      candidateLinkedIn: input.candidateLinkedIn,
     });
     console.info("[application-email]", { event: "sent", reference: input.reference, ...sent });
   } catch (error) {

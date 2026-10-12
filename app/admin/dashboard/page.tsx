@@ -1,10 +1,7 @@
 import Link from "next/link";
 
-import {
-  type ApplicationListItem,
-  countApplicationsByStatus,
-  listApplications,
-} from "@/lib/neon/applications";
+import { Avatar } from "@/components/admin/Avatar";
+import { countApplicationsByStatus } from "@/lib/neon/applications";
 import {
   AUTH_NOTICES,
   type AdminSessionUser,
@@ -16,29 +13,36 @@ import type { ApplicationStatus } from "@/lib/neon/types";
 import { logServerError } from "@/lib/observability/logger";
 
 /**
- * The recruitment admin overview.
+ * Recruitment Overview — the executive view of the hiring desk.
  *
- * This file used to be a 308 redirect to /app/recruiting (the Supabase
- * workspace). That alias is why a successful admin sign-in bounced straight
- * back to /login: the Neon login action lands on DEFAULT_ADMIN_LANDING
- * (/admin/dashboard), the redirect threw the browser into the Supabase
- * workspace, and the Supabase guard there has never heard of the ca_admin_session
- * cookie. The old workspace is untouched and still lives at /app/recruiting.
+ * THE SHAPE: four KPI cards, the hiring pipeline, and the applications waiting
+ * on a decision. Everything a recruiter or an owner needs to see before they
+ * choose which of the other three screens to open.
  *
- * Browsers that visited /admin/dashboard before this change hold a *permanent*
- * redirect in cache and will keep sending themselves to /app/recruiting until
- * that entry expires. A hard reload or a fresh profile clears it.
+ * WHAT THIS REPLACED, AND WHAT SURVIVED. The previous version was a dark
+ * instrument panel that led with waiting time and drew an animated ageing rail
+ * on every row. The underlying judgement was right and is kept: waiting time
+ * is the only figure here that represents an obligation rather than a
+ * statistic. What changed is how it speaks. "Needs review" is now a KPI, the
+ * review list is still ordered longest-wait-first without announcing it, and a
+ * wait past the service promise raises a plain alert instead of a coloured
+ * meter. Business language, not instrumentation.
  *
- * Every number rendered here is a count returned by Postgres in this request.
- * Nothing is cached, derived from a sample, or defaulted when a query fails:
- * when a read cannot be completed the page says so instead of printing a zero,
- * because a fabricated zero on a recruitment dashboard reads as "no applicants"
- * and that is a decision-changing lie.
+ * STILL A SERVER COMPONENT, WITH NO CLIENT BOUNDARY. Nothing here holds state.
+ * Waits are computed in Postgres rather than the browser so the figures cannot
+ * disagree with the clock that stamped the rows, and so React has no hydration
+ * mismatch to report on a page whose numbers are the point.
+ *
+ * Every number is counted in Postgres during this request. Nothing is cached,
+ * sampled, or defaulted when a read fails: when a query cannot be completed the
+ * page says so instead of printing a zero, because a fabricated zero on a
+ * recruitment dashboard reads as "no applicants" and that is a
+ * decision-changing lie.
  *
  * The guard is here rather than in app/admin/layout.tsx, which also wraps the
  * sign-in and password-reset pages; see the comment in that file.
  */
-export const metadata = { title: "Dashboard" };
+export const metadata = { title: "Recruitment Overview" };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -46,42 +50,36 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 /**
  * The pipeline, in the order an application moves through it. REJECTED and
- * WITHDRAWN are counted as well but reported separately below: folding closed
- * applications into this row would make the figures read as open work.
+ * WITHDRAWN are counted as well but reported separately: folding closed
+ * applications into these six would make the figures read as open work.
  */
-const PIPELINE: readonly { status: ApplicationStatus; label: string; tone: string }[] = [
-  { status: "NEW", label: "New", tone: "blue" },
-  { status: "SCREENING", label: "Screening", tone: "amber" },
-  { status: "INTERVIEW", label: "Interview", tone: "amber" },
-  { status: "SHORTLISTED", label: "Shortlisted", tone: "blue" },
-  { status: "OFFER", label: "Offer", tone: "green" },
-  { status: "HIRED", label: "Hired", tone: "green" },
+const PIPELINE: readonly { status: ApplicationStatus; label: string }[] = [
+  { status: "NEW", label: "New" },
+  { status: "SCREENING", label: "Screening" },
+  { status: "INTERVIEW", label: "Interview" },
+  { status: "SHORTLISTED", label: "Shortlisted" },
+  { status: "OFFER", label: "Offer" },
+  { status: "HIRED", label: "Hired" },
 ];
 
-const STATUS_TONES: Record<ApplicationStatus, string> = {
-  NEW: "blue",
-  SCREENING: "amber",
-  INTERVIEW: "amber",
-  SHORTLISTED: "blue",
-  OFFER: "green",
-  HIRED: "green",
-  REJECTED: "red",
-  WITHDRAWN: "",
-};
+/**
+ * The stages that count as "waiting on us".
+ *
+ * NEW and SCREENING only. An application at interview or offer is mid-process
+ * with dates in the diary, and counting it as unreviewed would inflate the
+ * number that is supposed to mean "nobody has looked at this yet".
+ */
+const REVIEW_STATUSES: readonly ApplicationStatus[] = ["NEW", "SCREENING"];
 
-const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  NEW: "New",
-  SCREENING: "Screening",
-  INTERVIEW: "Interview",
-  SHORTLISTED: "Shortlisted",
-  OFFER: "Offer",
-  HIRED: "Hired",
-  REJECTED: "Rejected",
-  WITHDRAWN: "Withdrawn",
-};
+/** How many of the longest-waiting applications the overview lists. */
+const REVIEW_LIMIT = 8;
 
-/** How many recent applications the overview lists before deferring to the queue. */
-const RECENT_LIMIT = 10;
+/**
+ * Days an application may wait before the alert fires. The banner quotes this
+ * constant rather than repeating the number, so threshold and copy cannot
+ * drift apart.
+ */
+const SLA_DAYS = 7;
 
 const ENV_VAR = "DATABASE_URL";
 
@@ -98,19 +96,15 @@ type HeadlineTotals = {
  * Job and candidate totals, as one aggregate.
  *
  * WHY THIS IS A QUERY AND NOT A CALL INTO lib/neon/jobs.ts: the data layer has
- * no countJobsByStatus or countCandidates (applications is the only table with
- * a counter, countApplicationsByStatus, used below) and lib/neon/* is outside
- * the scope of this change, so adding one is not an option here. The available
- * readers are listJobs() and listCandidates(), and both are LIMIT-capped —
- * clampLimit() refuses anything above 200 — so counting their rows would start
- * silently under-reporting at the 201st job with no indication on screen. An
- * undercount presented as a total is the kind of number someone makes a hiring
- * decision on, so this asks Postgres to do the counting instead.
+ * no countJobsByStatus or countCandidates. The available readers are listJobs()
+ * and listCandidates(), and both are LIMIT-capped — clampLimit() refuses
+ * anything above 200 — so counting their rows would start silently
+ * under-reporting at the 201st job with no indication on screen. An undercount
+ * presented as a total is the kind of number someone makes a hiring decision
+ * on, so this asks Postgres to do the counting instead.
  *
  * One statement rather than four: the HTTP transport costs a round trip per
- * statement, and scalar subqueries let a single trip answer the whole header.
- * FILTER beats four COUNT(CASE ...) expressions only in readability, which is
- * reason enough.
+ * statement, and scalar subqueries let a single trip answer all four cards.
  */
 async function loadHeadlineTotals(): Promise<HeadlineTotals> {
   const rows = await query<{
@@ -142,10 +136,79 @@ async function loadHeadlineTotals(): Promise<HeadlineTotals> {
   };
 }
 
+type ReviewRow = {
+  id: string;
+  reference: string;
+  status: ApplicationStatus;
+  applied_at: Date | string;
+  candidate_email: string;
+  candidate_first_name: string;
+  candidate_last_name: string;
+  job_title: string;
+  job_reference: string;
+  /** Whole days this application has been waiting, computed by Postgres. */
+  wait_days: number;
+};
+
+type ReviewQueue = {
+  rows: ReviewRow[];
+  /** Everything awaiting review, not just the page above. */
+  total: number;
+  /** How many of those are past SLA_DAYS. Counted over the whole set. */
+  overdue: number;
+};
+
+/**
+ * The applications waiting on a decision, longest wait first.
+ *
+ * TWO STATEMENTS, NOT ONE, AND THE SECOND IS THE IMPORTANT ONE. The list is
+ * capped at REVIEW_LIMIT, so counting overdue rows inside it would describe the
+ * page rather than the desk: with nine late applications and a limit of eight,
+ * a banner built from the list would say eight. The aggregate counts the whole
+ * table, so the alert is true regardless of how much of it is on screen.
+ *
+ * Waits are measured by Postgres against the clock that stamped applied_at, and
+ * floored to whole days with date_trunc so a recruiter reads "9 days" and never
+ * "8.6 days".
+ */
+async function loadReviewQueue(): Promise<ReviewQueue> {
+  const [rows, counts] = await Promise.all([
+    query<ReviewRow>(
+      `SELECT a.id, a.reference, a.status, a.applied_at,
+              c.email      AS candidate_email,
+              c.first_name AS candidate_first_name,
+              c.last_name  AS candidate_last_name,
+              j.title      AS job_title,
+              j.reference  AS job_reference,
+              GREATEST(
+                0,
+                EXTRACT(DAY FROM date_trunc('day', now()) - date_trunc('day', a.applied_at))
+              )::int AS wait_days
+         FROM applications a
+         JOIN candidates c ON c.id = a.candidate_id
+         JOIN jobs j       ON j.id = a.job_id
+        WHERE a.status = ANY($1::text[])
+        ORDER BY a.applied_at ASC
+        LIMIT $2`,
+      [REVIEW_STATUSES, REVIEW_LIMIT],
+    ),
+    query<{ total: number; overdue: number }>(
+      `SELECT count(*)::int AS total,
+              (count(*) FILTER (WHERE a.applied_at < now() - ($2 || ' days')::interval))::int AS overdue
+         FROM applications a
+        WHERE a.status = ANY($1::text[])`,
+      [REVIEW_STATUSES, SLA_DAYS],
+    ),
+  ]);
+
+  const summary = counts[0] ?? { total: rows.length, overdue: 0 };
+  return { rows, total: summary.total, overdue: summary.overdue };
+}
+
 type Dashboard = {
   totals: HeadlineTotals;
   byStatus: Record<ApplicationStatus, number>;
-  recent: ApplicationListItem[];
+  review: ReviewQueue;
 };
 
 type LoadResult =
@@ -162,14 +225,12 @@ type LoadResult =
  */
 async function loadDashboard(): Promise<LoadResult> {
   try {
-    const [totals, byStatus, recent] = await Promise.all([
+    const [totals, byStatus, review] = await Promise.all([
       loadHeadlineTotals(),
       countApplicationsByStatus(),
-      // listApplications already orders by applied_at DESC and has an index for
-      // it (applications_recent_idx), so "most recent ten" is just a limit.
-      listApplications({ limit: RECENT_LIMIT }),
+      loadReviewQueue(),
     ]);
-    return { ok: true, data: { totals, byStatus, recent } };
+    return { ok: true, data: { totals, byStatus, review } };
   } catch (error) {
     if (error instanceof NeonConfigError) {
       return { ok: false, reason: "not-configured" };
@@ -203,14 +264,94 @@ async function guard(): Promise<AdminSessionUser | "not-configured"> {
 
 // ------------------------------------------------------------------- rendering
 
+/*
+ * Icons. Inline SVG rather than an icon font or a package: four glyphs do not
+ * justify a dependency, and inlining means they inherit currentColor and
+ * animate with the card they sit in.
+ *
+ * aria-hidden throughout. Every one of them sits next to a text label that
+ * already says the same thing, so announcing them would make a screen reader
+ * read each card twice.
+ */
+const ICON = {
+  stroke: {
+    fill: "none" as const,
+    stroke: "currentColor",
+    strokeWidth: 1.7,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  },
+};
+
+function BriefcaseIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" {...ICON.stroke} aria-hidden>
+      <rect x="2.5" y="7" width="19" height="13" rx="2.5" />
+      <path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7M2.5 12.5h19" />
+    </svg>
+  );
+}
+
+function DocumentIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" {...ICON.stroke} aria-hidden>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h4" />
+    </svg>
+  );
+}
+
+function PeopleIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" {...ICON.stroke} aria-hidden>
+      <path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20" />
+      <circle cx="10" cy="8" r="3.2" />
+      <path d="M20 20v-1.5a3.5 3.5 0 0 0-2.6-3.4M15.4 5.2a3.2 3.2 0 0 1 0 5.6" />
+    </svg>
+  );
+}
+
+function ReviewIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" {...ICON.stroke} aria-hidden>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M11 8v3.2l2 1.3M20 20l-3.6-3.6" />
+    </svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" {...ICON.stroke} aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7.5v5M12 16.2v.1" />
+    </svg>
+  );
+}
+
+function InboxIcon() {
+  return (
+    <svg width="21" height="21" viewBox="0 0 24 24" {...ICON.stroke} aria-hidden>
+      <path d="M3 13h4l1.6 2.6h6.8L17 13h4" />
+      <path d="M5.4 5h13.2l2.4 8v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4z" />
+    </svg>
+  );
+}
+
+const ARROW = (
+  <svg width="13" height="13" viewBox="0 0 24 24" {...ICON.stroke} strokeWidth={2.2} aria-hidden>
+    <path d="M5 12h13M12 5.5 18.5 12 12 18.5" />
+  </svg>
+);
+
 /**
- * Dates are rendered on the server, so they carry the server's timezone (UTC on
+ * Dates render on the server, so they carry the server's timezone (UTC on
  * Vercel). The full ISO timestamp goes in a title attribute rather than being
  * dropped, so "which of these two arrived first" is always answerable.
  *
  * Typed to accept a string as well as a Date: the row types in lib/neon/types.ts
  * declare Date, and the driver does parse timestamptz into one, but a formatter
- * that falls over on a string would turn a driver-configuration change into a
+ * that fell over on a string would turn a driver-configuration change into a
  * crashed dashboard.
  */
 function fmtWhen(value: Date | string | null): { text: string; iso: string | undefined } {
@@ -223,18 +364,24 @@ function fmtWhen(value: Date | string | null): { text: string; iso: string | und
   };
 }
 
+/** "Today", "1 day", "6 days" — the wait, in words, for a table cell. */
+function waitLabel(days: number): string {
+  if (days <= 0) return "Today";
+  return `${days} ${days === 1 ? "day" : "days"}`;
+}
+
 /**
  * candidates.first_name and last_name are allowed to be '' by design (see the
  * note at the end of db/neon/002_fixes.sql), so a row can legitimately have no
  * name. The email is always present and unique, so it is the honest fallback —
  * better than an empty link nobody can click accurately.
  */
-function candidateName(application: ApplicationListItem): string {
-  const name = [application.candidate_first_name, application.candidate_last_name]
+function candidateName(row: ReviewRow): string {
+  const name = [row.candidate_first_name, row.candidate_last_name]
     .map((part) => part.trim())
     .filter(Boolean)
     .join(" ");
-  return name || application.candidate_email;
+  return name || row.candidate_email;
 }
 
 /**
@@ -243,10 +390,7 @@ function candidateName(application: ApplicationListItem): string {
  *
  * Self-contained, with its own .ws and .ws-main: in this state
  * app/admin/layout.tsx cannot read the session either, so it renders no chrome
- * and this panel is the entire page. (The second call site below — a dashboard
- * read reporting "not configured" after the guard already succeeded — cannot
- * happen, because the guard's own query would have failed first. It is handled
- * anyway rather than left to fall through to a blank screen.)
+ * and this panel is the entire page.
  *
  * The .adm-config panel style is the one /admin/jobs and /admin/applications
  * already use for this exact condition, so the same problem looks the same
@@ -259,7 +403,7 @@ function DatabaseNotConfigured() {
       <main className="ws-main">
         <div className="ws-head">
           <div>
-            <p className="ws-eyebrow">Consult America admin</p>
+            <p className="ws-eyebrow">Consult America / Recruitment</p>
             <h1>Recruitment admin is not connected to a database</h1>
             <p>
               A configuration problem, not a fault in the data: no connection string is set, so
@@ -309,8 +453,8 @@ function DatabaseUnavailable() {
     <>
       <div className="ws-head">
         <div>
-          <p className="ws-eyebrow">Consult America admin</p>
-          <h1>Recruitment overview</h1>
+          <p className="ws-eyebrow">Consult America / Recruitment</p>
+          <h1>Recruitment Overview</h1>
           <p>The database did not answer, so this page has no figures to show.</p>
         </div>
       </div>
@@ -336,9 +480,7 @@ function DatabaseUnavailable() {
 }
 
 /**
- * THE STATE THIS SYSTEM IS ACTUALLY IN TODAY: the database is empty.
- *
- * Shown above the figures when the jobs table has no rows, because every count
+ * Shown above the figures when the jobs table has no rows, because every number
  * below it is then zero and a screen of unexplained zeros is indistinguishable
  * from a screen of broken queries. It says which it is, why, and what to do.
  */
@@ -365,7 +507,7 @@ function NoJobsYet({ candidates }: { candidates: number }) {
         </li>
         <li>
           <strong>Work the applications.</strong> Each submission lands at New and moves through
-          screening, interview, shortlist and offer to hired. This overview counts them by stage.
+          screening, interview, shortlist and offer to hired.
         </li>
       </ol>
       <div className="ws-actions">
@@ -399,28 +541,27 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
     return loaded.reason === "not-configured" ? <DatabaseNotConfigured /> : <DatabaseUnavailable />;
   }
 
-  const { totals, byStatus, recent } = loaded.data;
+  const { totals, byStatus, review } = loaded.data;
 
   const openApplications = PIPELINE.reduce((sum, stage) => sum + byStatus[stage.status], 0);
   const closedApplications = byStatus.REJECTED + byStatus.WITHDRAWN;
   const totalApplications = openApplications + closedApplications;
-  const firstName = admin.fullName.trim().split(/\s+/)[0] || admin.fullName;
 
   return (
     /*
-      A fragment, not a <main>: app/admin/layout.tsx draws the signed-in chrome
-      and owns <main className="ws-main"> for every page under /admin. Only the
-      DatabaseNotConfigured branch above wraps itself, because that is the one
-      state in which the layout rendered no chrome at all.
+      A fragment-rooted <div>, not a <main>: app/admin/layout.tsx draws the
+      signed-in chrome and owns <main className="ws-main"> for every page under
+      /admin. Only the DatabaseNotConfigured branch above wraps itself, because
+      that is the one state in which the layout rendered no chrome at all.
     */
-    <>
-      <div className="ws-head">
+    <div className="rov">
+      <div className="rov-head">
         <div>
-          <p className="ws-eyebrow">Consult America admin</p>
-          <h1>Recruitment overview</h1>
+          <p className="ws-eyebrow">Consult America / Recruitment</p>
+          <h1>Recruitment Overview</h1>
           <p>
-            Welcome back, {firstName}. Every figure on this page was counted in the recruitment
-            database when the page loaded.
+            Manage job openings, review applications, and track candidates throughout the hiring
+            process.
           </p>
         </div>
         <Link className="ws-btn primary" href="/admin/jobs/new">
@@ -437,138 +578,218 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
       {/* The explanation comes before the numbers it explains. */}
       {totals.totalJobs === 0 ? <NoJobsYet candidates={totals.candidates} /> : null}
 
-      <div className="ws-stats">
-        {/*
-          The filter parameters are the ones the destination screens actually
-          read, which are not the same word: /admin/jobs takes ?status=, and
-          /admin/applications takes ?stage= (its "status" is per-application and
-          it keeps the queue filter under a different name). Values are the
-          canonical uppercase enums from lib/neon/types.ts, which is what both
-          pages validate against.
+      {/*
+        The only status message on the page, and it exists only when something
+        is actually late. A permanent "all is well" line is a line people stop
+        reading, which makes it worthless on the day it changes.
+      */}
+      {review.overdue > 0 ? (
+        <p className="rov-alert" role="status">
+          <span className="rov-alert-icon">
+            <AlertIcon />
+          </span>
+          <span>
+            <strong>
+              {review.overdue} {review.overdue === 1 ? "application has" : "applications have"} been
+              waiting more than {SLA_DAYS} days
+            </strong>{" "}
+            for a first review.
+          </span>
+          <Link href="/admin/applications?stage=NEW">Review now {ARROW}</Link>
+        </p>
+      ) : null}
 
-          Those lists are being built in parallel with this page, so the links
-          are written to degrade rather than break: an unrecognised parameter is
-          ignored and the visitor still lands on the right section, unfiltered.
+      <div className="rov-kpis">
+        {/*
+          The filter parameters are the ones the destination screens read, which
+          are not the same word: /admin/jobs takes ?status= and
+          /admin/applications takes ?stage=. Values are the canonical uppercase
+          enums from lib/neon/types.ts, which is what both pages validate
+          against; an unrecognised parameter is ignored and the visitor still
+          lands on the right section, unfiltered.
         */}
-        <Link className="ws-stat" href="/admin/jobs?status=PUBLISHED">
-          <strong>{totals.publishedJobs}</strong>
-          <span>Published jobs</span>
+        <Link className="rov-kpi" href="/admin/jobs?status=PUBLISHED">
+          <span className="rov-kpi-top">
+            <span className="rov-kpi-icon">
+              <BriefcaseIcon />
+            </span>
+            <span className="rov-kpi-label">Published jobs</span>
+          </span>
+          <strong className="rov-kpi-value">{totals.publishedJobs}</strong>
+          <span className="rov-kpi-note">
+            {totals.draftJobs} {totals.draftJobs === 1 ? "draft" : "drafts"} not yet live
+          </span>
         </Link>
-        <Link className="ws-stat" href="/admin/jobs?status=DRAFT">
-          <strong>{totals.draftJobs}</strong>
-          <span>Draft jobs</span>
+
+        <Link className="rov-kpi" href="/admin/applications">
+          <span className="rov-kpi-top">
+            <span className="rov-kpi-icon">
+              <DocumentIcon />
+            </span>
+            <span className="rov-kpi-label">Applications</span>
+          </span>
+          <strong className="rov-kpi-value">{totalApplications}</strong>
+          <span className="rov-kpi-note">
+            {closedApplications > 0
+              ? `${openApplications} open · ${closedApplications} closed`
+              : `${openApplications} open`}
+          </span>
         </Link>
-        <Link className="ws-stat" href="/admin/applications">
-          <strong>{totalApplications}</strong>
-          <span>Applications</span>
+
+        <Link className="rov-kpi" href="/admin/candidates">
+          <span className="rov-kpi-top">
+            <span className="rov-kpi-icon">
+              <PeopleIcon />
+            </span>
+            <span className="rov-kpi-label">Candidates</span>
+          </span>
+          <strong className="rov-kpi-value">{totals.candidates}</strong>
+          <span className="rov-kpi-note">In the talent database</span>
         </Link>
-        <Link className="ws-stat" href="/admin/candidates">
-          <strong>{totals.candidates}</strong>
-          <span>Candidates</span>
+
+        {/*
+          The action card. Distinguished by a tinted icon and a blue figure
+          rather than a filled background: it sits in a row of four and a solid
+          block would unbalance the set. At zero it looks like its neighbours,
+          because then there is nothing to act on.
+        */}
+        <Link
+          className={`rov-kpi${review.total > 0 ? " is-action" : ""}`}
+          href="/admin/applications?stage=NEW"
+        >
+          <span className="rov-kpi-top">
+            <span className="rov-kpi-icon">
+              <ReviewIcon />
+            </span>
+            <span className="rov-kpi-label">Needs review</span>
+          </span>
+          <strong className="rov-kpi-value">{review.total}</strong>
+          <span className="rov-kpi-note">
+            {review.total === 0
+              ? "Nothing awaiting a first look"
+              : review.overdue > 0
+                ? `${review.overdue} past ${SLA_DAYS} days`
+                : "Awaiting a first look"}
+          </span>
         </Link>
       </div>
 
-      <section className="ws-panel">
-        <h2>Application pipeline</h2>
-        <ul className="adm-pipeline">
+      <section className="rov-card" aria-labelledby="rov-pipeline-h">
+        <div className="rov-card-head">
+          <h2 id="rov-pipeline-h">Hiring pipeline</h2>
+          <p>
+            {openApplications} {openApplications === 1 ? "application" : "applications"} in progress
+          </p>
+        </div>
+        <ol className="rov-flow">
           {PIPELINE.map((stage) => (
-            <li key={stage.status}>
-              <Link href={`/admin/applications?stage=${stage.status}`}>
-                <strong>{byStatus[stage.status]}</strong>
-                <span className={`ws-pill ${stage.tone}`}>{stage.label}</span>
+            <li key={stage.status} className={byStatus[stage.status] === 0 ? "is-zero" : ""}>
+              <Link
+                href={`/admin/applications?stage=${stage.status}`}
+                aria-label={`${byStatus[stage.status]} at ${stage.label}`}
+              >
+                <span className="rov-flow-n">{byStatus[stage.status]}</span>
+                <span className="rov-flow-l">{stage.label}</span>
               </Link>
             </li>
           ))}
-        </ul>
-
-        {totalApplications === 0 ? (
-          <p className="ws-table-caption">
-            {totals.totalJobs === 0
-              ? "Every stage is empty because there are no jobs to apply to yet."
-              : totals.publishedJobs === 0
-                ? `Every stage is empty because none of the ${totals.totalJobs} ${totals.totalJobs === 1 ? "job" : "jobs"} in the system is published, so candidates cannot see any of them.`
-                : `Every stage is empty: ${totals.publishedJobs} ${totals.publishedJobs === 1 ? "role is" : "roles are"} published and nothing has been submitted against them yet.`}
-          </p>
-        ) : (
-          <p className="ws-table-caption">
-            {openApplications} open in the pipeline
-            {closedApplications > 0
-              ? `, plus ${closedApplications} closed (${byStatus.REJECTED} rejected, ${byStatus.WITHDRAWN} withdrawn), which are counted in the ${totalApplications} total above but kept out of the stages.`
-              : ". No application has been rejected or withdrawn."}
-          </p>
-        )}
+        </ol>
       </section>
 
-      <section className="ws-panel">
-        <h2>Latest applications</h2>
-        {recent.length === 0 ? (
-          <div className="ws-empty">
-            <h2>Nothing has been submitted yet</h2>
+      <section className="rov-card" aria-labelledby="rov-review-h">
+        <div className="rov-card-head">
+          <h2 id="rov-review-h">Applications requiring review</h2>
+          <Link className="rov-card-link" href="/admin/applications?stage=NEW">
+            View all {ARROW}
+          </Link>
+        </div>
+
+        {review.rows.length === 0 ? (
+          <div className="rov-empty">
+            <span className="rov-empty-icon">
+              <InboxIcon />
+            </span>
+            <h3>Nothing is waiting for a review</h3>
             <p>
               {totals.totalJobs === 0
-                ? "This fills in on its own once a published job starts receiving applications. Create a job to get there."
-                : "This fills in on its own once a published job starts receiving applications. Check that the roles you expect to be live are in the Published status."}
+                ? "This fills in once a published job starts receiving applications. Create a job to get there."
+                : totals.publishedJobs === 0
+                  ? `None of the ${totals.totalJobs} ${totals.totalJobs === 1 ? "job" : "jobs"} in the system is published, so candidates cannot see any of them to apply.`
+                  : "Every new application has been picked up. Submissions appear here as they arrive."}
             </p>
-            <Link className="ws-btn primary" href={totals.totalJobs === 0 ? "/admin/jobs/new" : "/admin/jobs"}>
-              {totals.totalJobs === 0 ? "Create the first job" : "Review jobs"}
-            </Link>
           </div>
         ) : (
           <>
-            <div className="ws-table-wrap">
-              <table className="ws-table">
-                <thead>
-                  <tr>
-                    <th>Candidate</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Recruiter</th>
-                    <th>Applied</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map((application) => {
-                    const when = fmtWhen(application.applied_at);
-                    return (
-                      <tr key={application.id}>
-                        <td>
-                          <Link href={`/admin/applications/${application.id}`}>
-                            {candidateName(application)}
-                          </Link>
-                          <div className="ws-muted">
-                            {application.candidate_email} · {application.reference}
-                          </div>
-                        </td>
-                        <td>
-                          {application.job_title}
-                          <div className="ws-muted">{application.job_reference}</div>
-                        </td>
-                        <td>
-                          <span className={`ws-pill ${STATUS_TONES[application.status]}`}>
-                            {STATUS_LABELS[application.status]}
+            <table className="rov-table">
+              <thead>
+                <tr>
+                  <th>Candidate</th>
+                  <th className="rov-role-cell">Role</th>
+                  <th>Applied</th>
+                  {/* The action column. Headed by a screen-reader-only label
+                      rather than left blank, so the table still has a name for
+                      every column it renders. */}
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {review.rows.map((row) => {
+                  const when = fmtWhen(row.applied_at);
+                  const name = candidateName(row);
+                  const late = row.wait_days >= SLA_DAYS;
+                  return (
+                    <tr key={row.id}>
+                      <td>
+                        <span className="rov-who">
+                          <Avatar name={name} seed={row.candidate_email} />
+                          <span className="rov-who-text">
+                            <Link className="rov-name" href={`/admin/applications/${row.id}`}>
+                              {name}
+                            </Link>
+                            <span className="rov-sub">{row.reference}</span>
+                            {/* Visible only on the narrowest layout, where the
+                                role column is dropped; see the stylesheet. */}
+                            <span className="rov-role-inline">{row.job_title}</span>
                           </span>
-                        </td>
-                        <td className="ws-muted">
-                          {application.assigned_recruiter_name ?? "Unassigned"}
-                        </td>
-                        <td className="ws-muted" title={when.iso}>
+                        </span>
+                      </td>
+                      <td className="rov-role-cell">
+                        <span className="rov-role">{row.job_title}</span>
+                        <span className="rov-sub">{row.job_reference}</span>
+                      </td>
+                      <td>
+                        <span className="rov-when" title={when.iso}>
                           {when.text}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <p className="ws-table-caption">
-              {totalApplications > recent.length
-                ? `The ${recent.length} most recent of ${totalApplications}. `
-                : `All ${totalApplications} ${totalApplications === 1 ? "application" : "applications"}. `}
-              <Link href="/admin/applications">Open the full queue</Link>
-            </p>
+                        </span>
+                        <span className={`rov-wait${late ? " is-late" : ""}`}>
+                          {waitLabel(row.wait_days)}
+                        </span>
+                      </td>
+                      <td>
+                        <Link
+                          className="rov-open"
+                          href={`/admin/applications/${row.id}`}
+                          aria-label={`Review ${name} for ${row.job_title}`}
+                        >
+                          Review {ARROW}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {review.total > review.rows.length ? (
+              <p className="rov-foot">
+                Showing {review.rows.length} of {review.total} awaiting review.{" "}
+                <Link href="/admin/applications?stage=NEW">View all</Link>
+              </p>
+            ) : null}
           </>
         )}
       </section>
-    </>
+    </div>
   );
 }

@@ -189,7 +189,7 @@ export default async function AdminJobsPage({ searchParams }: Props) {
         <main className="ws-main">
           <div className="ws-head">
             <div>
-              <p className="ws-eyebrow">Consult America admin</p>
+              <p className="ws-eyebrow">Consult America / Recruitment</p>
               <h1>Jobs</h1>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default async function AdminJobsPage({ searchParams }: Props) {
     <>
       <div className="ws-head">
         <div>
-          <p className="ws-eyebrow">Consult America admin</p>
+          <p className="ws-eyebrow">Consult America / Recruitment</p>
           <h1>Jobs</h1>
           <p>
             Every job in the recruitment database, newest first. Jobs are typed in here by hand;

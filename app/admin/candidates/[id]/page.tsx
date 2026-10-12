@@ -17,6 +17,8 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
+
+import { ResumeLink } from "@/components/admin/ResumeLink";
 import { notFound } from "next/navigation";
 
 import { listApplications } from "@/lib/neon/applications";
@@ -145,7 +147,7 @@ export default async function AdminCandidateDetailPage({ params }: Props) {
       <main className="ws-main">
         <div className="ws-head">
           <div>
-            <p className="ws-eyebrow">Recruitment</p>
+            <p className="ws-eyebrow">Consult America / Recruitment</p>
             <h1>Candidate</h1>
           </div>
         </div>
@@ -219,9 +221,9 @@ export default async function AdminCandidateDetailPage({ params }: Props) {
                     <tr>
                       <th>Role</th>
                       <th>Reference</th>
+                      <th>Resume</th>
                       <th>Stage</th>
                       <th>Applied</th>
-                      <th>Assigned recruiter</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -232,17 +234,28 @@ export default async function AdminCandidateDetailPage({ params }: Props) {
                           <div className="ws-muted">{row.job_reference}</div>
                         </td>
                         <td className="ws-muted">{row.reference}</td>
+                        <td className="ca-resume-cell">
+                          {/* Each application carries its own résumé: a
+                              candidate who applied three times may well have
+                              sent three different CVs, and showing only the
+                              latest would hide what they actually submitted
+                              for the role being looked at. listApplications
+                              already selects these columns, so the cell costs
+                              no extra query. */}
+                          <ResumeLink
+                            applicationId={row.id}
+                            resumeUrl={row.resume_url}
+                            filename={row.resume_filename}
+                            sizeBytes={row.resume_size_bytes}
+                            showSize={false}
+                          />
+                        </td>
                         <td>
                           <span className={`ws-pill ${stageTone(row.status)}`.trim()}>
                             {stageLabel(row.status)}
                           </span>
                         </td>
                         <td className="ws-muted">{fmtDate(row.applied_at)}</td>
-                        <td>
-                          {row.assigned_recruiter_name ?? (
-                            <span className="ws-muted">Unassigned</span>
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
