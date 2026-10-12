@@ -1816,6 +1816,26 @@ button.cmdk-item {
   min-height: 100vh;
   background: var(--surface);
   color: var(--ink);
+
+  /*
+    THE 2026 ADMIN REFRESH.
+
+    The Recruitment Overview was rebuilt with depth, tinted table headers and
+    real hover feedback, which left Jobs, Applications and Candidates looking
+    like a different product. Rather than restyle three pages, the shared
+    primitives below were lifted to the same language, so every screen in the
+    admin — and the older /app workspace, which shares these classes — moves
+    together and cannot drift apart again.
+
+    Two shadows, both nearly invisible alone: a tight contact shadow and a
+    wider ambient one. Together they read as a card resting on paper rather
+    than a box with a drop shadow.
+  */
+  --ws-lift: 0 1px 2px rgba(16, 30, 54, 0.05), 0 2px 8px -4px rgba(16, 30, 54, 0.12);
+  --ws-lift-hi: 0 2px 4px rgba(16, 30, 54, 0.06), 0 10px 24px -10px rgba(16, 30, 54, 0.2);
+  --ws-tint: #f5f8fc;
+  --ws-line-soft: #eef1f6;
+  --ws-ease: cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 .ws-bar {
@@ -1943,8 +1963,9 @@ button.cmdk-item {
 .ws-panel {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 20px;
+  box-shadow: var(--ws-lift);
 }
 
 .ws-panel + .ws-panel {
@@ -2042,26 +2063,43 @@ button.cmdk-item {
   font-size: 14px;
 }
 
+/* A tinted header band, so the column names read as chrome and the rows read
+   as content. On a long list this is the difference between scanning and
+   reading. */
 .ws-table th {
   text-align: left;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--ink-2);
+  color: var(--ink-3);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--line);
+  letter-spacing: 0.07em;
+  padding: 9px 14px;
+  background: var(--ws-tint);
+  border-top: 1px solid var(--ws-line-soft);
+  border-bottom: 1px solid var(--ws-line-soft);
   white-space: nowrap;
 }
 
+/* middle, not top. Rows here are one or two lines with a pill or a button in
+   them, and top-alignment left every badge floating above its own text. */
 .ws-table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ws-line-soft);
+  vertical-align: middle;
 }
 
 .ws-table tr:last-child td {
   border-bottom: 0;
+}
+
+/* Row feedback. Without it a dense table gives no sign it is interactive, and
+   the eye loses its place halfway across a wide row. */
+.ws-table tbody tr {
+  transition: background 0.15s var(--ws-ease);
+}
+
+.ws-table tbody tr:hover {
+  background: #f9fbfe;
 }
 
 .ws-table a {
@@ -2081,10 +2119,11 @@ button.cmdk-item {
 
 .ws-pill {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   background: var(--tint);
   color: var(--ink-2);
   white-space: nowrap;
@@ -2230,7 +2269,7 @@ button.cmdk-item {
   align-items: center;
   gap: 6px;
   padding: 9px 14px;
-  border-radius: 8px;
+  border-radius: 9px;
   border: 1px solid var(--line);
   background: #fff;
   color: var(--ink);
@@ -2239,17 +2278,47 @@ button.cmdk-item {
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  box-shadow: 0 1px 2px rgba(16, 30, 54, 0.04);
+  transition:
+    background 0.15s var(--ws-ease),
+    border-color 0.15s var(--ws-ease),
+    box-shadow 0.15s var(--ws-ease),
+    transform 0.15s var(--ws-ease);
+}
+
+.ws-btn:hover:not(:disabled) {
+  background: #f7f9fc;
+  border-color: #d3dce8;
+}
+
+/* One pixel. Enough to feel like the button accepted the press, small enough
+   that a toolbar of them does not bounce. */
+.ws-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.ws-btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 .ws-btn.primary {
   background: var(--blue);
   border-color: var(--blue);
   color: #fff;
+  box-shadow: 0 1px 2px rgba(29, 111, 224, 0.28), 0 4px 12px -4px rgba(29, 111, 224, 0.4);
+}
+
+.ws-btn.primary:hover:not(:disabled) {
+  background: var(--blue-d);
+  border-color: var(--blue-d);
 }
 
 .ws-btn:disabled {
   opacity: 0.6;
   cursor: progress;
+  box-shadow: none;
 }
 
 .ws-flash {
@@ -2703,11 +2772,17 @@ button.cmdk-item {
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   background: #fff;
   color: var(--ink);
   font: inherit;
   font-size: 14px;
+  transition: border-color 0.15s var(--ws-ease), box-shadow 0.15s var(--ws-ease);
+}
+
+.ws-toolbar input:hover,
+.ws-toolbar select:hover {
+  border-color: #d3dce8;
 }
 
 .ws-toolbar input:focus,
@@ -3571,4 +3646,1707 @@ ul.adm-steps {
   margin: 0 0 6px;
   font-size: 16px;
   font-weight: 600;
+}
+
+/* ============================================================================
+   RECRUITMENT OVERVIEW  (/admin/dashboard)
+   ============================================================================
+   An enterprise ATS overview built for someone who has never seen it before:
+   four KPI cards, the hiring pipeline as a flow, and the applications waiting
+   on a decision. Navy, white and one blue accent, the same palette as the
+   marketing site.
+
+   THREE DECISIONS THAT CARRY THE SCREEN.
+
+   1. The pipeline is a chevron flow, not six boxes. Six equal rectangles say
+      "six categories". Arrows say "a process that runs left to right", which
+      is what a hiring pipeline is, and a newcomer reads the direction before
+      they read a single label.
+
+   2. Candidates get initial avatars. A name in a table is a string; a name
+      with a mark beside it is a person, and the eye finds a repeat visitor in
+      a list far faster by colour than by reading. The colour is derived from
+      the name, so the same person is always the same colour.
+
+   3. Motion is short, purposeful and only on interaction. 150-200ms, cubic
+      easing, and nothing that plays on load except one quiet settle. This is a
+      screen someone opens forty times a day; a page that performs on every
+      visit becomes a page that annoys.
+
+   Namespace is .rov-. Shared .ws- chrome (bar, nav, buttons, pills) is
+   untouched, so this reads as the same product as Jobs and Applications.
+   ========================================================================== */
+
+.rov {
+  --rov-card: #ffffff;
+  --rov-line: #e4e9f1;
+  --rov-line-soft: #eef1f6;
+  --rov-tint: #f5f8fc;
+  --rov-accent: #1d6fe0;
+  --rov-accent-soft: #eaf2fe;
+  /* Two shadows, both nearly invisible on their own: a tight contact shadow
+     and a wider ambient one. Together they read as a card resting on paper
+     rather than a box with a drop shadow. */
+  --rov-lift: 0 1px 2px rgba(16, 30, 54, 0.05), 0 2px 8px -4px rgba(16, 30, 54, 0.12);
+  --rov-lift-hi: 0 2px 4px rgba(16, 30, 54, 0.06), 0 10px 24px -10px rgba(16, 30, 54, 0.22);
+  --rov-ease: cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ----------------------------------------------------------------- the head */
+
+.rov-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.rov-head h1 {
+  font-size: clamp(25px, 2.6vw, 31px);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  margin-top: 8px;
+}
+
+.rov-head p {
+  margin-top: 8px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  line-height: 1.55;
+  max-width: 64ch;
+}
+
+/* ---------------------------------------------------------------- the alert */
+
+/* Exists only when something is genuinely late. A permanent status line is a
+   line people stop reading, which makes it worthless on the day it changes. */
+.rov-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  margin-bottom: 20px;
+  border: 1px solid #f4dcae;
+  border-radius: 12px;
+  background: linear-gradient(0deg, #fdf9f0, #fdf9f0);
+  font-size: 14px;
+  color: #6f4f08;
+  animation: rov-settle 0.3s var(--rov-ease) both;
+}
+
+.rov-alert-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
+  background: #f6e3bb;
+  color: #8a6209;
+}
+
+.rov-alert strong {
+  font-weight: 650;
+}
+
+.rov-alert a {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #8a6209;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.16s var(--rov-ease), transform 0.16s var(--rov-ease);
+}
+
+.rov-alert a:hover {
+  background: #6f4f08;
+  transform: translateY(-1px);
+}
+
+/* ----------------------------------------------------------------- the KPIs */
+
+.rov-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rov-kpi {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  padding: 18px;
+  border: 1px solid var(--rov-line);
+  border-radius: 14px;
+  background: var(--rov-card);
+  box-shadow: var(--rov-lift);
+  transition:
+    transform 0.18s var(--rov-ease),
+    box-shadow 0.18s var(--rov-ease),
+    border-color 0.18s var(--rov-ease);
+}
+
+.rov-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rov-lift-hi);
+  border-color: #d3dce8;
+}
+
+.rov-kpi:focus-visible {
+  outline: 2px solid var(--rov-accent);
+  outline-offset: 2px;
+}
+
+/* A hairline that wipes across the top edge on hover. The whole decoration is
+   one pixel tall, which is the point: it acknowledges the pointer without
+   redrawing the card. */
+.rov-kpi::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--rov-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.28s var(--rov-ease);
+}
+
+.rov-kpi:hover::after {
+  transform: scaleX(1);
+}
+
+.rov-kpi-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rov-kpi-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  background: var(--rov-tint);
+  color: #5b7390;
+  transition: background 0.18s var(--rov-ease), color 0.18s var(--rov-ease);
+}
+
+.rov-kpi:hover .rov-kpi-icon {
+  background: var(--rov-accent-soft);
+  color: var(--rov-accent);
+}
+
+.rov-kpi-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--ink-2);
+}
+
+.rov-kpi-value {
+  display: block;
+  margin-top: 14px;
+  font-size: 32px;
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.rov-kpi-note {
+  display: block;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+/* The one card that is a call to action rather than a statistic. A tinted icon
+   and a blue figure, not a filled card: it sits in a row of four and a solid
+   block would unbalance the set. At zero it looks like its neighbours, because
+   then there is nothing to act on. */
+.rov-kpi.is-action .rov-kpi-icon {
+  background: var(--rov-accent-soft);
+  color: var(--rov-accent);
+}
+
+.rov-kpi.is-action .rov-kpi-value {
+  color: var(--rov-accent);
+}
+
+/* ---------------------------------------------------------------- the cards */
+
+.rov-card {
+  margin-top: 18px;
+  border: 1px solid var(--rov-line);
+  border-radius: 14px;
+  background: var(--rov-card);
+  box-shadow: var(--rov-lift);
+  overflow: hidden;
+}
+
+.rov-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+}
+
+.rov-card-head h2 {
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.rov-card-head p {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.rov-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--rov-accent);
+  padding: 6px 10px;
+  margin: -6px -10px -6px 0;
+  border-radius: 8px;
+  transition: background 0.16s var(--rov-ease);
+}
+
+.rov-card-link svg {
+  transition: transform 0.2s var(--rov-ease);
+}
+
+.rov-card-link:hover {
+  background: var(--rov-accent-soft);
+}
+
+.rov-card-link:hover svg {
+  transform: translateX(3px);
+}
+
+/* -------------------------------------------------------------- the pipeline */
+
+/* Chevrons, not boxes. The arrow shape is the whole idea: it says "a process
+   that runs left to right" before a newcomer has read a single label.
+   Implemented with clip-path, which means these segments cannot carry a
+   border — a clipped border loses its mitre at the point and looks broken. The
+   separation comes from the tinted strip they sit on instead. */
+.rov-flow {
+  list-style: none;
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  /* A mid-tone track, not the page tint. The arrows ARE the gaps between the
+     segments, so if the track is nearly white the shape disappears and the
+     whole device reads as a muddled row. This needs real contrast to work. */
+  background: #e7ecf4;
+  border-top: 1px solid var(--rov-line);
+}
+
+.rov-flow li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.rov-flow a {
+  display: block;
+  padding: 18px 10px;
+  text-align: center;
+  background: var(--rov-card);
+  /* The notch and the point are both 14px, so segments nest without a gap in
+     the silhouette even though they are 4px apart. */
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 50%);
+  transition: background 0.18s var(--rov-ease);
+}
+
+/* The first segment has a flat back and the last a flat face, so the run reads
+   as one object with a beginning and an end rather than a row of arrows. */
+.rov-flow li:first-child a {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+}
+
+.rov-flow li:last-child a {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 14px 50%);
+}
+
+.rov-flow li:only-child a {
+  clip-path: none;
+}
+
+.rov-flow a:focus-visible {
+  outline: 2px solid var(--rov-accent);
+  outline-offset: -2px;
+}
+
+.rov-flow-n {
+  display: block;
+  font-size: 24px;
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  transition: color 0.18s var(--rov-ease);
+}
+
+.rov-flow-l {
+  display: block;
+  margin-top: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+/* An empty stage is still a real stage you can click. It is just not news, so
+   it recedes instead of disappearing: a control that moves or vanishes with
+   its count is a control nobody can learn. */
+/* Recessed, not just pale. On a mid-tone track a near-white fill is
+   indistinguishable from the active segments, which defeats the point. */
+.rov-flow li.is-zero a {
+  background: #f3f6fa;
+}
+
+.rov-flow li.is-zero .rov-flow-n {
+  color: #b9c3d1;
+}
+
+.rov-flow li.is-zero .rov-flow-l {
+  color: var(--ink-3);
+}
+
+/* HOVER RULES GO LAST, AND THAT IS LOAD-BEARING.
+   `.rov-flow li.is-zero a` and `.rov-flow a:hover` have identical specificity
+   (0,2,2), so whichever is written later wins. With the hover rules above the
+   zero rules, pointing at an empty stage did nothing at all — the commonest
+   state on a new desk was the one state with no feedback. */
+.rov-flow a:hover {
+  background: var(--rov-accent-soft);
+}
+
+.rov-flow a:hover .rov-flow-n,
+.rov-flow a:hover .rov-flow-l {
+  color: var(--rov-accent);
+}
+
+/* ----------------------------------------------------------------- the table */
+
+.rov-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rov-table th {
+  text-align: left;
+  padding: 9px 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: var(--rov-tint);
+  border-top: 1px solid var(--rov-line-soft);
+  border-bottom: 1px solid var(--rov-line-soft);
+  white-space: nowrap;
+}
+
+.rov-table td {
+  padding: 12px 18px;
+  font-size: 14px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--rov-line-soft);
+}
+
+.rov-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.rov-table tbody tr {
+  transition: background 0.15s var(--rov-ease);
+}
+
+.rov-table tbody tr:hover {
+  background: #f9fbfe;
+}
+
+/* -- the candidate cell ------------------------------------------------------ */
+
+.rov-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rov-who-text {
+  min-width: 0;
+}
+
+.rov-name {
+  display: block;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s var(--rov-ease);
+}
+
+.rov-name:hover {
+  color: var(--rov-accent);
+}
+
+.rov-sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rov-role {
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.rov-when {
+  display: block;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+/* How long they have waited, beside the date. Muted until it is late: a number
+   that is always coloured is a number nobody looks at. */
+.rov-wait {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.rov-wait.is-late {
+  color: #a96c08;
+  font-weight: 600;
+}
+
+/* The row action. Present in the DOM at all times so the column never changes
+   width, revealed on hover or keyboard focus so a resting table stays calm. */
+.rov-open {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--rov-accent-soft);
+  color: var(--rov-accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.16s var(--rov-ease),
+    transform 0.16s var(--rov-ease),
+    background 0.16s var(--rov-ease);
+}
+
+.rov-table tbody tr:hover .rov-open,
+.rov-open:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.rov-open:hover {
+  background: #dbe9fd;
+}
+
+.rov-foot {
+  padding: 12px 18px;
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--rov-tint);
+  border-top: 1px solid var(--rov-line-soft);
+}
+
+.rov-foot a {
+  font-weight: 600;
+  color: var(--rov-accent);
+}
+
+.rov-foot a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ----------------------------------------------------------------- the empty */
+
+.rov-empty {
+  padding: 40px 18px 44px;
+  text-align: center;
+  border-top: 1px solid var(--rov-line-soft);
+}
+
+.rov-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 14px;
+  border-radius: 13px;
+  background: var(--rov-tint);
+  color: #8ea1b8;
+}
+
+.rov-empty h3 {
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+}
+
+.rov-empty p {
+  margin: 7px auto 0;
+  max-width: 46ch;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------- the motion */
+
+/* One settle, once, on the blocks that carry the page. Deliberately not a
+   staggered cascade and deliberately short: everything else on this screen
+   moves only when the pointer or the keyboard asks it to. */
+.rov-kpis,
+.rov-card {
+  animation: rov-settle 0.3s var(--rov-ease) both;
+}
+
+.rov-card {
+  animation-delay: 0.05s;
+}
+
+@keyframes rov-settle {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rov-alert,
+  .rov-kpis,
+  .rov-card {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The row action cannot rely on a transition that no longer runs, so it is
+     simply always visible when motion is off. */
+  .rov-open {
+    opacity: 1;
+    transform: none;
+  }
+
+  .rov-kpi,
+  .rov-kpi::after,
+  .rov-kpi-icon,
+  .rov-flow a,
+  .rov-flow-n,
+  .rov-table tbody tr,
+  .rov-card-link,
+  .rov-card-link svg,
+  .rov-open,
+  .rov-alert a {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------- the squeeze */
+
+@media (max-width: 1080px) {
+  .rov-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Six chevrons below about this width leave no room for the labels, and a
+     wrapped chevron row loses the left-to-right reading that justifies the
+     shape. Square cells in a grid are the honest fallback. */
+  .rov-flow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rov-flow a,
+  .rov-flow li:first-child a,
+  .rov-flow li:last-child a {
+    clip-path: none;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 620px) {
+  .rov-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .rov-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* The role column goes under the name. The date stays: "when did this
+     arrive" is the reason to open the row at all. */
+  .rov-table .rov-role-cell {
+    display: none;
+  }
+
+  .rov-role-inline {
+    display: block;
+    margin-top: 1px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+
+  .rov-open {
+    display: none;
+  }
+}
+
+/* Declared after the 620px block on purpose: identical specificity, so source
+   order decides, and the inline role must stay hidden at every wider layout. */
+@media (min-width: 621px) {
+  .rov-role-inline {
+    display: none;
+  }
+}
+
+/* ============================================================================
+   RÉSUMÉ PREVIEW  (components/admin/ResumePreview.tsx)
+   ============================================================================
+   Namespaced .rp-, NOT .cv-. The first version used .cv as the wrapper class
+   and silently broke the homepage: `.cv` was already taken by the animated
+   counter values in the "Outcomes you can measure" band
+   (components/marketing/EnterpriseHome.tsx, styles/enterprise.css), so every
+   figure on the marketing site got this panel's white background and border
+   painted over its gradient text. Four numbers became four white boxes, with
+   no error anywhere to say why.
+
+   The lesson is the obvious one: a two-letter class name in a global
+   stylesheet is a collision waiting to happen.
+   ========================================================================== */
+
+.rp {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.rp-bar {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 14px;
+  background: #f5f8fc;
+  border-bottom: 1px solid var(--line);
+}
+
+.rp-bar-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  background: #e7eefa;
+  color: #1d6fe0;
+}
+
+.rp-bar-text {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.rp-bar-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rp-bar-size {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.rp-bar-open {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--blue);
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.rp-bar-open:hover {
+  background: #eaf2fe;
+  border-color: #c3d8f6;
+}
+
+/* Tall enough to read a page of A4 without scrolling the frame twice, capped
+   in viewport units so it never pushes the notes and stage control off a
+   laptop screen. */
+.rp-frame {
+  display: block;
+  width: 100%;
+  height: min(72vh, 820px);
+  min-height: 420px;
+  border: 0;
+  background: #525659;
+}
+
+.rp-noframe {
+  padding: 30px 18px 34px;
+  text-align: center;
+}
+
+.rp-noframe-title {
+  font-size: 14.5px;
+  font-weight: 650;
+}
+
+.rp-noframe-note {
+  margin: 6px auto 16px;
+  max-width: 48ch;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.rp-none {
+  padding: 30px 18px 34px;
+  text-align: center;
+  border: 1px dashed #d8dfe9;
+  border-radius: 12px;
+  background: #fbfcfe;
+}
+
+.rp-none-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  background: #eef2f7;
+  color: #8ea1b8;
+}
+
+.rp-none-title {
+  font-size: 14.5px;
+  font-weight: 650;
+}
+
+.rp-none-note {
+  margin: 6px auto 0;
+  max-width: 50ch;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ============================================================================
+   JOB ROW ACTION MENU  (components/admin/AdminJobRowActions.tsx)
+   ========================================================================== */
+
+.jm {
+  position: relative;
+  display: inline-block;
+}
+
+.jm-trigger {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.jm-trigger:hover,
+.jm-trigger[aria-expanded="true"] {
+  background: #eef2f8;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.jm-trigger:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
+.jm-trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Right-aligned because the trigger is the last cell in the row: opening
+   leftwards keeps the menu inside the table instead of off the edge. */
+.jm-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 190px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(16, 30, 54, 0.06), 0 12px 28px -8px rgba(16, 30, 54, 0.26);
+  animation: jm-open 0.14s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes jm-open {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.jm-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.jm-item:hover {
+  background: #f2f6fb;
+}
+
+.jm-item:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+
+.jm-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.jm-item.is-danger {
+  color: #c02a4e;
+}
+
+.jm-item.is-danger:hover {
+  background: #fdeef2;
+}
+
+/* The armed confirm. Solid, so the one irreversible action in the menu does
+   not look like the five reversible ones above it. */
+.jm-item.is-solid {
+  background: #c02a4e;
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+}
+
+.jm-item.is-solid:hover {
+  background: #a51f40;
+}
+
+.jm-sep {
+  display: block;
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line);
+}
+
+.jm-confirm {
+  padding: 6px 6px 4px;
+}
+
+.jm-confirm-q {
+  padding: 0 4px 7px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.jm-confirm-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px;
+}
+
+.jm-confirm-row .jm-item {
+  width: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jm-menu {
+    animation: none;
+  }
+
+  .jm-trigger,
+  .jm-item {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   APPLICATIONS QUEUE: selection, bulk bar, sortable headers
+   (components/admin/ApplicationsTable.tsx)
+   ========================================================================== */
+
+/* The bulk bar appears only when something is selected, so it slides in rather
+   than occupying space permanently. A toolbar of controls that do nothing is
+   the commonest way an enterprise table starts feeling heavy. */
+.apb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #cfe0f8;
+  border-radius: 11px;
+  background: #f1f7ff;
+  animation: apb-in 0.16s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes apb-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.apb-count {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: #16417e;
+}
+
+.apb-field select {
+  height: 34px;
+  padding: 0 30px 0 10px;
+  border: 1px solid #c3d8f6;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.apb-apply,
+.apb-clear {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.apb-apply {
+  background: var(--blue);
+  color: #fff;
+}
+
+.apb-apply:hover:not(:disabled) {
+  background: #1557b0;
+}
+
+.apb-clear {
+  margin-left: auto;
+  background: transparent;
+  border-color: #c3d8f6;
+  color: #16417e;
+}
+
+.apb-clear:hover:not(:disabled) {
+  background: #e3eefc;
+}
+
+.apb-apply:disabled,
+.apb-clear:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.apb-msg {
+  padding: 9px 13px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+}
+
+.apb-msg.ok {
+  border: 1px solid #bfe3cd;
+  background: #f1faf4;
+  color: #1a5c36;
+}
+
+.apb-msg.err {
+  border: 1px solid #f3c9d2;
+  background: #fdf2f4;
+  color: #8e2440;
+}
+
+/* -- selection -------------------------------------------------------------- */
+
+.ap-table .ap-check {
+  width: 38px;
+  padding-right: 0;
+}
+
+.ap-table input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+
+.ap-table tbody tr.is-selected {
+  background: #f1f7ff;
+}
+
+/* -- sortable headers ------------------------------------------------------- */
+
+.ap-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.ap-sort:hover {
+  color: var(--blue);
+}
+
+/* The caret is present on every sortable header and only visible on the active
+   one or on hover. Reserving its space always is what stops the header row
+   jiggling as the sort moves between columns. */
+.ap-caret {
+  display: inline-flex;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ap-sort:hover .ap-caret,
+.ap-sort.is-active .ap-caret {
+  opacity: 1;
+}
+
+.ap-sort.is-active {
+  color: var(--blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apb {
+    animation: none;
+  }
+
+  .apb-apply,
+  .apb-clear,
+  .ap-sort,
+  .ap-caret {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   AVATAR  (components/admin/Avatar.tsx)
+   Shared by the overview, the applications queue and the candidate directory,
+   so one person is one colour everywhere in the admin.
+   ========================================================================== */
+
+.av {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+
+.av.c0 { background: #e3edfd; color: #1a5fc4; }
+.av.c1 { background: #e2f3ef; color: #12715e; }
+.av.c2 { background: #f0e9fb; color: #5b3bb0; }
+.av.c3 { background: #fdeee3; color: #9a5214; }
+.av.c4 { background: #e6f1f8; color: #1b5f82; }
+.av.c5 { background: #fae8ee; color: #9c2d55; }
+
+/* A name cell with a mark beside it. Used wherever a table row is a person. */
+.ws-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ws-who-text {
+  min-width: 0;
+}
+
+/* ============================================================================
+   ADMIN NAVIGATION BAR
+   (app/admin/layout.tsx, components/admin/AdminNav.tsx, AdminUserMenu.tsx)
+   ============================================================================
+   The one component on every screen, so it earns more care than anything
+   else. It replaced a row of four plain text links, a bare name and a loose
+   Sign out button.
+
+   THREE THINGS IT DOES THAT THE OLD BAR DID NOT.
+
+   1. Carries a live count. The badge on Applications is work waiting on a
+      first review, read per request. It makes the bar answer a question
+      rather than only move you somewhere.
+
+   2. Names each section twice, by icon and by word. "Applications" and
+      "Candidates" are the same length and start with the same letter; at a
+      glance they are the same word. A shape is not.
+
+   3. Marks the current section with a filled pill AND a cyan rule, because
+      colour alone is not an accessible way to say "you are here".
+
+   Navy is kept from the marketing site. The depth comes from a single soft
+   gradient and one hairline, not from shadows: a floating header on an
+   internal tool is costume.
+   ========================================================================== */
+
+.nv-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  color: #fff;
+  background: linear-gradient(180deg, #0b1322 0%, #070c18 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.nv-bar-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ------------------------------------------------------------------- brand */
+
+.nv-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: none;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 4px 6px;
+  margin-left: -6px;
+  transition: background 0.15s var(--ws-ease, ease);
+}
+
+.nv-brand:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nv-brand:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+.nv-brand img {
+  width: 27px;
+  height: 27px;
+  flex: none;
+}
+
+.nv-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.nv-brand-name {
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+/* The product name under the company name, not beside it: it is a
+   qualifier, and setting it inline made two nouns of equal weight. */
+.nv-brand-tag {
+  font-family: "Geist Mono", monospace;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  padding-top: 2px;
+}
+
+/* --------------------------------------------------------------------- nav */
+
+.nv-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nv-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.nv-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.66);
+  text-decoration: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.nv-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nv-item:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+.nv-item-icon {
+  display: grid;
+  place-items: center;
+  color: inherit;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, transform 0.18s var(--ws-ease, ease);
+}
+
+.nv-item:hover .nv-item-icon {
+  opacity: 1;
+}
+
+.nv-item.is-active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nv-item.is-active .nv-item-icon {
+  opacity: 1;
+  color: var(--cyan);
+}
+
+/* The second marker: a 2px cyan rule along the foot of the active pill.
+
+   INSIDE THE PILL, NOT UNDER IT. The first attempt hung it below the item at
+   bottom: -13px, flush with the bar's lower edge, and it never appeared.
+   `.nv-nav` carries overflow-x: auto for narrow screens, and a box that
+   scrolls on one axis clips the other — per spec, `visible` computes to `auto`
+   when its partner is not visible. The rule was being cut off by a scroll
+   container nobody could see. Keeping it within the item's own bounds means
+   the indicator cannot be clipped by a layout decision made for a different
+   reason. */
+.nv-item.is-active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--cyan);
+  animation: nv-mark 0.26s var(--ws-ease, ease) both;
+}
+
+@keyframes nv-mark {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+/* ------------------------------------------------------------------- badge */
+
+/* Cyan on navy, not red: this is work waiting, not an error. A red badge in a
+   header reads as "something is broken" and people learn to dread it. */
+.nv-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--cyan);
+  color: #04222a;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* -------------------------------------------------------------- user menu */
+
+.nv-user {
+  position: relative;
+  flex: none;
+}
+
+.nv-user-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  /* Even padding now that the avatar is gone. It was 4px on the left to seat a
+     30px circle; keeping that would leave the name visibly off-centre in its
+     own pill. */
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.nv-user-trigger:hover,
+.nv-user-trigger[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.nv-user-trigger:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+.nv-user-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nv-user-caret {
+  display: grid;
+  place-items: center;
+  opacity: 0.6;
+  transition: transform 0.2s var(--ws-ease, ease), opacity 0.15s ease;
+}
+
+.nv-user-caret.is-open {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------- the menu */
+
+.nv-menu {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 50;
+  width: 252px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 2px 4px rgba(7, 12, 24, 0.08), 0 16px 36px -10px rgba(7, 12, 24, 0.34);
+  animation: nv-open 0.15s var(--ws-ease, ease) both;
+}
+
+@keyframes nv-open {
+  from { opacity: 0; transform: translateY(-5px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.nv-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.nv-menu-id {
+  min-width: 0;
+}
+
+.nv-menu-name {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nv-menu-email {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nv-menu-role {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 10px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.nv-menu-role b {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--blue-d);
+  background: rgba(29, 111, 224, 0.1);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.nv-menu-form {
+  padding-top: 6px;
+}
+
+.nv-menu-out {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease;
+}
+
+.nv-menu-out:hover {
+  background: #fdeef2;
+  color: #c02a4e;
+}
+
+.nv-menu-out:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+
+/* --------------------------------------------------------------- the squeeze */
+
+@media (max-width: 900px) {
+  .nv-bar-inner {
+    gap: 14px;
+    padding: 0 16px;
+  }
+
+  /* The wordmark goes, the mark stays. The logo alone still says which
+     product this is, and the nav needs the room more than the name does. */
+  .nv-brand-text {
+    display: none;
+  }
+
+  .nv-user-name {
+    display: none;
+  }
+
+  .nv-user-trigger {
+    padding: 0 10px;
+  }
+}
+
+@media (max-width: 680px) {
+  /* Labels go, icons and the badge stay. Four icons in a row is a known
+     pattern on a phone, and the badge is the thing that must survive. */
+  .nv-item-label {
+    display: none;
+  }
+
+  .nv-item {
+    padding: 0 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-item.is-active::after,
+  .nv-menu {
+    animation: none;
+  }
+
+  .nv-item,
+  .nv-item-icon,
+  .nv-brand,
+  .nv-user-trigger,
+  .nv-user-caret,
+  .nv-menu-out {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   MOBILE NAVIGATION: expandable sections
+   (components/marketing/SiteNav.tsx)
+   ============================================================================
+   The phone menu used to be five flat links, so everything inside Capabilities,
+   Industries and Products was unreachable on mobile: twenty-five service pages
+   and twelve products existed only in the desktop hover panels.
+
+   Accordion rather than a drill-down screen. Expanding in place keeps every
+   other section one tap away; pushing to a sub-screen makes "back one level"
+   something the visitor has to learn.
+   ========================================================================== */
+
+.mnav-group {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Matches .mobile-menu a exactly, so a section header and a plain link are the
+   same object to the eye. The chevron is the only thing that says otherwise. */
+.mnav-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 4px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 17px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+}
+
+.mnav-trigger.is-open {
+  color: #fff;
+}
+
+.mnav-chev {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: var(--cyan);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.mnav-trigger.is-open .mnav-chev {
+  transform: rotate(180deg);
+}
+
+/* Indented and slightly recessed so the hierarchy is legible without a second
+   border system. Scrollable because Products has twelve entries and
+   Capabilities twenty-five: on a short phone the list must not push the Talk
+   to an expert button off the bottom of the menu. */
+.mnav-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0 10px 12px;
+  margin-bottom: 4px;
+  max-height: 46vh;
+  overflow-y: auto;
+  border-left: 2px solid rgba(34, 199, 230, 0.35);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Overrides .mobile-menu a: child rows are smaller, quieter and have no
+   divider of their own, so the group reads as one block. */
+.mobile-menu .mnav-panel a {
+  padding: 11px 4px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.72);
+  border-bottom: 0;
+}
+
+.mobile-menu .mnav-panel a:active {
+  color: #fff;
+}
+
+.mobile-menu .mnav-panel a.mnav-all {
+  font-weight: 600;
+  color: var(--cyan);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mnav-chev {
+    transition: none;
+  }
 }

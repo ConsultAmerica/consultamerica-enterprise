@@ -645,10 +645,6 @@ export function EnterpriseHome() {
               </div>
             ))}
           </div>
-          <div className="scale-note reveal">
-            <span className="demotag">Demo</span>
-            Figures are illustrative placeholders for this showcase, not verified client results.
-          </div>
         </div>
       </section>
 
