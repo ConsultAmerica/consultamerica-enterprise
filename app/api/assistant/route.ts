@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ASSISTANT_MODEL, claudeMessages, getClaudeClient } from "@/lib/ai/claude";
+import { answerDeterministically } from "@/lib/assistant/deterministic";
 import { runAssistant, type AssistantReply } from "@/lib/assistant/engine";
 import { publicJobSource } from "@/lib/assistant/public-jobs";
 import { checkAssistantRateLimit, clientIp } from "@/lib/assistant/rate-limit";
@@ -81,9 +82,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const client = getClaudeClient();
+    // Deterministic by default: no model call unless ASSISTANT_MODE=ai and a
+    // key is configured. Both modes answer from the same approved knowledge.
+    const client = process.env.ASSISTANT_MODE === "ai" ? getClaudeClient() : null;
+    if (!client) {
+      return json(await answerDeterministically(parsed.messages, parsed.context, { jobs: publicJobSource, log }));
+    }
     const reply = await runAssistant(parsed.messages, parsed.context, {
-      claude: client ? claudeMessages(client) : null,
+      claude: claudeMessages(client),
       jobs: publicJobSource,
       model: ASSISTANT_MODEL,
       log,

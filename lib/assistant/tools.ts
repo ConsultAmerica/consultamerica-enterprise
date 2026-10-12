@@ -110,7 +110,8 @@ export const ASSISTANT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_company_information",
-    description: "Approved information about Consult America: what it does, capabilities, industries, how it works, contact.",
+    description:
+      "Approved information about Consult America: what it does, capabilities, industries, how it works, contact, office locations, history, leadership, company size, credentials, clients. Some topics return that the fact can't be confirmed; say so rather than guessing.",
     strict: true,
     input_schema: {
       type: "object",

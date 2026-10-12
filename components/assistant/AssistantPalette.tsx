@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import { ExpertForm } from "@/components/marketing/ExpertForm";
+
 /** Mirrors lib/assistant/engine.ts types (client bundle must not import server code). */
 export type AssistantPageContext =
   | { page: "home" | "about" | "careers" | "jobs" }
@@ -24,7 +26,7 @@ type Reply = {
   status: "ok" | "fallback" | "limited" | "invalid";
   reply: string;
   jobs?: JobCard[];
-  links?: { label: string; href: string }[];
+  links?: { label: string; href: string; action?: "talk_to_expert" }[];
   grounding?: ("jobs" | "company" | "careers" | "application")[];
 };
 
@@ -34,8 +36,9 @@ const SUGGESTIONS: Record<"home" | "careers" | "job", string[]> = {
   home: [
     "What does Consult America do?",
     "Do you work with Oracle Cloud?",
+    "Where are your offices?",
     "What jobs are open?",
-    "How does your hiring process work?",
+    "Can I book a call with an expert?",
   ],
   careers: [
     "What jobs are open?",
@@ -85,6 +88,13 @@ export function AssistantPalette({ open, onClose, context }: AssistantPalettePro
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
+  // The palette owns its own "Talk to an expert" form, so a booking request in
+  // chat opens the same enquiry form the header button does, on any page.
+  const [expertOpen, setExpertOpen] = useState(false);
+  const talkToExpert = () => {
+    onClose();
+    setExpertOpen(true);
+  };
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +156,7 @@ export function AssistantPalette({ open, onClose, context }: AssistantPalettePro
     context.page === "job" ? "Ask about this role…" : "Ask about Consult America, careers, or open roles…";
 
   return (
+    <>
     <div
       className={`cmdk${open ? " open" : ""}`}
       role="dialog"
@@ -185,7 +196,7 @@ export function AssistantPalette({ open, onClose, context }: AssistantPalettePro
                 {turn.content}
               </div>
             ) : (
-              <AnswerBlock key={index} reply={turn.data} onNavigate={onClose} />
+              <AnswerBlock key={index} reply={turn.data} onNavigate={onClose} onTalkToExpert={talkToExpert} />
             ),
           )}
           {pending ? <div className="cmdk-answer cmdk-pending">Looking that up…</div> : null}
@@ -205,15 +216,17 @@ export function AssistantPalette({ open, onClose, context }: AssistantPalettePro
         </div>
 
         <div className="cmdk-foot">
-          <span>AI-assisted · answers use current listings and approved company information</span>
+          <span>Answers use current listings and approved company information</span>
           <span className="mono">Consult America AI</span>
         </div>
       </div>
     </div>
+    <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} />
+    </>
   );
 }
 
-function AnswerBlock({ reply, onNavigate }: { reply: Reply; onNavigate: () => void }) {
+function AnswerBlock({ reply, onNavigate, onTalkToExpert }: { reply: Reply; onNavigate: () => void; onTalkToExpert: () => void }) {
   const jobs = reply.jobs ?? [];
   const links = reply.links ?? [];
   const grounding = (reply.grounding ?? []).map((g) => GROUNDING_LABEL[g]).filter(Boolean);
@@ -248,11 +261,24 @@ function AnswerBlock({ reply, onNavigate }: { reply: Reply; onNavigate: () => vo
       ) : null}
       {links.length ? (
         <div className="cmdk-links">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} onClick={onNavigate}>
-              {link.label} →
-            </Link>
-          ))}
+          {links.map((link) =>
+            link.action === "talk_to_expert" ? (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onTalkToExpert();
+                }}
+              >
+                {link.label} →
+              </a>
+            ) : (
+              <Link key={link.href} href={link.href} onClick={onNavigate}>
+                {link.label} →
+              </Link>
+            ),
+          )}
         </div>
       ) : null}
       {grounding.length ? <p className="cmdk-grounding">Based on {grounding.join(" and ")}.</p> : null}

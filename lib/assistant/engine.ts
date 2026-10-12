@@ -26,7 +26,12 @@ export type AssistantContext =
   | { page: "home" | "about" | "careers" | "jobs" }
   | { page: "job"; jobSlug: string };
 
-export type AssistantLink = { label: string; href: string };
+export type AssistantLink = {
+  label: string;
+  href: string;
+  /** A client-side action instead of navigation; `href` stays as the no-JS fallback. */
+  action?: "talk_to_expert";
+};
 
 export type AssistantReply = {
   status: "ok" | "fallback";
