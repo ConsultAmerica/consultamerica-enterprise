@@ -101,6 +101,17 @@ export async function GET(request: Request): Promise<Response> {
       databaseUrl: true,
       source,
       select1: true,
+      /*
+        PRESENCE ONLY, never the value, the same rule databaseUrl follows.
+
+        Added because "Resume storage is not configured (BLOB_READ_WRITE_TOKEN)"
+        was reported from production and there was no way to tell from outside
+        whether the running deployment actually had the variable. The dashboard
+        is configured with it, which proves what Vercel stores, not what the
+        function sees. A boolean here answers that in one request instead of a
+        guess, and it is exactly the question the error asks.
+      */
+      blobToken: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
       latencyMs,
       checkedAt: new Date().toISOString(),
     });
