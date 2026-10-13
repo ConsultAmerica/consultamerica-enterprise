@@ -415,13 +415,27 @@ section{position:relative}
 /* ============ FOOTER ============ */
 footer{background:#ffffff;color:var(--ink-2);padding:60px 0 0;border-top:1px solid var(--line);position:relative}
 footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(29,111,224,.32),transparent)}
-/* Four link columns plus contact. Was five-plus-contact until the Support
-   column was removed for pointing at pages that do not exist. */
-.foot-top{display:grid;grid-template-columns:1fr 1fr 1fr 1.5fr;gap:36px 44px;padding-bottom:36px}
-@media(max-width:1000px){.foot-top{grid-template-columns:1fr 1fr 1fr;gap:40px 32px}.foot-contact{grid-column:1/-1;border-left:0;padding-left:0}}
+/* Three link columns plus contact. The link tracks are deliberately unequal:
+   "Enterprise Transformation" is more than twice the width of "Who we are", so
+   equal tracks parked ~150px of dead air inside the Company column and pushed
+   the Locations divider hard against the right edge, reading as a detached
+   block rather than the fourth item in a row. Weighting each track toward the
+   label it actually holds gives that slack to Locations instead, which pulls
+   its divider back toward the links. Capabilities keeps the largest share so its
+   longest label stays on one line all the way down to the 1000px breakpoint. */
+.foot-top{display:grid;grid-template-columns:1.1fr 1fr .75fr 1.9fr;gap:36px;padding-bottom:36px}
+/* Just enough inset to read as the divider's block without reopening the gap. */
+.foot-contact{border-left:1px solid var(--line);padding-left:20px;display:flex;flex-direction:column;gap:18px}
+/* Both narrow-width blocks sit after the base rules on purpose. They were split
+   above and below .foot-contact before, and the half that came first lost the
+   cascade to it: under 1000px the block spanned the full row but kept the
+   divider and the inset, so Locations hung 20px right of the link columns with
+   a stray hairline beside it. */
+@media(max-width:1000px){
+  .foot-top{grid-template-columns:1fr 1fr 1fr;gap:40px 32px}
+  .foot-contact{grid-column:1/-1;border-left:0;padding-left:0;flex-direction:row;flex-wrap:wrap;gap:26px 48px}
+}
 @media(max-width:620px){.foot-top{grid-template-columns:1fr 1fr}}
-.foot-contact{border-left:1px solid var(--line);padding-left:30px;display:flex;flex-direction:column;gap:18px}
-@media(max-width:1000px){.foot-contact{flex-direction:row;flex-wrap:wrap;gap:26px 48px}}
 .foot-brand{max-width:38ch}
 .foot-brand .brand{color:var(--ink);margin-bottom:22px}
 .foot-brand p{font-size:15px;color:var(--ink-2);line-height:1.7;margin-bottom:20px}

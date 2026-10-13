@@ -1,7 +1,9 @@
 export const CAPS = [
   ["Engineering", "Senior engineers who ship production systems, cloud-native builds, integrations, and the platforms your business runs on.", "/img/dev.jpg"],
   ["AI & Data", "Forecasting, assistants, and automation, operationalized with the data foundations and guardrails to run in production.", "/img/ai.jpg"],
-  ["Oracle Cloud", "Migrate and modernize ERP, HCM, and SCM on Oracle Cloud, with a right-sized roadmap and a low-drama cutover.", "/img/data.jpg"],
+  // "Oracle", not "Oracle Cloud": the practice also covers E-Business Suite,
+  // which is not a cloud product, so the narrower name misdescribed it.
+  ["Oracle", "Migrate and modernize ERP, HCM, and SCM across Oracle Cloud and E-Business Suite, with a right-sized roadmap and a low-drama cutover.", "/img/data.jpg"],
   ["Enterprise Transformation", "Reshape finance, procurement, and supply-chain operations around a connected, modern digital core.", "/img/meeting.jpg"],
   ["Managed Services", "We run and evolve what we build, SLAs, monitoring, and continuous improvement after go-live.", "/img/cloud.jpg"],
 ] as const;
@@ -31,8 +33,9 @@ export const CAP_SERVICES = [
     "Document & contract intelligence",
     "Data governance & guardrails",
   ],
-  // Oracle Cloud
-  ["Oracle ERP", "Oracle SCM", "Oracle HCM", "Oracle EPM", "Oracle Cloud Infrastructure"],
+  // Oracle. Fusion applications first, then E-Business Suite, then the
+  // infrastructure layer, so the list reads applications-to-platform.
+  ["Oracle ERP", "Oracle SCM", "Oracle HCM", "Oracle EPM", "Oracle EBS", "Oracle Cloud Infrastructure"],
   // Enterprise Transformation
   [
     "Finance transformation",
@@ -71,7 +74,7 @@ export const PROD = [
   ["AppointEase", "Booking platform", "https://appointease-hlohx8tz2-n-sfds-projects.vercel.app/", "/img/products/appointease.png"],
   ["Smart Appliances", "Home-service booking", "https://smartappliances.co/", "/img/products/smart-appliances.png"],
   ["Romeah", "Quiet-luxury fashion", "https://romeah.com/", "/img/products/romeah.png"],
-  ["Agentomatix", "Digital product studio", "https://agentomatix.com/", "/img/products/agentomatix.png"],
+  ["Agentomatix", "Digital product studio", "https://agentomatix.com/portfolio/#contact", "/img/products/agentomatix.png"],
   // Append only. The Products mega-menu picks entries by index (pi(n) in
   // EnterpriseHome), so inserting mid-array silently repoints every column.
 ] as const;
@@ -167,6 +170,8 @@ export const SUGGEST = [
 export const CAP_ICONS = [
   "/img/sectors/engineering.png",
   "/img/sectors/aidata.png",
+  // Filename predates renaming the capability to "Oracle". Left as-is: the
+  // artwork is unchanged and renaming the asset would only break the path.
   "/img/sectors/oraclecloud.png",
   "/img/sectors/transformation.png",
   "/img/sectors/managed.png",

@@ -19,12 +19,22 @@ import {
   ApplicationsTable,
   type ApplicationRowView,
 } from "@/components/admin/ApplicationsTable";
-import { countApplicationsByStatus, listApplications } from "@/lib/neon/applications";
-import { requireAdmin } from "@/lib/neon/auth";
+import { NeonTableLink } from "@/components/admin/NeonConsoleLink";
+import {
+  countApplicationsByMethod,
+  countApplicationsByStatus,
+  listApplications,
+} from "@/lib/neon/applications";
+import { type AdminRole, requireAdmin } from "@/lib/neon/auth";
 import { NeonConfigError, isUuid } from "@/lib/neon/client";
 import { listJobs } from "@/lib/neon/jobs";
-import { APPLICATION_STATUSES, isApplicationStatus } from "@/lib/neon/types";
-import type { ApplicationStatus } from "@/lib/neon/types";
+import {
+  APPLICATION_METHODS,
+  APPLICATION_STATUSES,
+  isApplicationMethod,
+  isApplicationStatus,
+} from "@/lib/neon/types";
+import type { ApplicationMethod, ApplicationStatus } from "@/lib/neon/types";
 
 export const metadata: Metadata = {
   title: "Applications",
@@ -101,6 +111,18 @@ function stageTone(status: ApplicationStatus): string {
 /** Every status in the schema is one word, so a label is a case change. */
 const stageLabel = (status: string) => status.charAt(0) + status.slice(1).toLowerCase();
 
+/**
+ * Method labels for the filter dropdown.
+ *
+ * Longer than the pill labels in ApplicationsTable on purpose. A dropdown
+ * option has room and is read once, while a cell is read a hundred times down
+ * a narrow column, so the option says what it means and the pill is terse.
+ */
+const METHOD_FILTER_LABELS: Record<ApplicationMethod, string> = {
+  EASY_APPLY: "Form (Easy Apply)",
+  AI_INTERVIEW: "AI Bot (AI interview)",
+};
+
 /*
   The same tone and label data as the helpers above, as plain objects.
   ApplicationsTable is a client component and a function cannot cross that
@@ -141,6 +163,13 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
   const q = (one(params.q) ?? "").slice(0, 200).trim();
   const stageParam = one(params.stage);
   const stage: ApplicationStatus | "ALL" = isApplicationStatus(stageParam) ? stageParam : "ALL";
+  // Same treatment as the stage filter: an unknown value degrades to ALL
+  // rather than reaching the CHECK constraint, and the filter lives in the URL
+  // so "show me only the AI applicants" is a link somebody can send.
+  const methodParam = one(params.method);
+  const method: ApplicationMethod | "ALL" = isApplicationMethod(methodParam)
+    ? methodParam
+    : "ALL";
   // Screened before it reaches a uuid comparison: listApplications binds this
   // straight into `a.job_id = $2`, and Postgres raises
   // invalid_text_representation on a malformed uuid, which would turn a
@@ -164,21 +193,35 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
 
   type Loaded = Awaited<ReturnType<typeof load>>;
   async function load() {
-    const [rows, jobs, counts] = await Promise.all([
-      listApplications({ status: stage, jobId, q: q || undefined, sort, dir, limit: 100 }),
+    const [rows, jobs, counts, methodCounts] = await Promise.all([
+      listApplications({
+        status: stage,
+        method,
+        jobId,
+        q: q || undefined,
+        sort,
+        dir,
+        limit: 100,
+      }),
       // The filter dropdown lists every role, including drafts: an application
       // can exist against a role that has since been unpublished, and the
       // recruiter still has to be able to filter down to it.
       listJobs({ limit: 200 }),
       countApplicationsByStatus(),
+      countApplicationsByMethod(),
     ]);
-    return { rows, jobs, counts };
+    return { rows, jobs, counts, methodCounts };
   }
 
   let loaded: Loaded | null = null;
+  // The role, kept because the Neon console link at the foot of this page is
+  // for OWNER and ADMIN only. Null while the guard has not returned, which is
+  // the same state the page is in when it has no rows to show either.
+  let role: AdminRole | null = null;
   let notConfigured = false;
   try {
-    await requireAdmin({ returnTo: "/admin/applications" });
+    const user = await requireAdmin({ returnTo: "/admin/applications" });
+    role = user.role;
     loaded = await load();
   } catch (error) {
     // Only the "no connection string" case is handled here. Anything else —
@@ -192,7 +235,7 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
   // TypeScript discards a `let`'s narrowed type inside a closure, because the
   // closure could run after a later assignment.
   const data = loaded;
-  const filtered = Boolean(q) || stage !== "ALL" || Boolean(jobId);
+  const filtered = Boolean(q) || stage !== "ALL" || method !== "ALL" || Boolean(jobId);
   // countApplicationsByStatus counts the whole table, so the per-stage numbers
   // in the dropdown are only true when nothing else narrows the view. They stay
   // off under a search or a role filter rather than quietly contradicting the
@@ -246,6 +289,22 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
               </select>
             </div>
             <div className="ws-toolbar-field">
+              <label htmlFor="app-method">Applied via</label>
+              <select id="app-method" name="method" defaultValue={method}>
+                <option value="ALL">Both methods</option>
+                {APPLICATION_METHODS.map((value) => (
+                  <option key={value} value={value}>
+                    {/* Counts are suppressed under a search or role filter for
+                        the same reason the stage counts are: they count the
+                        whole table and would contradict the rows on screen. */}
+                    {scoped
+                      ? METHOD_FILTER_LABELS[value]
+                      : `${METHOD_FILTER_LABELS[value]} (${data.methodCounts[value]})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="ws-toolbar-field">
               <label htmlFor="app-job">Role</label>
               <select id="app-job" name="job" defaultValue={jobId ?? ""}>
                 <option value="">All roles</option>
@@ -281,7 +340,8 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
                 <h2>Nothing matches those filters</h2>
                 <p>
                   There {total === 1 ? "is" : "are"} {total} application
-                  {total === 1 ? "" : "s"} in the system, but none in this stage, role or search.
+                  {total === 1 ? "" : "s"} in the system, but none in this stage, method, role or
+                  search.
                 </p>
                 <Link className="ws-btn" href="/admin/applications">
                   Clear filters
@@ -319,6 +379,12 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
                   resumeUrl: row.resume_url ? "stored" : null,
                   resumeFilename: row.resume_filename,
                   resumeSizeBytes: row.resume_size_bytes,
+                  method: row.method,
+                  // NUMERIC arrives as a string and is passed through as
+                  // stored. Parsing it to a float to re-print it could only
+                  // lose precision; see the header of lib/neon/types.ts.
+                  aiScore: row.interview_score,
+                  interviewStatus: row.interview_status,
                 }))}
                 stages={BULK_STAGES}
                 stageTone={STAGE_TONES}
@@ -334,6 +400,12 @@ export default async function AdminApplicationsPage({ searchParams }: Props) {
           )}
         </section>
       )}
+
+      {/* Under the queue rather than in the toolbar: this is a developer hatch
+          and it must not sit among the filters as though it narrowed anything.
+          Renders nothing for a RECRUITER, and nothing when the guard never
+          returned a role. */}
+      {role ? <NeonTableLink role={role} table="applications" /> : null}
     </main>
   );
 }

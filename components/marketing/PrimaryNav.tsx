@@ -105,7 +105,7 @@ export function MegaPanel({
 const CAP_SHORT = [
   "Cloud-native builds, platforms, integrations",
   "GenAI, assistants, and automation in production",
-  "Migrate and modernize ERP, HCM, SCM on OCI",
+  "Migrate and modernize ERP, HCM, SCM and E-Business Suite",
   "Reshape operations around a modern digital core",
   "SLAs, monitoring, and continuous improvement",
 ] as const;

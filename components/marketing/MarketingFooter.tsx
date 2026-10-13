@@ -12,7 +12,7 @@ export function MarketingFooter() {
             <h4>Capabilities</h4>
             <Link href="/#capabilities">Engineering</Link>
             <Link href="/#capabilities">AI &amp; Data</Link>
-            <Link href="/#capabilities">Oracle Cloud</Link>
+            <Link href="/#capabilities">Oracle</Link>
             <Link href="/#capabilities">Enterprise Transformation</Link>
             <Link href="/#capabilities">Managed Services</Link>
           </div>

@@ -724,7 +724,7 @@ export const SERVICE_DETAIL: Record<string, ServiceDetail> = {
     ],
   },
 
-  // ============================================================== Oracle Cloud
+  // ==================================================================== Oracle
   "oracle-erp": {
     technical:
       "Oracle Cloud ERP is a quarterly-release SaaS application, which changes the implementation calculus: customisation is constrained to supported extension points, and every quarter brings an update you cannot decline indefinitely. That makes fit-gap against standard functionality the single highest-leverage activity, and it makes an automated regression pack a permanent operational need rather than a project artefact. Data migration runs through File-Based Data Import or the REST APIs, and reconciliation at trial-balance level is the gate nobody should skip.",
@@ -991,6 +991,75 @@ export const SERVICE_DETAIL: Record<string, ServiceDetail> = {
       ["Can we keep using Excel?", "Yes, through Smart View. People keep the interface they know while the numbers live in a governed model rather than in the file."],
       ["How much can the close actually be shortened?", "Depends entirely on where the time currently goes, which is why we measure the cycle first. Automating the slowest step is worth more than a broad redesign."],
       ["What if our dimension design turns out wrong?", "Changing it later is expensive, which is why we spend disproportionate time on it early and validate against the questions you need answered."],
+    ],
+  },
+
+  "oracle-ebs": {
+    technical:
+      "EBS 12.2 runs a dual filesystem with online patching through ADOP, which turns most patching from an outage into a procedure, and brings edition-based redefinition rules that custom code has to respect. That is where the difficulty in an EBS engagement usually sits: Forms personalisations, OA Framework extensions, custom concurrent programs and direct-to-table interfaces written when nobody expected the suite to outlive them. An upgrade plan or a migration plan is really a plan for that custom estate, which is why the inventory has to come before the timeline rather than after it.",
+    offer: [
+      ["Estate assessment", "What is running, what is customised, what is still used, and what each forward option would cost on your estate."],
+      ["12.1 to 12.2 upgrade", "Upgrade rehearsed on cloned environments at production data volume, with custom code remediated for online patching."],
+      ["Maintenance and functional support", "Patching, quarterly security updates, performance work and day-to-day functional support on a sustainable cadence."],
+      ["Migration to Fusion Cloud", "A phased move to Oracle Cloud ERP, HCM or SCM, with coexistence while EBS is still the system of record."],
+    ],
+    problems: [
+      ["We cannot decide whether to stay or move", "Both are defensible positions. We cost them against your estate rather than arguing the general case, and the recommendation comes with the numbers behind it."],
+      ["Every patch is an outage", "On 12.2 online patching removes most of that, but only if the custom code follows the edition-based rules. Remediating it is the actual work."],
+      ["Nobody understands the customisations", "They get inventoried and traced to real usage. A large share usually turn out to be dormant and can simply be retired."],
+      ["The people who built it have gone", "Knowledge recovery from the running system and the code, written down, is the first deliverable rather than something hoped for along the way."],
+    ],
+    useCases: [
+      ["12.1 to 12.2 upgrade", "Upgrade with custom code remediated for online patching, rehearsed at full data volume before the cutover is scheduled."],
+      ["Financials first to Fusion Cloud", "Moving Financials while EBS continues to run supply chain, with reporting reconciled across both during the overlap."],
+      ["Customisation reduction", "Retiring dormant extensions and replacing the rest with standard functionality where Oracle has since closed the gap."],
+      ["Technology stack currency", "Database and middleware tiers brought back to supported versions with no functional change in scope."],
+    ],
+    stack: [
+      ["Financials", ["General Ledger", "Payables", "Receivables", "Assets", "Cash Management"]],
+      ["Supply chain", ["Inventory", "Purchasing", "Order Management", "Work in Process", "Advanced Supply Chain Planning"]],
+      ["HRMS", ["Core HR", "Payroll", "Self-Service HR", "Time and Labor"]],
+      ["Technology", ["Oracle Database", "Oracle WebLogic Server", "ADOP online patching", "Concurrent Manager", "AutoConfig"]],
+      ["Customisation", ["Oracle Forms", "OA Framework", "PL/SQL", "Oracle Workflow", "BI Publisher"]],
+      ["Integration & data", ["Oracle Integration Cloud", "Open interfaces and APIs", "SQL*Loader", "FBDI on the Fusion side"]],
+    ],
+    learn: {
+      roadmap: [
+        ["Beginner", ["The EBS module map and how the suite is organised", "Navigate both Forms and OA Framework pages", "Submit a concurrent request and read its log", "Multi-org: operating units, inventory organisations, ledgers", "Run a standard report and find where its data actually lives"]],
+        ["Intermediate", ["Open interfaces and the standard import programs", "Forms personalisation versus customisation, and when each is appropriate", "Patching with adop and the dual filesystem", "Period close in Financials and the subledger links", "Reading execution plans against the EBS schema"]],
+        ["Advanced", ["Edition-based redefinition and what it demands of custom code", "Upgrade path planning from 11i and 12.1", "Tuning the concurrent manager and the batch window", "Coexistence architecture alongside Fusion Cloud applications", "Cutover design for a phased migration"]],
+      ],
+      docs: [
+        ["Oracle E-Business Suite Documentation Web Library (12.2)", "https://docs.oracle.com/cd/E26401_01/index.htm"],
+        ["Oracle E-Business Suite Maintenance Guide", "https://docs.oracle.com/cd/E26401_01/doc.122/e22954/toc.htm"],
+        ["Oracle Lifetime Support Policy", "https://www.oracle.com/support/lifetime-support/"],
+        ["Oracle Fusion Cloud Applications documentation", "https://docs.oracle.com/en/cloud/saas/index.html"],
+        ["Oracle University learning paths", "https://education.oracle.com/"],
+      ],
+      channels: [
+        ["Oracle Learning", "https://www.youtube.com/@OracleLearning"],
+        ["Oracle", "https://www.youtube.com/@Oracle"],
+      ],
+      certs: [
+        "Oracle E-Business Suite R12.1 General Ledger Essentials",
+        "Oracle E-Business Suite R12.1 Payables Essentials",
+        "Oracle E-Business Suite R12.1 Purchasing Essentials",
+        "Oracle E-Business Suite R12.1 Inventory Essentials",
+      ],
+      projects: [
+        "Map the module footprint of a running instance from the data, not the documentation",
+        "Load suppliers and invoices through an open interface and reconcile the result",
+        "Apply a patch on a 12.2 instance and follow the adop phases through",
+        "Trace one Forms personalisation to the business rule it implements",
+        "Write the stay, upgrade and migrate comparison for a two-module estate",
+      ],
+    },
+    faqs: [
+      ["Is E-Business Suite end of life?", "No. Oracle publishes support dates for 12.2 and has moved them out before now, so staying on it is a strategy rather than a countdown. Check the current dates in the Lifetime Support Policy rather than relying on what was true a couple of years ago."],
+      ["Should we upgrade to 12.2 or go straight to Fusion Cloud?", "It turns on how much of your customisation is still load-bearing and how soon the business needs capability EBS does not have. An upgrade is cheaper and buys time; a Fusion move is a larger programme with a different operating model at the end of it. We cost both before recommending either."],
+      ["What happens to our customisations if we move to Fusion?", "Most do not come with you. Fusion constrains extension to supported points, so each one is either met by standard functionality, rebuilt inside those limits, or dropped. Doing the inventory first is what makes that a decision rather than a discovery during testing."],
+      ["Can you support EBS while we plan the move?", "Yes, and that is the common shape of this work: steady maintenance and patching on the running estate while the migration proceeds alongside it."],
+      ["How long does a 12.1 to 12.2 upgrade take?", "It is driven by the size of the custom estate and the number of rehearsal cycles the data volume demands, rather than by module count. The assessment is what produces a timeline worth quoting."],
     ],
   },
 

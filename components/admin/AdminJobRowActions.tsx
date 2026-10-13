@@ -7,11 +7,12 @@ import { useCallback, useEffect, useId, useRef, useState, useTransition } from "
 import {
   archiveJobAction,
   deleteJobAction,
+  generateJobInterviewAction,
   publishJobAction,
   unpublishJobAction,
   type JobActionResult,
 } from "@/app/admin/jobs/actions";
-import type { JobStatus } from "@/lib/neon/types";
+import type { ConsultHireStatus, JobStatus } from "@/lib/neon/types";
 
 /**
  * The per-job action set, used by both the admin list and a job's own page.
@@ -26,14 +27,16 @@ import type { JobStatus } from "@/lib/neon/types";
  * Which items appear is still decided by status, not by showing disabled ones:
  *
  *   DRAFT, UNPUBLISHED -> Publish, Edit, Delete
- *   PUBLISHED          -> Unpublish, Edit, Archive
- *   ARCHIVED           -> Edit only
+ *   PUBLISHED          -> Unpublish, Edit, Archive, Delete
+ *   ARCHIVED           -> Edit, Delete
  *
- * ARCHIVED is intentionally a one-way door from this row. Archiving is the
- * answer to "take this down but keep the applications", so letting the list
- * quietly republish or destroy an archived job would undo the one guarantee
- * archiving makes. Re-opening an archived role is a deliberate act that belongs
- * somewhere more considered than a row menu.
+ * ARCHIVED stays a one-way door for PUBLISHING. Archiving is the answer to
+ * "take this down but keep the applications", so letting the list quietly
+ * republish an archived job would undo the one guarantee archiving makes.
+ * Re-opening an archived role is a deliberate act that belongs somewhere more
+ * considered than a row menu. Delete is different: an archived job with no
+ * applications is exactly the thing somebody wants to clear out, and one with
+ * applications is refused by the database either way.
  *
  * Delete is a two-step inline confirm inside the menu. Not window.confirm:
  * that blocks the whole page on a modal the page cannot style, label or
@@ -47,6 +50,17 @@ export type AdminJobRowActionsProps = {
   status: JobStatus;
   /** Used for the accessible action names, so a screen reader hears "Publish <job>". */
   title: string;
+  /**
+   * The job's ConsultHire generation state, or null when the integration is
+   * not configured on this deployment.
+   *
+   * Null rather than defaulting to "NONE", because the two mean different
+   * things to this menu: NONE is "no interview yet, offer to make one" and null
+   * is "this system has no AI interviews", where the item must not appear at
+   * all. A deployment without credentials would otherwise show every recruiter
+   * an action that refuses every click.
+   */
+  consultHireStatus?: ConsultHireStatus | null;
 };
 
 /** The inline confirm un-arms itself, so a half-finished delete never lingers
@@ -61,10 +75,16 @@ const DOTS = (
   </svg>
 );
 
-export function AdminJobRowActions({ id, status, title }: AdminJobRowActionsProps) {
+export function AdminJobRowActions({
+  id,
+  status,
+  title,
+  consultHireStatus = null,
+}: AdminJobRowActionsProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [deleteWasBlocked, setDeleteWasBlocked] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [open, setOpen] = useState(false);
@@ -126,6 +146,7 @@ export function AdminJobRowActions({ id, status, title }: AdminJobRowActionsProp
     options?: { isDelete?: boolean },
   ) => {
     setError(null);
+    setNotice(null);
     setDeleteWasBlocked(false);
     setConfirmingDelete(false);
     setOpen(false);
@@ -145,10 +166,71 @@ export function AdminJobRowActions({ id, status, title }: AdminJobRowActionsProp
     });
   };
 
+  /*
+    Generation gets its own runner rather than going through `run`.
+
+    Two differences, both of which matter. It reports success as well as
+    failure, because "this job already had an interview" is an outcome the
+    recruiter needs to be told and a silent refresh would read as nothing
+    having happened. And it is the one action here that is slow by nature: an
+    interview plan is an LLM call at ConsultHire, so the menu item has to say
+    it is working rather than looking dead for most of a minute.
+  */
+  const runGenerate = (force: boolean) => {
+    setError(null);
+    setNotice(null);
+    setOpen(false);
+    startTransition(async () => {
+      const result = await generateJobInterviewAction(id, { force });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setNotice(result.message);
+      router.refresh();
+    });
+  };
+
   const canPublish = status === "DRAFT" || status === "UNPUBLISHED";
-  const canDelete = status === "DRAFT" || status === "UNPUBLISHED";
   const canUnpublish = status === "PUBLISHED";
   const canArchive = status === "PUBLISHED";
+
+  /*
+    DELETE IS OFFERED AT EVERY STATUS, including PUBLISHED.
+
+    It used to be hidden on a published job, which meant that in a dashboard
+    where every job is published the control existed and could never be
+    reached. Hiding it did not protect anything either: the thing worth
+    protecting is a job with real applications attached, and that is guarded
+    where it cannot be bypassed. applications.job_id is ON DELETE RESTRICT, so
+    the database itself refuses, and deleteJobAction counts the applications
+    first so the refusal can say how many people's submissions were at stake
+    and point at Archive, which clears the careers page and keeps every record.
+
+    So a published job with no applicants deletes, a job with applicants is
+    refused with a reason whatever its status, and the status no longer decides
+    anything on its own. The two-step confirm below is unchanged.
+  */
+  const canDelete = true;
+
+  /*
+    PUBLISHED ONLY. The interview link is offered on the public posting, so
+    generating one for a draft would spend an LLM call on a description still
+    being written and produce a link nothing can reach. The action re-checks
+    this server-side and says so; not offering the item is what stops a
+    recruiter discovering that by being refused.
+
+    Shown at every ConsultHire status including PENDING, because PENDING is
+    also how a job looks when generation crashed mid-flight, and the menu is
+    the only way back out of it.
+  */
+  const canGenerate = consultHireStatus !== null && status === "PUBLISHED";
+  const generateLabel =
+    consultHireStatus === "READY"
+      ? "Regenerate AI interview"
+      : consultHireStatus === "FAILED"
+        ? "Retry AI interview"
+        : "Generate AI interview";
 
   return (
     <>
@@ -203,6 +285,22 @@ export function AdminJobRowActions({ id, status, title }: AdminJobRowActionsProp
             <Link className="jm-item" role="menuitem" href={`/admin/jobs/${id}`}>
               View details
             </Link>
+
+            {canGenerate ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="jm-item"
+                disabled={pending}
+                // READY means there is a working link, so the only reason to
+                // press this is "the description changed, rebuild it", which is
+                // exactly what force means. Everywhere else the call is already
+                // idempotent and force would only burn an extra LLM call.
+                onClick={() => runGenerate(consultHireStatus === "READY")}
+              >
+                {pending ? "Working…" : generateLabel}
+              </button>
+            ) : null}
 
             {canArchive ? (
               <button
@@ -265,6 +363,16 @@ export function AdminJobRowActions({ id, status, title }: AdminJobRowActionsProp
           </div>
         ) : null}
       </div>
+
+      {/* Success is reported too, and only for generation: every other action
+          here is instant and its effect is visible in the row that re-renders,
+          whereas "already had one" and "rebuilt from the current description"
+          leave the row looking identical. */}
+      {notice ? (
+        <p className="ws-row-notice" role="status">
+          {notice}
+        </p>
+      ) : null}
 
       {error ? (
         <p className="ws-row-error" role="alert">

@@ -26,8 +26,6 @@
  * never reach a candidate's screen either way.
  */
 
-import { createHash } from "node:crypto";
-
 import { headers } from "next/headers";
 import { after } from "next/server";
 
@@ -35,6 +33,11 @@ import { submitApplication, SubmitApplicationError } from "@/lib/neon/applicatio
 import { getJobBySlug } from "@/lib/neon/jobs";
 import { ResumeValidationError, uploadResume, type StoredResume } from "@/lib/neon/resume-storage";
 import { logServerError } from "@/lib/observability/logger";
+import {
+  clientIp,
+  RATE_LIMITED_MESSAGE,
+  withinApplyRateLimit,
+} from "@/lib/security/apply-rate-limit";
 
 export type SubmitApplicationActionResult =
   | { ok: true; reference: string }
@@ -43,77 +46,6 @@ export type SubmitApplicationActionResult =
 /** Anything unexpected becomes this. Never a stack, never a driver message. */
 const GENERIC_ERROR = "We couldn't complete your application. Please try again.";
 const RESUME_REQUIRED = "Please upload your resume (PDF or DOCX).";
-
-// --------------------------------------------------------------- rate limiting
-
-/**
- * Per-IP and global fixed windows, held in process memory.
- *
- * In-process is a deliberate floor, not the finished article. The shared
- * limiter this repo already has (lib/assistant/rate-limit.ts) is backed by
- * Supabase, which is exactly what this route is being moved off, and Neon has
- * no counter table in the 11-table schema. So: one window per server instance.
- * On Vercel that means a determined attacker spread across instances gets a
- * multiple of these numbers, which still turns an unbounded flood into a
- * bounded one. Move it to a Neon table when there is a reason to.
- *
- * Limits are sized for a real applicant, not an average one: a family or an
- * office behind one NAT address can legitimately file several applications in
- * an afternoon.
- */
-const RATE_LIMIT = {
-  windowMs: 15 * 60 * 1000,
-  perIp: 8,
-  /** Backstop across all clients, so one window cannot drown the inbox. */
-  global: 200,
-} as const;
-
-type Window = { startedAt: number; count: number };
-const windows = new Map<string, Window>();
-
-/** Salted hash: the limiter needs to tell clients apart, not to know who they are. */
-function ipKey(ip: string): string {
-  const salt = process.env.ASSISTANT_RATE_LIMIT_SALT || "consult-america-apply";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
-}
-
-function hit(key: string, limit: number, now: number): boolean {
-  const start = now - (now % RATE_LIMIT.windowMs);
-  const existing = windows.get(key);
-  const window: Window =
-    existing && existing.startedAt === start ? existing : { startedAt: start, count: 0 };
-  window.count += 1;
-  windows.set(key, window);
-
-  // Bounded memory. Expired windows are dead weight once the clock moves on.
-  if (windows.size > 10_000) {
-    for (const [k, v] of windows) if (v.startedAt < start) windows.delete(k);
-  }
-
-  return window.count <= limit;
-}
-
-/**
- * Fails OPEN. A limiter that breaks and starts refusing genuine applicants
- * costs the business real candidates; a burst that gets through costs it a
- * noisy inbox for fifteen minutes. The asymmetry is not close.
- */
-function withinRateLimit(ip: string): boolean {
-  try {
-    const now = Date.now();
-    if (!hit(`ip:${ipKey(ip)}`, RATE_LIMIT.perIp, now)) return false;
-    return hit("global", RATE_LIMIT.global, now);
-  } catch (error) {
-    logServerError("apply.rate-limit", error);
-    return true;
-  }
-}
-
-function clientIp(requestHeaders: Headers): string {
-  const forwarded = requestHeaders.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]!.trim();
-  return requestHeaders.get("x-real-ip")?.trim() || "unknown";
-}
 
 // ------------------------------------------------------------------ validation
 
@@ -163,11 +95,14 @@ export async function submitApplicationAction(
   // callback for Server Functions, but the IP is wanted up front regardless.
   const requestHeaders = await headers();
 
-  if (!withinRateLimit(clientIp(requestHeaders))) {
-    return {
-      ok: false,
-      error: "Too many applications from this connection. Please try again in a few minutes.",
-    };
+  // The limiter moved to lib/security/apply-rate-limit.ts when the AI route
+  // was added, so both public apply doors spend from one allowance rather than
+  // one each. Same numbers, same behaviour, one window.
+  const limited = !withinApplyRateLimit(clientIp(requestHeaders), (error) =>
+    logServerError("apply.rate-limit", error),
+  );
+  if (limited) {
+    return { ok: false, error: RATE_LIMITED_MESSAGE };
   }
 
   const slug = field(formData, "slug", 128).toLowerCase();
@@ -396,6 +331,11 @@ async function mailApplication(input: NotificationInput): Promise<void> {
       applicationId: input.applicationId,
       applicationNumber: input.reference,
       source: "Careers Site",
+      // Named explicitly rather than left to the default, so the notification
+      // says which of the two routes filed this one. There are two now, and an
+      // unlabelled notification makes the recruiter open the dashboard to find
+      // out whether a score is coming.
+      method: "EASY_APPLY",
       resumeFilename: input.resumeFilename,
       resumeAttachment: input.resumeAttachment,
       candidateLocation: input.candidateLocation,

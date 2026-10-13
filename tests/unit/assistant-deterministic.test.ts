@@ -216,7 +216,10 @@ describe("deterministic assistant", () => {
   it("answers the questions visitors actually arrive with", async () => {
     const what = await ask("what is Consult America");
     expect(what.reply).toMatch(/engineering, AI, and enterprise consulting/);
-    expect(what.reply).toMatch(/Oracle Cloud/);
+    // The practice list names it "Oracle". Asserting the old name is absent
+    // too, so a revert to "Oracle Cloud" in the practice list fails here.
+    expect(what.reply).toMatch(/practices:.*\bOracle\b/);
+    expect(what.reply).not.toMatch(/Oracle Cloud/);
 
     const services = await ask("what services do you offer");
     expect(services.reply).toMatch(/Managed Services/);
@@ -372,7 +375,7 @@ describe("deterministic assistant", () => {
   it("unconfirmed answers hand over what is known instead of stopping", async () => {
     const size = await ask("how many employees do you have");
     expect(size.reply).toMatch(/headcount/);
-    expect(size.reply).toMatch(/Oracle Cloud/); // the practices it can name
+    expect(size.reply).toMatch(/practices:.*\bOracle\b/); // the practices it can name
     expect(size.reply).toMatch(/Jobs page/);
 
     const founded = await ask("when was Consult America founded");

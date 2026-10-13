@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { CONSULTHIRE_BOT, buildJobSections, daysUntil } from "@/lib/jobs/detail";
 import type { Job } from "@/lib/jobs/public-model";
-import { formatPostedDate } from "@/lib/jobs/public-model";
+import { formatPostedDate, locationLabels } from "@/lib/jobs/public-model";
 import { safeExternalApplyUrl } from "@/lib/jobs/portal";
 
 type JobDetailViewProps = {
@@ -39,6 +39,22 @@ const EXTERNAL_ICON = (
 );
 
 /**
+ * Whether a visitor is ever offered the AI interview route.
+ *
+ * Off for now, by request. Ten of the eleven published roles carry a generated
+ * ConsultHire interview and would otherwise show a live "Apply with AI
+ * Interview" button, so this is what holds the feature back rather than the
+ * absence of interviews.
+ *
+ * Off, every posting falls through to the same "coming soon" chip it showed
+ * before the integration existed, and Easy Apply is the one way in. Nothing is
+ * deleted: the interviews, the route at /jobs/[slug]/ai-interview and the
+ * webhook that records a score are all untouched, so turning this back on
+ * restores the route for every role that already has one.
+ */
+const OFFER_AI_INTERVIEW = false;
+
+/**
  * Secondary CTA to the ConsultHire bot. A plain link: nothing about the visitor
  * is added to the URL.
  *
@@ -72,6 +88,26 @@ export function ConsultHireBotLink({ className = "btn btn-dark jd-bot" }: { clas
   );
 }
 
+/**
+ * The AI interview route for this specific role.
+ *
+ * NOT ConsultHireBotLink. That one is a generic marketing link to the product
+ * and deliberately carries nothing about the visitor or the job; this is an
+ * application. It goes to our own page, which takes the candidate's details,
+ * files an application with method AI_INTERVIEW, creates the row the result
+ * will land on, and only then mints the signed launch URL. So it is a same-tab
+ * internal Link rather than a new-tab external anchor: the candidate is
+ * starting an application with us, not visiting another site.
+ */
+function AiInterviewLink({ job }: { job: Job }) {
+  return (
+    <Link href={`/jobs/${job.slug}/ai-interview`} className="btn btn-dark jd-bot">
+      {BOT_ICON}
+      Apply with AI Interview
+    </Link>
+  );
+}
+
 function ApplyActions({ job }: { job: Job }) {
   if (!job.acceptingApplications) {
     return (
@@ -84,6 +120,21 @@ function ApplyActions({ job }: { job: Job }) {
     );
   }
   const externalUrl = job.applicationType === "EXTERNAL" ? safeExternalApplyUrl(job.externalApplyUrl) : null;
+  /*
+    BOTH ROUTES, WITH EASY APPLY STILL FIRST AND STILL PRIMARY.
+
+    The AI interview is an alternative, not a replacement, and the visual
+    hierarchy says so: Easy Apply keeps the primary button and the position it
+    has always had, so nothing about that journey changes for anyone. A
+    candidate who does not want to be interviewed by a bot must not have to
+    look for the ordinary way in.
+
+    Offered only for an INTERNAL role with a generated interview. An EXTERNAL
+    posting is applied to on somebody else's site, so there is no application
+    of ours for a result to attach to.
+  */
+  const offerAiInterview =
+    OFFER_AI_INTERVIEW && job.applicationType === "INTERNAL" && job.aiInterviewReady === true;
   return (
     <div className="jd-actions">
       {job.applicationType === "INTERNAL" ? (
@@ -95,17 +146,41 @@ function ApplyActions({ job }: { job: Job }) {
           Apply Now {EXTERNAL_ICON}
         </a>
       ) : null}
-      <ConsultHireBotLink />
-      {/* The note only makes sense next to a working link. While the bot is
-          off, "it doesn't submit an application" explains a button that isn't
-          there. */}
-      {CONSULTHIRE_BOT.enabled ? <p className="jd-bot-note">{CONSULTHIRE_BOT.note}</p> : null}
+      {offerAiInterview ? (
+        <>
+          <AiInterviewLink job={job} />
+          <p className="jd-bot-note">
+            A 20 minute conversation with our AI interviewer, built from this job description. Your
+            answers go to the recruiting team with your application.
+          </p>
+        </>
+      ) : (
+        <>
+          {/* Unchanged for every job without a generated interview: the
+              generic ConsultHire link, or the "coming soon" chip while
+              CONSULTHIRE_BOT.enabled is false. */}
+          <ConsultHireBotLink />
+          {/* The note only makes sense next to a working link. While the bot is
+              off, "it doesn't submit an application" explains a button that isn't
+              there. */}
+          {CONSULTHIRE_BOT.enabled ? <p className="jd-bot-note">{CONSULTHIRE_BOT.note}</p> : null}
+        </>
+      )}
     </div>
   );
 }
 
 function Facts({ job, compact }: { job: Job; compact: boolean }) {
   const closesIn = daysUntil(job.closesAt);
+  /*
+    Both Location and Work arrangement stay here even for a remote role, where
+    they carry the same word. This is a labelled definition list, not a run of
+    chips: "Location: Remote (US)" and "Work arrangement: Remote" answer two
+    different questions and the labels say which, so neither reads as a repeat.
+    Collapsing them would also lose the arrangement for anyone scanning the
+    facts table for exactly that. The deduplication rule applies to the
+    unlabelled meta lines, where the pair really does read as one word twice.
+  */
   const rows: [string, ReactNode][] = [
     ["Reference", job.referenceNumber],
     ["Location", job.location],
@@ -161,8 +236,23 @@ function ApplicationProcess({ job }: { job: Job }) {
       {job.applicationType === "INTERNAL" ? (
         <ol className="jd-steps">
           <li>
-            <strong>Apply.</strong> Easy Apply takes your contact details and résumé in a few minutes; no account is
-            needed.
+            {/* Two routes are described only where both exist. Naming the AI
+                interview on a posting that has not got one would advertise a
+                button the visitor cannot find. */}
+            <strong>Apply.</strong>{" "}
+            {OFFER_AI_INTERVIEW && job.aiInterviewReady === true ? (
+              <>
+                Two ways in, and either one files a complete application. Easy Apply takes your
+                contact details and résumé in a few minutes. Apply with AI Interview adds a 20
+                minute conversation about this role, which the recruiting team reads alongside
+                your application. No account is needed for either.
+              </>
+            ) : (
+              <>
+                Easy Apply takes your contact details and résumé in a few minutes; no account is
+                needed.
+              </>
+            )}
           </li>
           <li>
             <strong>Review.</strong> Our recruiting team reviews your application against the requirements above.
@@ -191,8 +281,11 @@ export function JobDetailView({ job, compact = false, related = [], panelExtra }
         {job.company} · {job.department}
       </p>
       <ul className="jd-tags" aria-label="Role summary">
-        <li>{job.location}</li>
-        <li>{job.workplaceType}</li>
+        {/* One chip per label, and for a remote role that is one chip, not two
+            saying Remote. See showWorkplaceType in lib/jobs/public-model.ts. */}
+        {locationLabels(job.location, job.workplaceType).map((label) => (
+          <li key={label}>{label}</li>
+        ))}
         <li>{job.employmentType}</li>
         {job.categories.slice(0, 2).map((category) => (
           <li key={category.id} className="jd-tag-cat">
@@ -313,7 +406,10 @@ export function JobDetailView({ job, compact = false, related = [], panelExtra }
                 <Link href={`/jobs/${other.slug}`}>
                   <span className="jd-related-t">{other.title}</span>
                   <span className="jd-related-m">
-                    {other.location} · {other.workplaceType} · {other.employmentType}
+                    {[
+                      ...locationLabels(other.location, other.workplaceType),
+                      other.employmentType,
+                    ].join(" · ")}
                   </span>
                   {other.summary ? <span className="jd-related-s">{other.summary}</span> : null}
                 </Link>

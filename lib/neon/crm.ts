@@ -13,14 +13,12 @@ import { db, tx, type Queryable } from "./client";
 import type {
   ActivityKind,
   ApplicationActivityRow,
-  ApplicationNoteRow,
   ApplicationStatus,
   SyncEntityType,
   SyncOperation,
   ZohoSyncQueueRow,
 } from "./types";
 
-const NOTE_COLUMNS = "id, application_id, author_id, body, created_at";
 
 const ACTIVITY_COLUMNS =
   "id, application_id, actor_id, kind, from_status, to_status, detail, created_at";
@@ -30,86 +28,10 @@ const SYNC_COLUMNS = `
   next_attempt_at, zoho_record_id, created_at, updated_at
 `;
 
-/** A note plus the author's display name, which is what a timeline needs. */
-export interface NoteWithAuthor extends ApplicationNoteRow {
-  /** Null when the note has no author, or the author's account was deleted. */
-  author_name: string | null;
-}
-
 /** An activity plus the actor's display name. */
 export interface ActivityWithActor extends ApplicationActivityRow {
   /** Null for system-generated events, e.g. a candidate's own submission. */
   actor_name: string | null;
-}
-
-// ------------------------------------------------------------------------ notes
-
-export class NoteInputError extends Error {
-  readonly code = "EMPTY_NOTE" as const;
-
-  constructor(message: string) {
-    super(message);
-    this.name = "NoteInputError";
-  }
-}
-
-/**
- * Add a note and record it on the timeline.
- *
- * Two writes, so they share a transaction: a note that exists with no matching
- * NOTE_ADDED activity would be invisible in the timeline the recruiter actually
- * reads, which is worse than the note not being saved at all.
- */
-export async function addNote(
-  applicationId: string,
-  authorId: string | null,
-  body: string,
-): Promise<ApplicationNoteRow> {
-  const trimmed = body.trim();
-  if (trimmed === "") {
-    throw new NoteInputError("A note needs a body.");
-  }
-
-  return tx(async (t) => {
-    const rows = await t.query<ApplicationNoteRow>(
-      `INSERT INTO application_notes (application_id, author_id, body)
-       VALUES ($1, $2, $3)
-       RETURNING ${NOTE_COLUMNS}`,
-      [applicationId, authorId, trimmed],
-    );
-
-    const note = rows[0];
-    if (!note) {
-      throw new Error("Insert of application_notes returned no row.");
-    }
-
-    await insertActivity(t, {
-      applicationId,
-      actorId: authorId,
-      kind: "NOTE_ADDED",
-      // The note body lives in its own row; duplicating it here would mean two
-      // copies to keep in step. Store only enough to render the timeline line.
-      detail: summarise(trimmed, 140),
-    });
-
-    return note;
-  });
-}
-
-/** Notes for one application, newest first, with author names resolved. */
-export async function listNotes(
-  applicationId: string,
-  runner: Queryable = db,
-): Promise<NoteWithAuthor[]> {
-  return runner.query<NoteWithAuthor>(
-    `SELECT n.id, n.application_id, n.author_id, n.body, n.created_at,
-            a.full_name AS author_name
-       FROM application_notes n
-       LEFT JOIN admin_users a ON a.id = n.author_id
-      WHERE n.application_id = $1
-      ORDER BY n.created_at DESC`,
-    [applicationId],
-  );
 }
 
 // ------------------------------------------------------------------- activities
@@ -135,6 +57,12 @@ export interface InsertActivityInput {
  *
  * The table is append-only; nothing in this module ever updates or deletes a
  * row here, because the history is the product.
+ *
+ * ONE THING DOES REMOVE ROWS, and it is not in this module.
+ * application_activities.application_id is ON DELETE CASCADE, so deleting an
+ * application takes its whole timeline with it. That is all-or-nothing by
+ * design: the trail for a record that still exists can never be edited or
+ * thinned, which is the property that makes it worth reading.
  */
 export async function insertActivity(
   t: Queryable,
@@ -209,12 +137,45 @@ export const MAX_SYNC_ATTEMPTS = 8;
  * a failure. Two simultaneous enqueues can still both insert; a duplicate sync
  * is harmless because the Zoho operation is an upsert.
  */
+/**
+ * Zoho CRM syncing, switched off.
+ *
+ * WHY IT IS OFF. The integration worked: it was authenticated against
+ * jobs@consultamerica.com and delivered ten of ten jobs. What it did not have
+ * was a reader. Two candidate records ever reached Zoho, both in the first two
+ * days, and neither was looked at again. A pipeline nobody reads is not a
+ * feature, it is a second copy of the truth that can quietly drift from the
+ * first, which it already had: both Zoho contacts still say NEW for
+ * applications that no longer exist here.
+ *
+ * WHY THE CODE IS STILL HERE. Pulling the enqueue out of lib/neon/applications.ts
+ * means editing the two most important writes in the product, the one that
+ * saves an application and the one that moves a candidate's stage. The whole
+ * benefit of removal is "stop talking to Zoho", and this one line achieves all
+ * of it at none of that risk. The tables are dropped separately, in
+ * db/neon/005_cleanup.sql.
+ *
+ * TO TURN IT BACK ON: set this true AND restore the tables. The second half
+ * matters, because once 005 has run against a database the queue table is gone
+ * and this flag alone would make every write fail.
+ */
+const ZOHO_SYNC_ENABLED = false;
+
 export async function enqueueZohoSync(
   entityType: SyncEntityType,
   entityId: string,
   operation: SyncOperation,
   runner: Queryable = db,
 ): Promise<ZohoSyncQueueRow | null> {
+  /*
+    The switch. Returns before any statement is built, so no row is written and
+    nothing touches zoho_sync_queue. That is what makes dropping the table safe:
+    this runs inside the same transaction as the application insert and the
+    stage change, and a reference to a table that no longer exists would fail
+    both of them.
+  */
+  if (!ZOHO_SYNC_ENABLED) return null;
+
   const rows = await runner.query<ZohoSyncQueueRow>(
     `INSERT INTO zoho_sync_queue (entity_type, entity_id, operation)
      SELECT $1::text, $2::uuid, $3::text

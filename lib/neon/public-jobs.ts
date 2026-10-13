@@ -177,6 +177,19 @@ export function toPublicJob(row: JobRow, now: Date = new Date()): Job {
     verified: false,
     // Admin-entered perks now have a home on the detail page.
     benefits: row.benefits ?? [],
+    /*
+      THE AI ROUTE IS OFFERED ONLY ON A READY LINK, AND ONLY WHILE THE ROLE IS
+      OPEN. Both halves matter. READY without the deadline check would put an
+      "Apply with AI Interview" button on a posting that closed last week, and
+      the apply route would then refuse the click. `open` without the status
+      check would offer an interview that does not exist yet, which is a
+      candidate clicking through to an error on the one journey this feature
+      exists to make smooth.
+
+      Only the fact is published, never the slug or the URL. See the note on
+      `aiInterviewReady` in lib/jobs/public-model.ts for why.
+    */
+    aiInterviewReady: open && row.consulthire_status === "READY" && Boolean(row.consulthire_slug),
   };
 }
 

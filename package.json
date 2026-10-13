@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:show": "node --env-file=.env.local scripts/show-db.mjs",
+    "seed:jobs": "npx --yes tsx@4 --tsconfig tsconfig.json scripts/seed-jobs.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.0",

@@ -25,6 +25,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { SubmitButton } from "@/components/admin/SubmitButton";
+
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { noticeFor, sanitizeAdminReturnTo } from "@/lib/neon/auth";
 
@@ -97,9 +99,7 @@ export default async function AdminLoginPage({ searchParams }: Props) {
                 </p>
               ) : null}
               <div className="apply-actions apply-actions-end">
-                <button type="submit" className="btn btn-primary">
-                  Sign in
-                </button>
+                <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
               </div>
             </form>
             <p className="apply-trust">

@@ -63,7 +63,9 @@ const JOB_COLUMNS = `
   id, slug, reference, title, department, location, workplace_type, employment_type,
   experience_level, salary_min, salary_max, salary_currency, description,
   responsibilities, requirements, benefits, application_deadline, status,
-  published_at, created_by, created_at, updated_at
+  published_at, created_by, created_at, updated_at,
+  consulthire_role_id, consulthire_slug, consulthire_url, consulthire_status,
+  consulthire_error, consulthire_synced_at
 `;
 
 // ----------------------------------------------------------------------- reads
@@ -355,6 +357,108 @@ export async function setJobStatus(
     throw new JobNotFoundError(id);
   }
   return job;
+}
+
+// ------------------------------------------------- ConsultHire role interview
+
+/**
+ * The outcome of one generation attempt, as it is stored.
+ *
+ * A discriminated union rather than six optional fields, because the three
+ * states are mutually exclusive and the compiler should say so: PENDING has no
+ * link and no error yet, READY has a link and no error, FAILED has an error and
+ * no link. Six nullable arguments would let a caller write "ready, with an
+ * error, and no slug" and nothing would notice.
+ */
+export type ConsultHireState =
+  | { status: "PENDING" }
+  | { status: "READY"; roleId: string; slug: string; url: string }
+  | { status: "FAILED"; error: string };
+
+/**
+ * Record where a job's ConsultHire interview got to.
+ *
+ * WHY THE WRITE IS GUARDED BY `WHERE id = $1` AND NOTHING ELSE. An earlier
+ * version refused to overwrite a READY row, so that a failed retry could not
+ * take a working link away. That was wrong: republishing an edited job
+ * regenerates the plan at the far end, and if that regeneration fails the
+ * stored link now points at an interview built from the old description. A
+ * recruiter has to be told the link is stale, which means FAILED must be able
+ * to replace READY. Idempotency is decided by the caller, which skips the call
+ * entirely when there is nothing to do.
+ *
+ * The identity columns are cleared on PENDING and FAILED rather than left
+ * behind, so the public page cannot keep offering a link whose generation we
+ * have just recorded as broken. consulthire_error is cleared on the two
+ * non-failure states for the same reason: a stale error next to a working link
+ * reads as a live problem.
+ *
+ * Returns null when the job no longer exists, which is a real case: generation
+ * runs after the response, and a job can be deleted while it is in flight. The
+ * caller logs it and stops. It is not an error worth throwing.
+ */
+export async function setJobConsultHireState(
+  id: string,
+  state: ConsultHireState,
+  runner: Queryable = db,
+): Promise<JobRow | null> {
+  if (!isUuid(id)) {
+    return null;
+  }
+
+  const ready = state.status === "READY" ? state : null;
+
+  const rows = await runner.query<JobRow>(
+    `UPDATE jobs
+        SET consulthire_role_id = $2,
+            consulthire_slug    = $3,
+            consulthire_url     = $4,
+            consulthire_status  = $5,
+            consulthire_error   = $6,
+            -- Stamped on every attempt, success or failure, because the
+            -- question it answers is "when did we last hear from ConsultHire
+            -- about this job", and a failure is an answer.
+            consulthire_synced_at = NOW()
+      WHERE id = $1
+      RETURNING ${JOB_COLUMNS}`,
+    [
+      id,
+      ready?.roleId ?? null,
+      ready?.slug ?? null,
+      ready?.url ?? null,
+      state.status,
+      state.status === "FAILED" ? state.error.slice(0, 1_000) : null,
+    ],
+  );
+
+  return rows[0] ?? null;
+}
+
+/**
+ * Published jobs that have no usable AI interview yet.
+ *
+ * Drives the bulk generate control on /admin/jobs, and is the definition of
+ * "eligible" that control and its action both read, so the count shown and the
+ * set acted on cannot disagree.
+ *
+ * PUBLISHED only. Generating an interview for a draft would spend an LLM call
+ * on a description still being written, and the public page cannot offer the
+ * route anyway. PENDING is excluded so a sweep does not pile a second attempt
+ * on top of one already in flight.
+ */
+export async function listJobsNeedingConsultHire(
+  limit = 50,
+  runner: Queryable = db,
+): Promise<JobRow[]> {
+  return runner.query<JobRow>(
+    `SELECT ${JOB_COLUMNS}
+       FROM jobs
+      WHERE status = 'PUBLISHED'
+        AND consulthire_status IN ('NONE', 'FAILED')
+      ORDER BY published_at DESC NULLS LAST, created_at DESC
+      LIMIT $1`,
+    [clampLimit(limit, 50)],
+  );
 }
 
 /**

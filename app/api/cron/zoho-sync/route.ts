@@ -1,108 +1,62 @@
 import { timingSafeEqual } from "node:crypto";
 
-import { NeonConfigError } from "@/lib/neon/client";
-import { DEFAULT_SYNC_BATCH, processDueSyncJobs } from "@/lib/zoho/sync";
-import { isZohoConfigured } from "@/lib/zoho/token";
-
-// The worker uses the pooled WebSocket transport and node:crypto, neither of
-// which exists on the edge runtime.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
-
-/** Upper bound on ?limit=, matching the ceiling claimDueSyncJobs enforces. */
-const MAX_LIMIT = 100;
 
 /**
- * Drain the Zoho CRM outbox.
+ * Drain the Zoho CRM outbox. Switched off.
  *
- * Authenticated before it does anything. This endpoint spends a third party's
- * rate limit on every call, so leaving it open would let anyone on the internet
- * burn the day's API credits and take the CRM integration down for everybody —
- * and it would look like a Zoho problem, not an exposed route.
+ * WHY. The integration worked and nobody read it: two candidate records ever
+ * reached Zoho and neither was looked at again. See ZOHO_SYNC_ENABLED in
+ * lib/neon/crm.ts for the full reasoning.
  *
- * Duplicate and overlapping runs are safe: claims use FOR UPDATE SKIP LOCKED,
- * so two workers get different rows, and the Zoho operation is an upsert matched
- * on email, so a repeat never creates a second contact.
+ * WHY THE ROUTE STILL EXISTS. The Vercel Cron schedule calls this URL, and a
+ * schedule pointing at a 404 is a daily error nobody can act on. It answers
+ * honestly instead, and turning the integration back on is restoring one
+ * function rather than rebuilding a worker. The draining implementation is
+ * untouched in lib/zoho/sync.ts.
+ *
+ * WHY IT RETURNS BEFORE READING ANYTHING. This is what lets the two Zoho
+ * tables be dropped. The old body called claimDueSyncJobs on every run, which
+ * SELECTs from zoho_sync_queue, and that table is removed in
+ * db/neon/005_cleanup.sql. A scheduled job querying a dropped table is an
+ * error every hour, forever.
+ *
+ * STILL AUTHENTICATED. The check costs nothing and keeps the shape of the
+ * endpoint honest: an unauthenticated caller should never learn anything about
+ * this deployment's integrations, including that one was removed.
  */
 export async function GET(request: Request): Promise<Response> {
   if (!isAuthorized(request)) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  if (!isZohoConfigured()) {
-    // 503, not 500: nothing is broken, this deployment simply has no CRM
-    // connection. A health check should be able to tell those apart.
-    return Response.json({ status: "not-configured" }, { status: 503 });
-  }
-
-  const limit = parseLimit(new URL(request.url).searchParams.get("limit"));
-
-  try {
-    const summary = await processDueSyncJobs(limit);
-    return Response.json({ status: "ok", ...summary });
-  } catch (error) {
-    if (error instanceof NeonConfigError) {
-      return Response.json({ status: "not-configured" }, { status: 503 });
-    }
-    // Per-job failures never reach here; processDueSyncJobs records them on the
-    // queue and keeps going. Reaching here means the queue itself is
-    // unreachable, so there is no state to update and nothing to report but the
-    // reason.
-    return Response.json(
-      {
-        status: "error",
-        error: error instanceof Error ? error.message : "unknown error",
-      },
-      { status: 500 },
-    );
-  }
+  /*
+    503 and "disabled", which is deliberately not "not-configured". Those are
+    different facts: not-configured means a deployment has no CRM credentials
+    and might want some, disabled means the integration was removed on purpose.
+    A health check should be able to tell them apart.
+  */
+  return Response.json(
+    { status: "disabled", reason: "Zoho CRM integration removed" },
+    { status: 503 },
+  );
 }
 
 /**
- * Accept Vercel's scheduler or a bearer token, and nothing else.
+ * Constant-time comparison against CRON_SECRET.
  *
- * Vercel strips client-supplied `x-vercel-*` headers at the edge, so the header
- * can only have been added by the platform. Fails closed: with CRON_SECRET
- * unset and no platform header, every request is rejected. Same convention as
- * app/api/cron/email-intake/route.ts.
+ * Unchanged from the working version. timingSafeEqual throws on a length
+ * mismatch, hence the length check first, and the lengths themselves are not
+ * secret.
  */
 function isAuthorized(request: Request): boolean {
-  if (request.headers.get("x-vercel-cron")) {
-    return true;
-  }
-
   const secret = process.env.CRON_SECRET;
-  const presented = request.headers.get("authorization");
-  if (!secret || secret.trim() === "" || !presented) {
-    return false;
-  }
+  if (!secret) return false;
 
-  return constantTimeEquals(presented, `Bearer ${secret}`);
-}
+  const header = request.headers.get("authorization") ?? "";
+  const presented = header.startsWith("Bearer ") ? header.slice(7) : "";
+  if (presented.length !== secret.length) return false;
 
-/**
- * Compare without leaking the answer through timing.
- *
- * The length check short-circuits, which reveals the secret's length and
- * nothing else. Byte content is compared in constant time.
- */
-function constantTimeEquals(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  if (left.length !== right.length) {
-    return false;
-  }
-  return timingSafeEqual(left, right);
-}
-
-function parseLimit(raw: string | null): number {
-  if (raw === null) {
-    return DEFAULT_SYNC_BATCH;
-  }
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return DEFAULT_SYNC_BATCH;
-  }
-  return Math.min(Math.floor(parsed), MAX_LIMIT);
+  return timingSafeEqual(Buffer.from(presented), Buffer.from(secret));
 }

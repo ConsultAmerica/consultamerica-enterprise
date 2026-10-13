@@ -54,11 +54,14 @@ const ART: Record<string, Art> = {
   "document-contract-intelligence": { motif: "extract", labels: ["Party", "Term", "Renewal", "Value"] },
   "data-governance-guardrails": { motif: "shield", labels: ["Classify", "Mask", "Audit"] },
 
-  // Oracle Cloud
+  // Oracle
   "oracle-erp": { motif: "grid", labels: ["General Ledger", "Payables", "Receivables", "Fixed Assets", "Cash", "Procurement"] },
   "oracle-scm": { motif: "chain", labels: ["Supplier", "Inventory", "Manufacturing", "Order", "Customer"] },
   "oracle-hcm": { motif: "people", labels: ["Core HR", "Absence", "Payroll", "Talent"] },
   "oracle-epm": { motif: "bars", labels: ["Actual", "Budget", "Forecast", "Variance"] },
+  // Shares the module-grid motif with Oracle ERP on purpose: EBS is the
+  // on-premises applications suite, so a module footprint is what it is.
+  "oracle-ebs": { motif: "grid", labels: ["Financials", "Supply Chain", "HRMS", "Projects", "Manufacturing", "Technology Stack"] },
   "oracle-cloud-infrastructure": { motif: "zones", labels: ["Tenancy", "Network", "Database", "Identity"] },
 
   // Enterprise Transformation

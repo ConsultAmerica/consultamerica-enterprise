@@ -6,6 +6,26 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ExpertForm } from "@/components/marketing/ExpertForm";
 
 /** Mirrors lib/assistant/engine.ts types (client bundle must not import server code). */
+/**
+ * Whether the Ask AI assistant is offered anywhere on the site.
+ *
+ * OFF, by request. Every entry point reads this one value: the two buttons in
+ * MarketingHeader (desktop nav and mobile menu), the two on the homepage, and
+ * the Ask AI item in the floating contact button. With it off, none of them
+ * render and the palette is never mounted, so no assistant request can be made
+ * from the UI at all.
+ *
+ * NOTHING WAS DELETED. The palette below, lib/assistant/* (the engine, the
+ * company knowledge, the deterministic answers, the rate limiter) and the API
+ * route are all untouched, as are their tests. Flipping this to true brings the
+ * assistant back exactly as it was.
+ *
+ * The API route is deliberately NOT gated by this. A flag in a client bundle
+ * is not a security control, and the route has its own rate limiting; turning
+ * off the UI is a product decision, not a lockdown.
+ */
+export const ASSISTANT_ENABLED = false;
+
 export type AssistantPageContext =
   | { page: "home" | "about" | "careers" | "jobs" }
   | { page: "job"; jobSlug: string };

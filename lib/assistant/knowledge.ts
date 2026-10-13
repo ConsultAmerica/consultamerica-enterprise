@@ -127,8 +127,10 @@ export function getCompanyInformation(topic: CompanyTopic): KnowledgeAnswer {
       return { topic, facts: [COMPANY_SUMMARY], links: [ABOUT] };
     case "capabilities":
       return { topic, facts: CAPABILITIES.map((c) => `${c.title}: ${c.body}`), links: [ABOUT] };
+    // Topic key stays `oracle_cloud` (it is matched against visitor phrasing,
+    // which still says "Oracle Cloud"); the practice it names is now "Oracle".
     case "oracle_cloud":
-      return { topic, facts: [capability("Oracle Cloud")], links: [ABOUT] };
+      return { topic, facts: [capability("Oracle")], links: [ABOUT] };
     case "ai_data":
       return { topic, facts: [capability("AI + Data")], links: [ABOUT] };
     case "engineering":

@@ -18,11 +18,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { NeonRecordPanel } from "@/components/admin/NeonConsoleLink";
 import { ResumeLink } from "@/components/admin/ResumeLink";
 import { notFound } from "next/navigation";
 
 import { listApplications } from "@/lib/neon/applications";
-import { requireAdmin } from "@/lib/neon/auth";
+import { type AdminRole, requireAdmin } from "@/lib/neon/auth";
 import { getCandidateById } from "@/lib/neon/candidates";
 import { NeonConfigError } from "@/lib/neon/client";
 import type { ApplicationStatus } from "@/lib/neon/types";
@@ -130,8 +131,12 @@ export default async function AdminCandidateDetailPage({ params }: Props) {
   type Loaded = { candidate: Awaited<ReturnType<typeof getCandidateById>>; applications: Awaited<ReturnType<typeof listApplications>> };
 
   let loaded: Loaded | null = null;
+  // The role, for the Neon DB hatch at the foot of the page, which is for
+  // OWNER and ADMIN only.
+  let role: AdminRole | null = null;
   try {
-    await requireAdmin({ returnTo: `/admin/candidates/${id}` });
+    const user = await requireAdmin({ returnTo: `/admin/candidates/${id}` });
+    role = user.role;
     // getCandidateById screens a malformed id and returns null, so the
     // applications read is only worth doing once the person is known to exist.
     const candidate = await getCandidateById(id);
@@ -322,11 +327,18 @@ export default async function AdminCandidateDetailPage({ params }: Props) {
                 </>
               ) : null}
             </dl>
-            <p className="ws-note">
-              Contact details are updated by the candidate&rsquo;s own submissions. A later
-              application can fill a blank field but never blanks one that is already recorded.
-            </p>
+            {/* The note explaining how contact details get updated was removed
+                by request. The behaviour it described is unchanged and lives in
+                the ON CONFLICT clause in lib/consulthire/intake.ts and the apply
+                path: a later application fills a blank field and never blanks
+                one that is already recorded. */}
           </section>
+
+          {/* Under Contact, in the column this page uses for facts about the
+              record rather than for the application history. The same panel the
+              application and job screens show, driven by props. Renders nothing
+              for a RECRUITER. */}
+          {role ? <NeonRecordPanel role={role} table="candidates" id={candidate.id} /> : null}
         </div>
       </div>
     </main>

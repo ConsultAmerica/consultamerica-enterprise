@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AdminJobRowActions } from "@/components/admin/AdminJobRowActions";
+import { NeonRecordPanel } from "@/components/admin/NeonConsoleLink";
 import { ResumeLink } from "@/components/admin/ResumeLink";
 import { findById } from "@/lib/neon/admin-users";
-import { requireAdmin } from "@/lib/neon/auth";
+import { type AdminRole, requireAdmin } from "@/lib/neon/auth";
 import { NeonConfigError, query } from "@/lib/neon/client";
 import { getJobById } from "@/lib/neon/jobs";
 import type { ApplicationStatus, JobRow, JobStatus } from "@/lib/neon/types";
@@ -173,6 +174,9 @@ type LoadResult =
       applicants: number;
       applicantRows: JobApplicant[];
       createdBy: string | null;
+      /** The signed-in admin's role, carried because the Neon DB hatch at the
+       *  foot of the page is for OWNER and ADMIN only. */
+      role: AdminRole;
     }
   | { ok: false; configError: string };
 
@@ -183,10 +187,17 @@ type LoadResult =
  */
 async function load(id: string): Promise<LoadResult> {
   try {
-    await requireAdmin({ returnTo: `/admin/jobs/${id}` });
+    const user = await requireAdmin({ returnTo: `/admin/jobs/${id}` });
     const job = await getJobById(id);
     if (!job) {
-      return { ok: true, job: null, applicants: 0, applicantRows: [], createdBy: null };
+      return {
+        ok: true,
+        job: null,
+        applicants: 0,
+        applicantRows: [],
+        createdBy: null,
+        role: user.role,
+      };
     }
 
     const [counted, applicantRows, author] = await Promise.all([
@@ -229,6 +240,7 @@ async function load(id: string): Promise<LoadResult> {
       applicants: counted[0]?.count ?? 0,
       applicantRows,
       createdBy: author?.fullName ?? null,
+      role: user.role,
     };
   } catch (error) {
     if (error instanceof NeonConfigError) {
@@ -276,7 +288,7 @@ export default async function AdminJobDetailPage({ params }: Props) {
   // in the URL is a 404 rather than a database error.
   if (!loaded.job) notFound();
 
-  const { job, applicants, applicantRows, createdBy } = loaded;
+  const { job, applicants, applicantRows, createdBy, role } = loaded;
   const isPublic = job.status === "PUBLISHED";
 
   return (
@@ -401,6 +413,13 @@ export default async function AdminJobDetailPage({ params }: Props) {
           )}
         </section>
       ))}
+
+      {/* Last panel on the page. This screen is a single column of panels, so
+          the record's own identifiers belong at the end, after the job copy and
+          well away from the status actions in the header. The same panel the
+          application and candidate screens show, driven by props. Renders
+          nothing for a RECRUITER. */}
+      <NeonRecordPanel role={role} table="jobs" id={job.id} />
     </>
   );
 }

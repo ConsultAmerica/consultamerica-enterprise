@@ -20,7 +20,7 @@ import {
   PROD,
 } from "@/data/marketing";
 import { INDUSTRY_PAGES, industryHref } from "@/data/industries";
-import { AssistantPalette } from "@/components/assistant/AssistantPalette";
+import { ASSISTANT_ENABLED, AssistantPalette } from "@/components/assistant/AssistantPalette";
 import { IndustryCard } from "@/components/industries/IndustryCard";
 import { ExpertForm } from "@/components/marketing/ExpertForm";
 import { ContactFab } from "@/components/marketing/ContactFab";
@@ -384,14 +384,16 @@ export function EnterpriseHome() {
             })}
           </nav>
           <div className="nav-right">
-            <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={openCmdk}>
-              <span className="spk">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
-                </svg>
-              </span>
-              Ask AI
-            </button>
+            {ASSISTANT_ENABLED ? (
+              <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={openCmdk}>
+                <span className="spk">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
+                  </svg>
+                </span>
+                Ask AI
+              </button>
+            ) : null}
             <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpertOpen(true)}>
               {CONTACT_CTA.label} {ARROW_BTN}
             </button>
@@ -415,16 +417,18 @@ export function EnterpriseHome() {
         <div className={`mobile-menu${menuOpen ? " open" : ""}`} id="mobileMenu">
           <MobileNavLinks onHome onNavigate={() => setMenuOpen(false)} />
           {/* Same markup/label as MarketingHeader's mobile menu so the two agree. */}
-          <button
-            type="button"
-            className="mobile-ask"
-            onClick={() => {
-              setMenuOpen(false);
-              openCmdk();
-            }}
-          >
-            Ask AI
-          </button>
+          {ASSISTANT_ENABLED ? (
+            <button
+              type="button"
+              className="mobile-ask"
+              onClick={() => {
+                setMenuOpen(false);
+                openCmdk();
+              }}
+            >
+              Ask AI
+            </button>
+          ) : null}
           <button type="button" className="btn btn-primary" onClick={() => { setMenuOpen(false); setExpertOpen(true); }}>
             {CONTACT_CTA.label}
           </button>
@@ -871,10 +875,17 @@ export function EnterpriseHome() {
 
       <MarketingFooter />
 
-      {/* Ask AI command palette */}
-      <AssistantPalette open={cmdkOpen} onClose={closeCmdk} context={{ page: "home" }} />
+      {/* Ask AI command palette. Not mounted at all while the assistant is off. */}
+      {ASSISTANT_ENABLED ? (
+        <AssistantPalette open={cmdkOpen} onClose={closeCmdk} context={{ page: "home" }} />
+      ) : null}
 
-      <ContactFab onAskAi={openCmdk} onTalkToExpert={() => setExpertOpen(true)} />
+      {/* onAskAi omitted while off, which is what drops the Ask AI row from the
+          floating button rather than leaving a control that does nothing. */}
+      <ContactFab
+        onAskAi={ASSISTANT_ENABLED ? openCmdk : undefined}
+        onTalkToExpert={() => setExpertOpen(true)}
+      />
       <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} />
     </>
   );

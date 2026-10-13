@@ -4,7 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { AssistantPalette, type AssistantPageContext } from "@/components/assistant/AssistantPalette";
+import {
+  ASSISTANT_ENABLED,
+  AssistantPalette,
+  type AssistantPageContext,
+} from "@/components/assistant/AssistantPalette";
 import { CONTACT_CTA, PRIMARY_NAV, isNavItemActive } from "@/components/marketing/nav-config";
 import { ExpertForm } from "@/components/marketing/ExpertForm";
 import { CHEV, MEGA_IDS, NavMegaPanel } from "@/components/marketing/PrimaryNav";
@@ -95,14 +99,16 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
             )}
           </nav>
           <div className="nav-right">
-            <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={() => setAskOpen(true)}>
-              <span className="spk">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
-                </svg>
-              </span>
-              Ask AI
-            </button>
+            {ASSISTANT_ENABLED ? (
+              <button type="button" className="ask-nav" aria-label="Ask Consult America AI" onClick={() => setAskOpen(true)}>
+                <span className="spk">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8z" />
+                  </svg>
+                </span>
+                Ask AI
+              </button>
+            ) : null}
             <button type="button" className="btn btn-primary btn-sm" onClick={() => setExpertOpen(true)}>
               {CONTACT_CTA.label}{" "}
               <svg
@@ -148,16 +154,18 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
         {menuOpen ? (
           <div className="mobile-menu open" id="mobileMenu">
             <MobileNavLinks onHome={false} onNavigate={() => setMenuOpen(false)} />
-            <button
-              type="button"
-              className="mobile-ask"
-              onClick={() => {
-                setMenuOpen(false);
-                setAskOpen(true);
-              }}
-            >
-              Ask AI
-            </button>
+            {ASSISTANT_ENABLED ? (
+              <button
+                type="button"
+                className="mobile-ask"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setAskOpen(true);
+                }}
+              >
+                Ask AI
+              </button>
+            ) : null}
             <button
               type="button"
               className="btn btn-primary"
@@ -171,7 +179,9 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
           </div>
         ) : null}
       </header>
-      <AssistantPalette open={askOpen} onClose={closeAsk} context={assistantContext} />
+      {ASSISTANT_ENABLED ? (
+        <AssistantPalette open={askOpen} onClose={closeAsk} context={assistantContext} />
+      ) : null}
       <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} sourcePath={pathname ?? undefined} />
     </>
   );
