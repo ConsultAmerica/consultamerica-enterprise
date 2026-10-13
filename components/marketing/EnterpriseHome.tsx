@@ -19,7 +19,9 @@ import {
   INDUSTRIES,
   PROD,
 } from "@/data/marketing";
+import { INDUSTRY_PAGES, industryHref } from "@/data/industries";
 import { ASSISTANT_ENABLED, AssistantPalette } from "@/components/assistant/AssistantPalette";
+import { IndustryCard } from "@/components/industries/IndustryCard";
 import { ExpertForm } from "@/components/marketing/ExpertForm";
 import { ContactFab } from "@/components/marketing/ContactFab";
 import { INSIGHTS } from "@/data/insights";
@@ -186,7 +188,6 @@ export function EnterpriseHome() {
   const [expertOpen, setExpertOpen] = useState(false);
   const [cmdkOpen, setCmdkOpen] = useState(false);
   const [capSel, setCapSel] = useState(0);
-  const [indSel, setIndSel] = useState(0);
   const countersRun = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => true);
@@ -299,7 +300,7 @@ export function EnterpriseHome() {
     INDUSTRIES[i][0],
     INDUSTRIES[i][1],
     IND_ICONS[i],
-    "#industries",
+    industryHref(INDUSTRIES[i][0]),
   ];
   const pi = (i: number): [string, string, string, string] => [
     PROD[i][0],
@@ -320,11 +321,11 @@ export function EnterpriseHome() {
             ["Commerce", [ii(4)]],
           ]}
           feature={{
-            img: "/img/finance.jpg",
-            label: "Client impact",
-            title: "Proof in production",
-            desc: "Outcomes delivered across regulated, high-stakes industries.",
-            href: "#why",
+            img: "/img/industries/supply-chain-tile.jpg",
+            label: "Industries",
+            title: "All industries",
+            desc: "Five sectors, each with its challenges, solutions and how we deliver.",
+            href: "/industries",
           }}
         />
       ),
@@ -694,37 +695,18 @@ export function EnterpriseHome() {
           <div className="sec-head reveal">
             <span className="eyebrow">Industries</span>
             <h2>Context that shortens the distance to value.</h2>
-            <p>Hover an industry to see where modernization moves the needle most.</p>
+            <p>
+              Five sectors where we bring Oracle Cloud, data, AI and integration together. Open one to see the
+              challenges, the solutions and how we deliver.
+            </p>
           </div>
-          <div className="ind reveal">
-            <div className="ind-list" id="indList">
-              {INDUSTRIES.map(([name, tagline], i) => (
-                <div
-                  key={name}
-                  className={`ind-row${i === indSel ? " active" : ""}`}
-                  data-i={i}
-                  tabIndex={0}
-                  onMouseEnter={() => setIndSel(i)}
-                  onFocus={() => setIndSel(i)}
-                  onClick={() => setIndSel(i)}
-                >
-                  <div>
-                    <h3>{name}</h3>
-                  </div>
-                  <span className="io">{tagline}</span>
-                </div>
-              ))}
-            </div>
-            <div className="ind-stage" id="indStage">
-              {INDUSTRIES.map(([name, , , img], i) => (
-                <img key={name} src={img} alt={name} className={i === indSel ? "on" : ""} data-i={i} />
-              ))}
-              <div className="ind-cap" id="indCap">
-                <div className="ct">{INDUSTRIES[indSel][0]}</div>
-                <div className="cd">{INDUSTRIES[indSel][2]}</div>
-              </div>
-            </div>
-          </div>
+          <ul className="ind-cards reveal">
+            {INDUSTRY_PAGES.map((industry, i) => (
+              <li key={industry.slug}>
+                <IndustryCard industry={industry} size={i < 2 ? "large" : "standard"} />
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

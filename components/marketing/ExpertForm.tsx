@@ -16,7 +16,16 @@ const INTERESTS = [
 
 type Status = { state: "idle" | "sending" } | { state: "sent"; via: string } | { state: "error"; message: string };
 
-export function ExpertForm({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function ExpertForm({
+  open,
+  onClose,
+  sourcePath,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** The page the form was opened on. The server maps it to a label for the enquiry email. */
+  sourcePath?: string;
+}) {
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const panelRef = useRef<HTMLDivElement>(null);
   const firstRef = useRef<HTMLInputElement>(null);
@@ -105,6 +114,7 @@ export function ExpertForm({ open, onClose }: { open: boolean; onClose: () => vo
             </header>
 
             <form className="xf-form" onSubmit={onSubmit}>
+              {sourcePath ? <input type="hidden" name="sourcePath" value={sourcePath} /> : null}
               <div className="xf-row">
                 <label className="xf-field">
                   <span>Full name</span>

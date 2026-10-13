@@ -7,6 +7,7 @@ import { CONTACT } from "@/data/marketing";
 
 export const metadata: Metadata = {
   title: "Life at Consult America",
+  alternates: { canonical: "/life" },
   description:
     "How we work, who we hire, and what it's like to build enterprise systems at Consult America.",
 };

@@ -37,7 +37,10 @@ export const PRIMARY_NAV: readonly PrimaryNavItem[] = [
     you can click.
   */
   { label: "Capabilities", href: "/capabilities", mega: "capabilities", alsoActiveOn: ["/services"] },
-  { label: "Industries", href: "/#industries", anchor: "#industries", mega: "industries" },
+  // Industries has a hub page (/industries) and a page per sector. It keeps its
+  // anchor because the homepage section is still the best destination there:
+  // on the homepage it scrolls, everywhere else it opens the hub.
+  { label: "Industries", href: "/industries", anchor: "#industries", mega: "industries" },
   { label: "Products", href: "/products", mega: "products" },
   // "AI", "Insights" and "Services" were all removed from the nav. Their
   // destinations are still reachable: the #ai and #insights sections from the
