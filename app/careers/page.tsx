@@ -5,7 +5,7 @@ import { CAPABILITIES, HIRING_STEPS, PHASES } from "@/components/marketing/compa
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { SEARCH_OPEN_JOBS } from "@/components/marketing/nav-config";
-import type { Job } from "@/lib/jobs/public-model";
+import { locationLabels, type Job } from "@/lib/jobs/public-model";
 import { listPublicJobs } from "@/lib/neon/public-jobs";
 import { logServerError } from "@/lib/observability/logger";
 
@@ -158,7 +158,13 @@ export default async function CareersPage() {
                       <div>
                         <h3>{job.title}</h3>
                         <p className="meta">
-                          {[job.location, job.employmentType, job.workplaceType]
+                          {/* Location and arrangement are deduplicated: a
+                              remote role says Remote once, not twice. See
+                              showWorkplaceType in lib/jobs/public-model.ts. */}
+                          {[
+                            ...locationLabels(job.location, job.workplaceType),
+                            job.employmentType,
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
                         </p>

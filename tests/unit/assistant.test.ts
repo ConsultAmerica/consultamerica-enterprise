@@ -140,7 +140,10 @@ describe("AI careers assistant", () => {
 
   it("company answers come only from approved content", async () => {
     const out = await executeAssistantTool("get_company_information", { topic: "oracle_cloud" }, { jobs: jobsSource() });
-    expect(JSON.parse(out.content).facts[0]).toMatch(/^Oracle Cloud: Migrate and modernize/);
+    // The practice is named "Oracle". The `oracle_cloud` topic key is the
+    // visitor's phrasing, not the practice name, so the fact must not lead
+    // with "Oracle Cloud:" even though the body still mentions the platform.
+    expect(JSON.parse(out.content).facts[0]).toMatch(/^Oracle: Migrate and modernize/);
     expect(out.grounding).toBe("company");
   });
 

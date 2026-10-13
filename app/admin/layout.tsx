@@ -128,30 +128,53 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const waiting = await reviewCount();
 
   return (
-    <div className="ws">
-      <header className="nv-bar">
-        <div className="nv-bar-inner">
-          <Link href="/admin/dashboard" className="nv-brand">
-            {/* Same mark and cache-buster as the marketing header, so the
-                admin and the site read as one company, not two products. */}
-            <img src="/logo-mark3.png?v=m1" alt="" aria-hidden />
-            <span className="nv-brand-text">
-              <span className="nv-brand-name">Consult America</span>
-              <span className="nv-brand-tag">Recruiting</span>
-            </span>
-          </Link>
+    /*
+      A LEFT RAIL, NOT A TOP BAR.
 
-          {/* The badge count is read per request and passed down: AdminNav is
-              a client component and must not query anything itself. */}
-          <AdminNav reviewCount={waiting} />
+      The top bar was already carrying four sections and had nowhere to put a
+      fifth: every new destination competed for the same horizontal strip with
+      the brand and the account menu. A rail is the shape Linear, Stripe,
+      Vercel and every other tool of this kind converged on, and for a reason
+      that is structural rather than fashionable. Vertical space is the thing
+      an admin has spare. It takes more sections without crowding, it has room
+      for a count beside a label instead of a badge squeezed into a tab, and it
+      hands the entire top edge of the page back to the thing the page is
+      actually about.
 
+      Dark rail against a light workspace. The contrast does the separating, so
+      navigation never has to compete with content for attention, and the
+      palette is the one the old bar already used rather than a new one.
+    */
+    <div className="ws adm-shell">
+      <aside className="sb" aria-label="Recruitment admin">
+        <Link href="/admin/dashboard" className="sb-brand">
+          {/* Same mark and cache-buster as the marketing header, so the
+              admin and the site read as one company, not two products. */}
+          <img src="/logo-mark3.png?v=m1" alt="" aria-hidden />
+          <span className="sb-brand-text">
+            <span className="sb-brand-name">Consult America</span>
+            <span className="sb-brand-tag">Recruiting</span>
+          </span>
+        </Link>
+
+        {/* The badge count is read per request and passed down: AdminNav is
+            a client component and must not query anything itself. */}
+        <AdminNav reviewCount={waiting} />
+
+        {/*
+          The account sits at the foot of the rail, which is where every tool
+          of this shape puts it. It is the control a person uses least and
+          needs to find instantly, and the bottom corner is the one place on
+          screen that never moves as content grows.
+        */}
+        <div className="sb-foot">
           <AdminUserMenu
             fullName={user.fullName}
             email={user.email}
             roleLabel={ROLE_LABELS[user.role]}
           />
         </div>
-      </header>
+      </aside>
       {/*
         THE CONTRACT WITH THE PAGES: the shell owns <main className="ws-main">,
         so a signed-in page returns a fragment and never opens a <main> of its

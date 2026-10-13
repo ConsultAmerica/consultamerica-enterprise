@@ -14,6 +14,7 @@ import { JobDetailView } from "@/components/jobs/JobDetailView";
 import { LEARN_ABOUT_CAREERS } from "@/components/marketing/nav-config";
 import {
   formatPostedDate,
+  locationLabels,
   type Job,
 } from "@/lib/jobs/public-model";
 import {
@@ -399,7 +400,11 @@ export function JobsPortal({
                   ) : null}
                   <h3>{job.title}</h3>
                   <div className="meta">
-                    {job.company} · {job.location} · {job.workplaceType} · {job.employmentType}
+                    {[
+                      job.company,
+                      ...locationLabels(job.location, job.workplaceType),
+                      job.employmentType,
+                    ].join(" · ")}
                   </div>
                   {job.summary ? <p className="jc-sum">{job.summary}</p> : null}
                   <div className="jc-foot">

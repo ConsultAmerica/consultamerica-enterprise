@@ -31,6 +31,8 @@ import {
   type KeyboardEvent,
 } from "react";
 
+import { showWorkplaceType } from "@/lib/jobs/public-model";
+
 import { submitApplicationAction } from "./actions";
 
 const ACCEPT =
@@ -266,7 +268,10 @@ export function ApplyForm({ job }: { job: ApplyFormJob }) {
             {job.location}
             <span aria-hidden> · </span>
             {job.employmentType}
-            {job.workplaceType ? (
+            {/* Dropped for a remote role whose location already says Remote,
+                so this line does not read "Remote (US) · Full Time · Remote".
+                See showWorkplaceType in lib/jobs/public-model.ts. */}
+            {showWorkplaceType(job.location, job.workplaceType) ? (
               <>
                 <span aria-hidden> · </span>
                 {job.workplaceType}
@@ -485,7 +490,7 @@ function JobSummaryCard({ job, sticky = false }: { job: ApplyFormJob; sticky?: b
         <li>{job.company}</li>
         <li>{job.location}</li>
         <li>{job.employmentType}</li>
-        {job.workplaceType ? <li>{job.workplaceType}</li> : null}
+        {showWorkplaceType(job.location, job.workplaceType) ? <li>{job.workplaceType}</li> : null}
         {job.reference ? <li>Job ID · {job.reference}</li> : null}
       </ul>
       <Link href={`/jobs/${job.slug}`} className="apply-job-card-link">

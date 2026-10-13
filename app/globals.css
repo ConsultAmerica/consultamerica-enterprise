@@ -3190,23 +3190,6 @@ ul.adm-steps {
   height: 40px;
 }
 
-/* A real <caption>, so the rule about which statuses are public is announced
-   as the table's description instead of being a paragraph that happens to sit
-   nearby. Browsers centre captions by default; left-align it to the table. */
-.adm-table-caption {
-  caption-side: top;
-  text-align: left;
-  padding-bottom: 12px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ink-3);
-}
-
-.adm-table-caption strong {
-  color: var(--ink-2);
-  font-weight: 600;
-}
-
 /* NeonConfigError: DATABASE_URL is unset. A panel rather than a 500, because
    the fix is a named environment variable and the person reading this is the
    one who can set it. Amber, not red: nothing is broken or lost. */
@@ -3885,6 +3868,31 @@ ul.adm-steps {
   color: var(--rov-accent);
 }
 
+/* A STATUS RAIL ON THE ONE CARD THAT WANTS SOMETHING.
+   Four identical cards make the eye read left to right and weigh them equally,
+   which is wrong: three of them are facts and the fourth is work. A 3px rail
+   down the leading edge is the lightest thing that breaks the tie. It is the
+   same device the application rows use for stage, so it is already part of
+   this dashboard's vocabulary rather than a new one invented here.
+
+   Deliberately not a filled card or a coloured border all the way round. Both
+   turn "six to look at" into an alarm, and six applications waiting is the
+   normal state of a working recruiting desk, not an incident. At zero the
+   is-action class is absent and the card goes back to looking like its
+   neighbours, because then there is nothing to point at. */
+.rov-kpi.is-action::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--rov-accent);
+  border-radius: 14px 0 0 14px;
+}
+
+.rov-kpi.is-action {
+  padding-left: 21px;
+}
+
 /* ---------------------------------------------------------------- the cards */
 
 .rov-card {
@@ -3961,9 +3969,13 @@ ul.adm-steps {
   border-top: 1px solid var(--rov-line);
 }
 
+/* flex-grow is set per item from the page, carrying the stage's share of the
+   pipeline. basis 0 so growth decides the whole width rather than content
+   nudging it, and a min-width floor so a label never has to wrap to two lines
+   on a narrow stage. */
 .rov-flow li {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 1 0;
+  min-width: 84px;
 }
 
 .rov-flow a {
@@ -4017,7 +4029,8 @@ ul.adm-steps {
 
 /* An empty stage is still a real stage you can click. It is just not news, so
    it recedes instead of disappearing: a control that moves or vanishes with
-   its count is a control nobody can learn. */
+   its count is a control nobody can learn. It is narrow rather than absent,
+   which is the same statement made by the layout instead of by colour. */
 /* Recessed, not just pale. On a mid-tone track a near-white fill is
    indistinguishable from the active segments, which defeats the point. */
 .rov-flow li.is-zero a {
@@ -4680,6 +4693,7 @@ ul.adm-steps {
 }
 
 .apb-apply,
+.apb-delete,
 .apb-clear {
   height: 34px;
   padding: 0 14px;
@@ -4869,16 +4883,44 @@ ul.adm-steps {
   color: #fff;
   background: linear-gradient(180deg, #0b1322 0%, #070c18 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  /* Only the shadow animates. Transitioning `box-shadow` alone keeps this off
+     the layout and paint path that a scroll handler must not touch. */
+  transition: box-shadow 0.2s var(--ws-ease, ease), border-color 0.2s var(--ws-ease, ease);
+}
+
+/* Lifted, once the page has moved under it. See the useEffect in
+   components/admin/AdminNav.tsx for why this is driven by an attribute on
+   <html>: a flat sticky bar slices the first line of page content in half at
+   its edge, and the cut reads as a bug rather than as depth. */
+:root[data-scrolled] .nv-bar {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 24px -12px rgba(2, 6, 18, 0.85);
 }
 
 .nv-bar-inner {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 62px;
+  height: 56px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
+}
+
+/* A hairline between the brand and the sections, the way a workspace switcher
+   is separated from navigation in Vercel and Linear. It is the cheapest way to
+   say "this names where you are, those move you around" without adding a
+   single word. */
+.nv-bar-inner > .nv-nav::before {
+  content: "";
+  align-self: center;
+  width: 1px;
+  height: 20px;
+  margin-right: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  flex: none;
 }
 
 /* ------------------------------------------------------------------- brand */
@@ -5577,4 +5619,896 @@ ul.adm-steps {
   .cap-services a svg {
     transition: none;
   }
+}
+
+/* ===== ConsultHire AI interviews =====
+   Appended rather than edited into the blocks above, following the same rule
+   the admin section states: this is a feature added on top of an established
+   visual vocabulary, so it adds only what that vocabulary did not already
+   have. The pills, panels, buttons, notes and score display are existing
+   .ws- classes and are reused untouched. */
+
+/* The admin jobs heading now carries two controls, not one. */
+.adm-head-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.adm-bulk-gen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.adm-bulk-gen-msg {
+  font-size: 12.5px;
+  line-height: 1.5;
+  max-width: 34ch;
+  text-align: right;
+  color: var(--ink-2);
+}
+
+.adm-bulk-gen-msg.err {
+  color: #a12626;
+}
+
+/* Row-level success, next to the existing .ws-row-error. Same shape, neutral
+   tone: a generated interview is information, not a warning. */
+.ws-row-notice {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* The AI score column in the applications queue. Tabular figures so a column
+   of scores lines up on the decimal point and can be scanned vertically,
+   which is the only reason the column exists. */
+.ca-ai-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------- the AI interview panel */
+
+.ai-score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* An em dash stands in for a missing score. Muted, because "no score" is a
+   neutral fact and a grey dash reads as absence where a black one reads as a
+   result. */
+.ws-score strong.is-none {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.ai-warn {
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border: 1px solid #f0dcb0;
+  border-radius: 9px;
+  background: #fdf3df;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #7a5200;
+}
+
+/* Competency rows: label, bar, number. Grid rather than flex so every bar
+   starts at the same x position however long the labels are; ragged bars
+   cannot be compared at a glance, which is their whole purpose. */
+.ai-comps {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+
+.ai-comp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 76px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+.ai-comp-label {
+  color: var(--ink);
+  min-width: 0;
+}
+
+.ai-comp-bar {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--tint);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.ai-comp-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--blue);
+}
+
+.ai-comp-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
+}
+
+.ai-comp-score.is-none {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.ai-points {
+  margin: 0 0 4px;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.ai-points li::marker {
+  color: #1f6b45;
+}
+
+/* Concerns get the only colour change. Not red text, which would read as an
+   error in the system rather than a note about a candidate: just a different
+   marker, so the two lists are told apart without either being alarming. */
+.ai-points.is-concern li::marker {
+  color: #a16207;
+}
+
+.ai-evidence {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.ai-evidence > li > p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* The candidate's own words, visually separated from our summary of them.
+   The distinction between what somebody said and what a model concluded from
+   it is the point of this section. */
+.ai-quote {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--line);
+  background: var(--tint);
+  border-radius: 0 8px 8px 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  font-style: italic;
+}
+
+.ai-action {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.ai-action .ws-note {
+  margin-top: 8px;
+}
+
+.ws-note.ai-sent {
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  /* The bar is the first thing to go on a narrow screen: the number carries
+     the same information and the label has to stay readable. */
+  .ai-comp {
+    grid-template-columns: minmax(0, 1fr) 68px;
+  }
+  .ai-comp-bar {
+    display: none;
+  }
+  .adm-bulk-gen {
+    align-items: flex-start;
+  }
+  .adm-bulk-gen-msg {
+    text-align: left;
+  }
+}
+
+/* --------------------------------------------- the public AI apply page */
+
+/* The "how this works" brief above the form. Tinted rather than white so it
+   reads as explanation and the form below it reads as the thing to fill in. */
+.apply-panel.apply-ai-brief {
+  background: var(--tint);
+  margin-bottom: 18px;
+}
+
+.apply-ai-brief .jd-steps {
+  margin-bottom: 14px;
+}
+
+/* Shown during the handover to ConsultHire, which is a real navigation to
+   another origin and therefore a visible pause. */
+.apply-launching {
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid #c7e3d4;
+  border-radius: 9px;
+  background: #e8f4ee;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #1f6b45;
+}
+
+/* A submit button that is working. The spinner is the only moving thing on the
+   sign-in page, so it reads as "this is happening" rather than decoration. */
+.sb-spin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .35);
+  border-top-color: #fff;
+  animation: sb-rotate .6s linear infinite;
+}
+
+@keyframes sb-rotate { to { transform: rotate(360deg); } }
+
+/* Without this the button looks clickable while refusing clicks. */
+.btn:disabled {
+  opacity: .72;
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-spin { animation: none; opacity: .6; }
+}
+
+/* ============================================================================
+   DATABASE RECORD PANEL
+   (components/admin/NeonConsoleLink.tsx, components/admin/CopyToClipboard.tsx)
+   ============================================================================
+   Appended at the end of this file, uniquely prefixed `.ndb-`, and it modifies
+   nothing above it — the same contract every other appended admin block in here
+   keeps.
+
+   ALMOST ALL OF THE PANEL IS ALREADY-EXISTING VOCABULARY. The card is .ws-panel,
+   the heading is the .ws-panel h2 every other card uses, the facts are a .ws-dl,
+   and every control is a .ws-btn. That is the whole design intent: this started
+   life as small print bolted under the page and read as debugging output, so it
+   was rebuilt out of the dashboard's own parts to sit in the layout as one more
+   card about the record. The rules below are only the handful of things that
+   vocabulary has no answer for: a monospace chip for an identifier, a uuid that
+   has to wrap without breaking the grid, and the copied / failed states of a
+   button.
+
+   Quiet here is a matter of placement and brevity rather than of styling: the
+   panel is last in its column, it states four facts, and it explains nothing.
+   ========================================================================== */
+
+/* The id is the longest value in the panel and the labels are short, so the
+   default 160px term column of .ws-dl would squeeze a uuid into three lines in
+   a sidebar. A compound selector, so the override is explicit about what it is
+   overriding rather than relying on source order. */
+.ndb-panel .ws-dl {
+  grid-template-columns: 96px minmax(0, 1fr);
+  /* Baseline rather than centre: the id wraps onto a second line with its copy
+     button, and centring would float the term "Record ID" between the two lines
+     instead of beside the value it names. */
+  align-items: baseline;
+}
+
+/* A stored identifier: a database name, a table name. Monospace because it is
+   something you type, not something you read. */
+.ndb-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--tint);
+  font-family: "Geist Mono", monospace;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+/* The live database, marked so that opening it is never an accident. Amber
+   from .adm-config and a tag rather than a banner: pointing at production is
+   legitimate and deliberate, and only doing it without noticing is a problem. */
+.ndb-chip.is-live {
+  border-color: #e0b94e;
+  background: #fffaf0;
+  color: #8a5a06;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* A value and its control on one line, wrapping together when the column is
+   too narrow to hold both. */
+.ndb-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The record id. Wraps rather than scrolls: a uuid has no internal structure to
+   protect, so breaking it across lines costs the reader nothing, while a
+   scrolling box inside a sidebar would hide half of it. */
+.ndb-id {
+  font-family: "Geist Mono", monospace;
+  font-size: 12px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  /* One click selects the whole id, which is the fallback wherever the
+     clipboard API is unavailable. See CopyToClipboard.tsx. */
+  user-select: all;
+}
+
+/* The two full-size controls, under the facts they act on. Wraps to two rows in
+   a narrow column rather than letting either button shrink out of shape. */
+.ndb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ws-line-soft, var(--line));
+}
+
+/* Inline beside a value rather than in the action row, so the smaller size is
+   what tells you which control belongs to which value. */
+.ws-btn.ndb-btn-sm {
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+/* Done. The green of .apply-launching, which is the other place in this file
+   where something quietly confirms it worked. Tone only: the button keeps its
+   size, so confirming a copy never reflows the row. */
+.ndb-copy[data-state="copied"] {
+  border-color: #bcdcc9;
+  background: #e8f4ee;
+  color: #1f6b45;
+}
+
+.ndb-copy[data-state="copied"]:hover {
+  background: #e8f4ee;
+  border-color: #bcdcc9;
+}
+
+/* No clipboard, which is a browser limitation rather than a fault: the API does
+   not exist outside a secure context. Amber, and it stays until the next press,
+   because the label is telling the reader to select the value by hand. */
+.ndb-copy[data-state="failed"] {
+  border-color: #e0b94e;
+  background: #fffaf0;
+  color: #8a5a06;
+}
+
+/* ------------------------------------------------- the list screens' one line
+   A list has no record to describe, so there is no panel: just the database,
+   the table and the link, in one row under the table. Sized like
+   .ws-table-caption, which is the other thing that sits in that position. */
+/* The second step, under the two controls that make it up. Quiet: it is an
+   instruction for the one reader who has not done this before, not a notice
+   for everybody who has. */
+.ndb-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.ndb-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.ndb-foot-key {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* A link that looks like a link, not a .ws-btn: on a list screen this is a way
+   out of the page and must not read as one of its actions. */
+.ndb-foot-link {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.ndb-foot-link:hover {
+  color: var(--blue);
+  border-bottom-color: currentColor;
+}
+
+.ndb-foot-link:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* The shared .ws-dl already drops to a single column at 900px. The compound
+   selector above outranks that rule even from inside its media query, so the
+   collapse has to be restated here, at the same breakpoint, or this one panel
+   would keep two columns while every other list of facts on the page had
+   stacked. */
+@media (max-width: 900px) {
+  .ndb-panel .ws-dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px 0;
+  }
+
+  .ndb-panel .ws-dl dt {
+    margin-top: 8px;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Full width at phone size, so the two controls stack into two reachable
+     targets instead of sitting as a cramped pair. */
+  .ndb-actions .ws-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
+/* The resume row in the Database record panel. The blob URL is long and has no
+   spaces, so it is given its own line and allowed to break anywhere; left in
+   one line it pushes the panel wider than the column it sits in. */
+.ndb-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ndb-url {
+  word-break: break-all;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Delete, in the applications bulk bar.
+   Quiet at rest and loud only once it has been armed. A permanently red button
+   sitting beside Apply would make the destructive action the most eye-catching
+   thing on a toolbar a recruiter uses all day, which is the opposite of what
+   its weight should be. */
+.apb-delete {
+  background: transparent;
+  color: var(--red, #c0392b);
+  border-color: color-mix(in srgb, var(--red, #c0392b) 32%, transparent);
+}
+
+.apb-delete:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red, #c0392b) 8%, transparent);
+  border-color: color-mix(in srgb, var(--red, #c0392b) 55%, transparent);
+}
+
+/* Armed. Filled, so the second click cannot be mistaken for the first. */
+.apb-delete.is-confirming {
+  background: var(--red, #c0392b);
+  border-color: var(--red, #c0392b);
+  color: #fff;
+}
+
+.apb-delete.is-confirming:hover:not(:disabled) {
+  background: #a93226;
+  border-color: #a93226;
+}
+
+.apb-delete:focus-visible {
+  outline: 2px solid var(--red, #c0392b);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   Recruitment admin shell: a left rail.
+
+   Replaces the top bar. The rail is dark against a light workspace, which is
+   what keeps navigation from competing with content: the eye sorts the two by
+   value before it reads a single label. Palette is the one the old bar used.
+
+   Everything here is prefixed .sb- and .adm-shell, appended at the end of this
+   file, so it adds rather than overrides. The old .nv-* block above is left in
+   place and unused: the sign-in screens and the old /app workspace still
+   reference parts of it.
+   ========================================================================= */
+
+.adm-shell {
+  display: grid;
+  grid-template-columns: var(--sb-w, 236px) minmax(0, 1fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* THE RAIL'S PALETTE, IN ONE PLACE.
+
+   It was a near-black navy carried over from the old top bar, which is the
+   colour every dark admin ships with and said nothing about this company. It
+   is now built from the brand blue (#1d6fe0) rather than from grey: the same
+   hue the buttons and links use, taken down to a depth that can sit behind
+   white text all day. Next to the light workspace it reads as Consult America
+   rather than as a generic dark sidebar.
+
+   Changing the whole rail is changing these four values. Two alternates that
+   work with the rest of the system, if this one is wrong:
+
+     slate   #141922 / #0d1117   neutral, recedes furthest
+     ink     #101c33 / #0a1222   the previous near-black navy
+
+   The surface values are deliberately not pure black. A true black rail against
+   a light page produces the harshest edge on the screen and makes the border
+   redundant. */
+.sb {
+  --sb-top: #163a6d;
+  --sb-bottom: #0d2347;
+  --sb-edge: rgba(255, 255, 255, 0.1);
+  --sb-hover: rgba(255, 255, 255, 0.08);
+
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--sb-top) 0%, var(--sb-bottom) 100%);
+  border-right: 1px solid var(--sb-edge);
+}
+
+/* ------------------------------------------------------------------ brand */
+
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-bottom: 18px;
+  border-radius: 10px;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s var(--ws-ease, ease);
+}
+
+.sb-brand:hover {
+  background: var(--sb-hover);
+}
+
+.sb-brand:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.sb-brand img {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 7px;
+}
+
+.sb-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sb-brand-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  white-space: nowrap;
+}
+
+.sb-brand-tag {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* ------------------------------------------------------------------- nav */
+
+.sb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* Takes the slack, which is what pins the account menu to the foot of the
+     rail without absolute positioning. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.62);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  transition:
+    background 0.14s var(--ws-ease, ease),
+    color 0.14s var(--ws-ease, ease);
+}
+
+.sb-item:hover {
+  background: var(--sb-hover);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.sb-item:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+.sb-item-icon {
+  display: inline-flex;
+  flex: none;
+  color: currentColor;
+  opacity: 0.8;
+}
+
+.sb-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The current section. Marked three ways, because colour alone is not an
+   accessible way to say "you are here": a filled surface, a brighter label,
+   and a cyan marker at the leading edge. aria-current carries it for anyone
+   not looking at pixels at all. */
+.sb-item.is-active {
+  position: relative;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sb-item.is-active .sb-item-icon {
+  opacity: 1;
+  color: var(--cyan);
+}
+
+.sb-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  translate: 0 -50%;
+  width: 3px;
+  height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--cyan);
+}
+
+/* The count rides at the end of its row rather than crowding the label. In a
+   rail there is room for it to be a number a person reads, not a badge they
+   squint at. */
+.sb-count {
+  flex: none;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--cyan);
+  color: #04121c;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------- foot */
+
+.sb-foot {
+  flex: none;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--sb-edge);
+}
+
+/* The account trigger fills the rail's width here rather than hugging its
+   label the way it did in a horizontal bar. */
+.sb-foot .nv-user,
+.sb-foot .nv-user-trigger {
+  width: 100%;
+}
+
+.sb-foot .nv-user-trigger {
+  justify-content: space-between;
+}
+
+/* The menu opens upward, because the trigger is at the bottom of the screen. */
+.sb-foot .nv-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+/* ----------------------------------------------------------- the workspace */
+
+/* The rail owns the left edge, so the content column keeps its own centred
+   measure rather than inheriting the old full-width one.
+
+   WIDER THAN THE OLD BAR LAYOUT, not narrower. The rail costs 236px, and the
+   first version of this capped the content at 1180 on top of that, which took
+   roughly 120px off every table compared with the top bar it replaced: the
+   applications filter row wrapped to two lines and candidate names broke
+   across two. A sidebar is supposed to buy the content room, not spend it, so
+   the cap went up and the gutters came in. */
+.adm-shell .ws-main {
+  max-width: 1360px;
+  padding-inline: 28px;
+}
+
+/* Narrow screens: the rail becomes a horizontal strip at the top. A 236px
+   column on a phone leaves nothing for the content it is supposed to serve.
+   The brand drops its wordmark and the sections scroll sideways, which keeps
+   every destination reachable rather than hiding them behind a menu nobody
+   opens. */
+@media (max-width: 900px) {
+  .adm-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sb {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .sb-brand {
+    margin-bottom: 0;
+    padding: 4px;
+  }
+
+  .sb-brand-text {
+    display: none;
+  }
+
+  .sb-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .sb-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sb-item {
+    flex: none;
+  }
+
+  .sb-item.is-active::before {
+    left: 50%;
+    top: auto;
+    bottom: -8px;
+    translate: -50% 0;
+    width: 18px;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .sb-foot {
+    margin: 0 0 0 auto;
+    padding: 0;
+    border-top: 0;
+  }
+
+  .sb-foot .nv-menu {
+    top: calc(100% + 8px);
+    bottom: auto;
+  }
+
+  .adm-shell .ws-main {
+    padding-inline: 18px;
+  }
+}
+
+/* Below the fold on a phone the labels cost more than they are worth. */
+@media (max-width: 560px) {
+  .sb-item-label {
+    display: none;
+  }
+
+  .sb-item {
+    padding: 8px;
+  }
+}
+
+/* The account row at the foot of the rail: initials, name, role, caret. */
+.sb-foot .nv-user-trigger {
+  gap: 9px;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.nv-user-ini {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.nv-user-id {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Both lines truncate rather than wrap: the rail has a fixed width and a
+   two-line name would push the caret out of its row. */
+.sb-foot .nv-user-name,
+.nv-user-role {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nv-user-role {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
 }

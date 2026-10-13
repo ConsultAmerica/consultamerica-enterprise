@@ -9,7 +9,7 @@ import { serviceHref } from "@/data/services";
 export const metadata: Metadata = {
   title: "Capabilities",
   description:
-    "Engineering, AI and data, Oracle Cloud, enterprise transformation and managed services — and every service line underneath them.",
+    "Engineering, AI and data, Oracle, enterprise transformation and managed services — and every service line underneath them.",
 };
 
 /**
@@ -68,7 +68,7 @@ export default function CapabilitiesPage() {
               <span className="g">Everything we actually do.</span>
             </h1>
             <p>
-              Engineering, AI and data, Oracle Cloud, enterprise transformation and managed
+              Engineering, AI and data, Oracle, enterprise transformation and managed
               services. Each one has a page for every service line underneath it.
             </p>
           </div>

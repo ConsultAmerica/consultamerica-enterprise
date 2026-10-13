@@ -6,8 +6,11 @@ export const CAPABILITIES = [
     body: "Reshape finance, procurement, and supply-chain operations around a connected, modern digital core.",
   },
   {
-    title: "Oracle Cloud",
-    body: "Migrate and modernize ERP, HCM, and SCM on Oracle Cloud, with a right-sized roadmap and a low-drama cutover.",
+    // Kept in step with CAPS[2] in data/marketing.ts, which is the version the
+    // navigation and /capabilities render. The practice covers E-Business
+    // Suite as well, so the name is "Oracle" rather than "Oracle Cloud".
+    title: "Oracle",
+    body: "Migrate and modernize ERP, HCM, and SCM across Oracle Cloud and E-Business Suite, with a right-sized roadmap and a low-drama cutover.",
   },
   {
     title: "AI + Data",

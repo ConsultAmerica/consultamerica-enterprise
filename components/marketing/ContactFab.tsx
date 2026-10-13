@@ -94,13 +94,23 @@ export function ContactFab({ onAskAi, onTalkToExpert }: ContactFabProps) {
       icon: ICON_EXPERT,
       ...(onTalkToExpert ? { onSelect: onTalkToExpert } : { href: "#contact" }),
     },
-    {
-      key: "ai",
-      title: "Ask AI",
-      desc: "Get answers instantly",
-      icon: ICON_AI,
-      onSelect: onAskAi,
-    },
+    /*
+      Offered only when a handler was passed. The assistant is currently off
+      (see ASSISTANT_ENABLED in components/assistant/AssistantPalette.tsx), so
+      the caller omits onAskAi and this row is not built at all. A row with no
+      onSelect would render as a control that silently does nothing.
+    */
+    ...(onAskAi
+      ? [
+          {
+            key: "ai",
+            title: "Ask AI",
+            desc: "Get answers instantly",
+            icon: ICON_AI,
+            onSelect: onAskAi,
+          },
+        ]
+      : []),
     {
       key: "general",
       title: "General contact",

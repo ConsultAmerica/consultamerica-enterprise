@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 /**
  * Section nav for the recruitment admin.
@@ -88,8 +88,34 @@ type Props = {
 export function AdminNav({ reviewCount = null }: Props) {
   const pathname = usePathname();
 
+  /*
+    ELEVATION ON SCROLL, which is the one thing a sticky bar needs to not look
+    broken. Page content slides underneath it, and with a flat bar the first
+    line of text gets sliced in half at the boundary and reads as a rendering
+    fault rather than as layering. A shadow that appears only once the page has
+    moved says "this is in front" at exactly the moment it needs saying, and
+    stays out of the way at rest.
+
+    The flag goes on <html> rather than on the bar, so the rule can be written
+    in CSS next to the bar's own styles and nothing has to be threaded through
+    the layout. passive, because this listener never calls preventDefault and
+    the browser should not have to wait for it before scrolling.
+  */
+  useEffect(() => {
+    const root = document.documentElement;
+    const apply = () => {
+      root.toggleAttribute("data-scrolled", window.scrollY > 4);
+    };
+    apply();
+    window.addEventListener("scroll", apply, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", apply);
+      root.removeAttribute("data-scrolled");
+    };
+  }, []);
+
   return (
-    <nav className="nv-nav" aria-label="Recruitment admin">
+    <nav className="sb-nav" aria-label="Recruitment admin">
       {ITEMS.map((item) => {
         // Prefix match on `${href}/`, not startsWith(href), so a detail route
         // (/admin/applications/<id>) or a child form (/admin/jobs/new) keeps
@@ -105,13 +131,13 @@ export function AdminNav({ reviewCount = null }: Props) {
           <Link
             key={item.href}
             href={item.href}
-            className={`nv-item${active ? " is-active" : ""}`}
+            className={`sb-item${active ? " is-active" : ""}`}
             aria-current={active ? "page" : undefined}
           >
-            <span className="nv-item-icon">{ICONS[item.icon]}</span>
-            <span className="nv-item-label">{item.label}</span>
+            <span className="sb-item-icon">{ICONS[item.icon]}</span>
+            <span className="sb-item-label">{item.label}</span>
             {badge !== null ? (
-              <span className="nv-badge">
+              <span className="sb-count">
                 {/* Capped, because a three-digit badge stretches the nav item
                     and the exact number stops mattering long before 99. */}
                 {badge > 99 ? "99+" : badge}

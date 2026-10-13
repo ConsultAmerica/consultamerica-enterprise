@@ -36,6 +36,29 @@ export type ApplicationStatus =
   | "REJECTED"
   | "WITHDRAWN";
 
+/**
+ * applications.method — how the candidate applied.
+ *
+ * Not nullable anywhere: db/neon/003_consulthire.sql defaults it to
+ * EASY_APPLY, on the grounds that "we do not know how this person applied" is
+ * not a state worth being able to represent.
+ */
+export type ApplicationMethod = "EASY_APPLY" | "AI_INTERVIEW";
+
+/**
+ * jobs.consulthire_status — the generation lifecycle of the job's role-level
+ * AI interview, deliberately separate from the job's own status.
+ *
+ * NONE    no interview has been asked for. Easy Apply only, which is a
+ *         perfectly good state and the one every job starts in.
+ * PENDING generation is in flight. Set before the call so a reload during the
+ *         LLM round trip shows progress rather than NONE.
+ * READY   there is a link, and the public page may offer the AI route.
+ * FAILED  generation was attempted and did not work; consulthire_error says
+ *         why, in words a recruiter can act on.
+ */
+export type ConsultHireStatus = "NONE" | "PENDING" | "READY" | "FAILED";
+
 /** jobs.workplace_type */
 export type WorkplaceType = "REMOTE" | "HYBRID" | "ONSITE";
 
@@ -64,8 +87,21 @@ export type ActivityKind =
 /** interviews.kind */
 export type InterviewKind = "AI_SCREEN" | "PHONE" | "TECHNICAL" | "PANEL" | "FINAL";
 
-/** interviews.status */
-export type InterviewStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+/**
+ * interviews.status
+ *
+ * INVITED is the AI route's first state and was added by
+ * db/neon/004_consulthire_invited.sql. The row is written before the candidate
+ * reaches ConsultHire (the completion webhook needs somewhere to land), so
+ * "handed a link, never started" is a real and often permanent state. It is not
+ * SCHEDULED, which would claim a time was agreed with somebody.
+ */
+export type InterviewStatus =
+  | "INVITED"
+  | "SCHEDULED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
 
 /** zoho_sync_queue.status */
 export type SyncStatus =
@@ -122,10 +158,23 @@ export const INTERVIEW_KINDS: readonly InterviewKind[] = [
 ];
 
 export const INTERVIEW_STATUSES: readonly InterviewStatus[] = [
+  "INVITED",
   "SCHEDULED",
   "COMPLETED",
   "CANCELLED",
   "NO_SHOW",
+];
+
+export const APPLICATION_METHODS: readonly ApplicationMethod[] = [
+  "EASY_APPLY",
+  "AI_INTERVIEW",
+];
+
+export const CONSULTHIRE_STATUSES: readonly ConsultHireStatus[] = [
+  "NONE",
+  "PENDING",
+  "READY",
+  "FAILED",
 ];
 
 /** Terminal application states: no further pipeline movement is expected. */
@@ -143,6 +192,13 @@ export function isApplicationStatus(value: unknown): value is ApplicationStatus 
   return (
     typeof value === "string" &&
     (APPLICATION_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+export function isApplicationMethod(value: unknown): value is ApplicationMethod {
+  return (
+    typeof value === "string" &&
+    (APPLICATION_METHODS as readonly string[]).includes(value)
   );
 }
 
@@ -206,6 +262,22 @@ export interface JobRow {
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
+
+  // --- ConsultHire role interview (db/neon/003_consulthire.sql) -------------
+  //
+  // The link belongs to the opening, not to any candidate: everyone who
+  // applies is interviewed against the same generated plan and gets their own
+  // session underneath it. All four identity columns are nullable because a
+  // job with no interview is the normal, default state.
+  consulthire_role_id: string | null;
+  consulthire_slug: string | null;
+  /** Full launch URL as ConsultHire reported it. Stored rather than rebuilt
+   *  from the slug so a base-URL change cannot silently rewrite old links. */
+  consulthire_url: string | null;
+  consulthire_status: ConsultHireStatus;
+  /** Why the last generation failed, in words a recruiter can act on. */
+  consulthire_error: string | null;
+  consulthire_synced_at: Date | null;
 }
 
 // -------------------------------------------------------------------- candidates
@@ -242,18 +314,14 @@ export interface ApplicationRow {
   zoho_synced_at: Date | null;
   applied_at: Date;
   updated_at: Date;
+  /**
+   * How they applied. `source` answers "which site sent them", which is a
+   * different question: both methods have source 'careers'.
+   */
+  method: ApplicationMethod;
 }
 
 // ----------------------------------------------------------------------- CRM bits
-
-export interface ApplicationNoteRow {
-  id: string;
-  application_id: string;
-  /** Null once the author's admin_users row is deleted (ON DELETE SET NULL). */
-  author_id: string | null;
-  body: string;
-  created_at: Date;
-}
 
 export interface ApplicationActivityRow {
   id: string;
@@ -285,6 +353,23 @@ export interface InterviewRow {
   summary: string | null;
   created_at: Date;
   updated_at: Date;
+
+  // --- completion detail (db/neon/003_consulthire.sql) ---------------------
+  //
+  // `report` is jsonb, so the driver hands back a parsed object and not a
+  // string. Typed as unknown rather than as the report shape: it is written by
+  // another product and an interface here would be a promise this codebase
+  // cannot keep. lib/consulthire/report.ts narrows it defensively at the one
+  // place it is rendered.
+  report: unknown;
+  verdict: string | null;
+  transcript_url: string | null;
+  /** Set once, by the second-round action, so the invitation cannot double-send. */
+  second_round_sent_at: Date | null;
+  /** When the candidate was sent to ConsultHire, as opposed to when the row
+   *  was created. Equal in practice today; different the moment an invitation
+   *  is emailed rather than clicked through. */
+  launched_at: Date | null;
 }
 
 // -------------------------------------------------------------------- Zoho sync

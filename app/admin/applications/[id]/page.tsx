@@ -18,18 +18,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ApplicationNotes } from "@/components/admin/ApplicationNotes";
+import { AiInterviewPanel } from "@/components/admin/AiInterviewPanel";
 import {
   ApplicationRecruiterSelect,
   ApplicationStageControl,
 } from "@/components/admin/ApplicationStageControl";
+import { NeonRecordPanel } from "@/components/admin/NeonConsoleLink";
 import { ResumeLink } from "@/components/admin/ResumeLink";
 import { ResumePreview } from "@/components/admin/ResumePreview";
+import { parseConsultHireReport } from "@/lib/consulthire/report";
+import { secondRoundEligibility, SECOND_ROUND_THRESHOLD } from "@/lib/consulthire/second-round";
+import { locationLabels } from "@/lib/jobs/public-model";
 import { listAdminUsers } from "@/lib/neon/admin-users";
 import { getApplicationDetail } from "@/lib/neon/applications";
-import { requireAdmin } from "@/lib/neon/auth";
+import { type AdminRole, requireAdmin } from "@/lib/neon/auth";
 import { NeonConfigError } from "@/lib/neon/client";
-import type { ActivityKind, ApplicationStatus } from "@/lib/neon/types";
+import type { ActivityKind, ApplicationStatus, InterviewRow } from "@/lib/neon/types";
 
 export const metadata: Metadata = {
   title: "Application",
@@ -138,6 +142,41 @@ const INTERVIEW_KIND_LABELS: Record<string, string> = {
 };
 
 /**
+ * Why the second-round button is not there, said in a sentence.
+ *
+ * The four reasons are four different situations and only one of them is
+ * "this candidate was not good enough". Rendering nothing for all four would
+ * leave a recruiter wondering whether the feature is broken on the very screen
+ * where they are deciding about a person.
+ *
+ * Mirrors the copy in sendSecondRoundAction deliberately: the page explains why
+ * the button is absent and the action explains why a click was refused, and a
+ * recruiter should not be told two different stories about one rule.
+ */
+function secondRoundBlockedReason(interview: InterviewRow | null): string | null {
+  const eligibility = secondRoundEligibility(interview);
+  if (eligibility.eligible) return null;
+  switch (eligibility.reason) {
+    case "no-interview":
+      return null;
+    case "not-scored":
+      return (
+        "The second-round invitation becomes available once the candidate finishes the " +
+        "interview and the result arrives."
+      );
+    case "below-threshold":
+      return (
+        `Scored ${eligibility.score}, below the ${SECOND_ROUND_THRESHOLD} needed for an ` +
+        "automatic second-round invitation. Contact the candidate directly if you want to take " +
+        "them further."
+      );
+    case "already-sent":
+      // Handled by the sent stamp in the panel, which says more than this would.
+      return null;
+  }
+}
+
+/**
  * A clickable address, or null.
  *
  * The character class excludes whitespace, quotes, brackets, `?`, `&` and `%`,
@@ -212,8 +251,12 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
   }
 
   let loaded: Loaded | null = null;
+  // The role, for the Neon DB hatch at the foot of the page, which is for
+  // OWNER and ADMIN only.
+  let role: AdminRole | null = null;
   try {
-    await requireAdmin({ returnTo: `/admin/applications/${id}` });
+    const user = await requireAdmin({ returnTo: `/admin/applications/${id}` });
+    role = user.role;
     loaded = await load();
   } catch (error) {
     if (!(error instanceof NeonConfigError)) throw error;
@@ -243,7 +286,12 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
   // getApplicationDetail screens a malformed id itself and returns null, so a
   // hand-typed URL is a 404 rather than a 500.
   if (!loaded.detail) notFound();
-  const { application, candidate, job, notes, activities, interviews } = loaded.detail;
+  // `interviews` is deliberately not destructured here. It is split below into
+  // the AI screen, which gets its own panel, and everything else, which keeps
+  // the sidebar list; binding the whole array as well would leave a name in
+  // scope that must never be rendered directly or the AI interview appears
+  // twice on one page.
+  const { application, candidate, job, activities } = loaded.detail;
 
   const name = `${candidate.first_name} ${candidate.last_name}`.trim() || candidate.email;
   const email = mailtoHref(candidate.email);
@@ -257,6 +305,23 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
     name: admin.fullName,
     isActive: admin.isActive,
   }));
+
+  /*
+    The AI interview, picked out of the interviews list rather than fetched
+    again. getApplicationDetail already read every interview for this
+    application, and interviews_application_ai_uidx guarantees there is at most
+    one AI_SCREEN among them, so this is a find and not a query.
+  */
+  const aiInterview = loaded.detail.interviews.find((row) => row.kind === "AI_SCREEN") ?? null;
+  const aiEligibility = secondRoundEligibility(aiInterview);
+  const aiReport = aiInterview ? parseConsultHireReport(aiInterview.report) : null;
+  /*
+    The remaining interviews, for the panel further down. Without this
+    exclusion the AI screen would appear twice on one screen: once as a full
+    report and once as a one-line row in the generic list, with the second copy
+    saying much less than the first.
+  */
+  const otherInterviews = loaded.detail.interviews.filter((row) => row.kind !== "AI_SCREEN");
 
   return (
     <main className="ws-main">
@@ -361,7 +426,13 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
                   {job.title}
                 </Link>
                 <div className="ws-muted">
-                  {[job.department, job.location, humanize(job.workplace_type)]
+                  {/* Location and arrangement are deduplicated: a remote role
+                      reads "Remote (US)" once, not "Remote (US) · Remote".
+                      See showWorkplaceType in lib/jobs/public-model.ts. */}
+                  {[
+                    job.department,
+                    ...locationLabels(job.location, humanize(job.workplace_type)),
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </div>
@@ -373,6 +444,17 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
               <dt>Applied</dt>
               <dd>
                 <When value={application.applied_at} />
+              </dd>
+              <dt>Applied via</dt>
+              <dd>
+                {/* Named here as well as in the queue, because this is the
+                    screen somebody opens from an email and the two routes
+                    produce different things to act on. */}
+                <span
+                  className={`ws-pill${application.method === "AI_INTERVIEW" ? " blue" : ""}`}
+                >
+                  {application.method === "AI_INTERVIEW" ? "AI interview" : "Easy Apply form"}
+                </span>
               </dd>
               <dt>Source</dt>
               <dd>{application.source}</dd>
@@ -415,6 +497,53 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
           </section>
 
           {/*
+            The AI interview result, in the main column and above the résumé.
+
+            ABOVE, not in the sidebar next to the other interviews, and that is
+            a judgement about what this page is for. For a candidate who came
+            through the AI route the interview IS the application: it is a
+            scored, structured, job-specific conversation, and it is the thing a
+            recruiter reads to decide. The résumé is supporting material for
+            them, which is the reverse of the Easy Apply case. Rendered only
+            when an AI interview exists, so nothing changes for form applicants.
+          */}
+          {aiInterview ? (
+            <section className="ws-panel">
+              <h2>AI interview</h2>
+              <AiInterviewPanel
+                applicationId={application.id}
+                // NUMERIC arrives as a string and is passed through as stored;
+                // parsing it to re-print it could only lose precision.
+                score={aiInterview.score}
+                verdict={aiInterview.verdict}
+                statusLabel={humanize(aiInterview.status)}
+                // Every date is formatted here, on the server, in the one fixed
+                // locale, so the client component cannot produce a hydration
+                // mismatch from a different timezone.
+                launchedLabel={
+                  aiInterview.launched_at ? fmtDateTime(aiInterview.launched_at) : null
+                }
+                completedLabel={
+                  aiInterview.completed_at ? fmtDateTime(aiInterview.completed_at) : null
+                }
+                secondRoundSentLabel={
+                  aiInterview.second_round_sent_at
+                    ? fmtDateTime(aiInterview.second_round_sent_at)
+                    : null
+                }
+                report={aiReport}
+                canSendSecondRound={aiEligibility.eligible}
+                blockedReason={secondRoundBlockedReason(aiInterview)}
+              />
+              <p className="ws-note">
+                Scored by ConsultHire against this job description. A score of{" "}
+                {SECOND_ROUND_THRESHOLD} or above unlocks the second-round invitation. The score is
+                a screening signal, not a decision: nothing here rejects anybody automatically.
+              </p>
+            </section>
+          ) : null}
+
+          {/*
             The résumé, in the workspace rather than behind a link. Placed
             immediately under the application facts and above the notes,
             because the order someone works in is: what did they apply for,
@@ -430,31 +559,20 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
             />
           </section>
 
-          <section className="ws-panel">
-            <h2>Notes</h2>
-            <ApplicationNotes
-              applicationId={application.id}
-              notes={notes.map((note) => {
-                const created = asDate(note.created_at);
-                return {
-                  id: note.id,
-                  body: note.body,
-                  authorName: note.author_name,
-                  // Formatted here, on the server, so the client component
-                  // cannot produce a hydration mismatch from a different
-                  // timezone or locale.
-                  createdAtLabel: created ? DATE_TIME.format(created) : "—",
-                  createdAtIso: created?.toISOString() ?? "",
-                };
-              })}
-            />
-          </section>
+          {/* REMOVED: the Notes panel. application_notes was dropped in
+              db/neon/005_cleanup.sql. Nobody had written a note in either
+              database and the timeline below already records what happened to
+              an application and who did it, which is what the panel was really
+              being read for. */}
 
           <section className="ws-panel">
             <h2>Activity</h2>
             {/* Read-only by design. application_activities is append-only: it is
                 the audit trail, so this screen offers no way to edit or remove
-                an entry and must never grow one. */}
+                an entry and must never grow one. Deleting the whole application
+                is the one thing that removes entries, and it removes all of
+                them at once rather than letting anyone edit the record of what
+                happened. */}
             {activities.length === 0 ? (
               <p className="ws-muted">
                 Nothing recorded yet. Every stage change, note and assignment is logged here
@@ -490,10 +608,6 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
                 ))}
               </ol>
             )}
-            <p className="ws-note">
-              This timeline is the audit trail for the application. Entries are written
-              automatically and are never edited or deleted.
-            </p>
           </section>
         </div>
 
@@ -505,19 +619,19 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
               assignedRecruiterId={application.assigned_recruiter_id}
               recruiters={recruiters}
             />
-            <p className="ws-note">
-              Assigning or unassigning is recorded on the timeline, so ownership of a candidate
-              is always accountable.
-            </p>
           </section>
 
           <section className="ws-panel">
             <h2>Interviews</h2>
-            {interviews.length === 0 ? (
-              <p className="ws-muted">No interviews are recorded against this application.</p>
+            {otherInterviews.length === 0 ? (
+              <p className="ws-muted">
+                {aiInterview
+                  ? "No interviews beyond the AI screen above are recorded against this application."
+                  : "No interviews are recorded against this application."}
+              </p>
             ) : (
               <ul className="ws-list">
-                {interviews.map((interview) => (
+                {otherInterviews.map((interview) => (
                   <li key={interview.id}>
                     <p>
                       <strong>
@@ -548,31 +662,39 @@ export default async function AdminApplicationDetailPage({ params }: Props) {
                 ))}
               </ul>
             )}
-            <p className="ws-note">
-              ConsultHire AI interview results attach here. The schema already carries the link
-              (interviews.consulthire_interview_id, score and summary); nothing writes to it yet,
-              so this section only ever shows interviews that genuinely exist.
-            </p>
+            {/* The note used to say nothing wrote AI results yet. It does now:
+                the completion webhook at app/api/webhooks/consulthire fills
+                them in, and they render in their own panel in the main column
+                rather than as a line here, because for an AI applicant the
+                interview is the application rather than a footnote to it. */}
           </section>
 
-          <section className="ws-panel">
-            <h2>CRM sync</h2>
-            <dl className="ws-dl">
-              <dt>Last synced</dt>
-              <dd>
-                {application.zoho_synced_at ? (
-                  <When value={application.zoho_synced_at} />
-                ) : (
-                  <span className="ws-muted">Not yet synced</span>
-                )}
-              </dd>
-            </dl>
-            <p className="ws-note">
-              Applications and stage changes are queued for Zoho CRM as they happen. The sync
-              worker is not connected yet, so a queued application stays queued rather than
-              being lost.
-            </p>
-          </section>
+          {/* REMOVED: the CRM sync panel. Zoho syncing is off (see
+              ZOHO_SYNC_ENABLED in lib/neon/crm.ts), so zoho_synced_at can
+              never advance again and this panel would read "Not yet synced"
+              on every application forever. The column itself is kept: it is
+              the record of what did reach Zoho while the integration ran. */}
+
+          {/*
+            Last panel in the sidebar, under CRM sync. The sidebar is where this
+            page keeps facts about the record rather than about the person, and
+            it is read occasionally rather than worked, which is exactly what
+            this is. The id it shows is applications.id and not the human
+            reference: the reference is for talking to people, the uuid is what
+            a WHERE clause matches. Renders nothing for a RECRUITER.
+          */}
+          {role ? (
+            <NeonRecordPanel
+              role={role}
+              table="applications"
+              id={application.id}
+              resume={{
+                url: application.resume_url,
+                filename: application.resume_filename,
+                sizeBytes: application.resume_size_bytes,
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </main>

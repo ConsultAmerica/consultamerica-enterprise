@@ -26,12 +26,11 @@ import {
   enqueueZohoSync,
   insertActivity,
   listActivities,
-  listNotes,
   type ActivityWithActor,
-  type NoteWithAuthor,
 } from "./crm";
 import { allocateReferenceForSeries, getJobById, utcYear } from "./jobs";
 import type {
+  ApplicationMethod,
   ApplicationRow,
   ApplicationStatus,
   CandidateRow,
@@ -43,12 +42,13 @@ import type {
 const APPLICATION_COLUMNS = `
   id, reference, job_id, candidate_id, status, resume_url, resume_filename,
   resume_size_bytes, relevant_experience, additional_info, source,
-  assigned_recruiter_id, zoho_synced_at, applied_at, updated_at
+  assigned_recruiter_id, zoho_synced_at, applied_at, updated_at, method
 `;
 
 const INTERVIEW_COLUMNS = `
   id, application_id, kind, status, scheduled_at, completed_at,
-  consulthire_interview_id, score, summary, created_at, updated_at
+  consulthire_interview_id, score, summary, created_at, updated_at,
+  report, verdict, transcript_url, second_round_sent_at, launched_at
 `;
 
 // ------------------------------------------------------------------------ errors
@@ -96,6 +96,23 @@ export interface SubmitApplicationInput {
   additionalInfo?: string | null;
   /** Where the submission came from, for attribution. Defaults to "careers". */
   source?: string;
+  /**
+   * How they applied. Defaults to EASY_APPLY, which is what every caller that
+   * predates the AI route means and what the column already defaults to.
+   */
+  method?: ApplicationMethod;
+  /**
+   * Also create the AI_SCREEN interview row, inside the same transaction.
+   *
+   * WHY IT IS PART OF THE SUBMIT AND NOT A SECOND CALL. The candidate is about
+   * to be sent to ConsultHire, and the completion webhook that carries their
+   * score needs a row to land on. A separate insert afterwards can fail on its
+   * own, and then the interview runs against a record that does not exist and
+   * the result has nowhere to go: a candidate sits a twenty-minute interview
+   * and the recruiter never sees a score. One transaction means the application
+   * and the row that will hold its result are the same commit.
+   */
+  withAiScreen?: boolean;
 }
 
 export interface SubmitApplicationResult {
@@ -103,6 +120,8 @@ export interface SubmitApplicationResult {
   candidate: CandidateRow;
   /** false when this updated an existing application rather than creating one. */
   created: boolean;
+  /** Present only when `withAiScreen` was asked for. */
+  interview?: InterviewRow;
 }
 
 /**
@@ -114,7 +133,11 @@ export interface SubmitApplicationResult {
  *   2. Upsert the candidate. Done before the reference lock is taken so the
  *      lock is held for as little of the transaction as possible.
  *   3. Take the application reference lock, allocate the reference, insert.
- *   4. Log APPLIED and enqueue the CRM sync.
+ *   4. Create the AI_SCREEN interview row, when one was asked for. After the
+ *      application, because it is a child of it; before the response, because
+ *      the candidate is about to be sent to ConsultHire and the result has to
+ *      have somewhere to land.
+ *   5. Log APPLIED and enqueue the CRM sync.
  *
  * Re-applying updates the existing row rather than creating a second one, via
  * the `(job_id, candidate_id)` unique index. The update deliberately does not
@@ -177,14 +200,28 @@ export async function submitApplication(
     const rows = await t.query<ApplicationRow & { created: boolean }>(
       `INSERT INTO applications (
          reference, job_id, candidate_id, resume_url, resume_filename,
-         resume_size_bytes, relevant_experience, additional_info, source
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 'careers'))
+         resume_size_bytes, relevant_experience, additional_info, source, method
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 'careers'), COALESCE($10, 'EASY_APPLY'))
        ON CONFLICT (job_id, candidate_id) DO UPDATE SET
          resume_url          = COALESCE(EXCLUDED.resume_url, applications.resume_url),
          resume_filename     = COALESCE(EXCLUDED.resume_filename, applications.resume_filename),
          resume_size_bytes   = COALESCE(EXCLUDED.resume_size_bytes, applications.resume_size_bytes),
          relevant_experience = COALESCE(EXCLUDED.relevant_experience, applications.relevant_experience),
          additional_info     = COALESCE(EXCLUDED.additional_info, applications.additional_info),
+         -- METHOD ONLY EVER RATCHETS UP, NEVER BACK.
+         --
+         -- The naive EXCLUDED.method is wrong in one direction. Somebody who
+         -- sat the AI interview and later submitted the Easy Apply form for
+         -- the same role would have their application relabelled "Form" while
+         -- the interview row, the score and the report all stayed attached to
+         -- it: the dashboard would then hide an AI score behind a Form badge
+         -- and the method filter would never find it. Sitting an interview is
+         -- a fact about this application that filling in a form afterwards
+         -- does not undo.
+         method              = CASE
+                                 WHEN EXCLUDED.method = 'AI_INTERVIEW' THEN 'AI_INTERVIEW'
+                                 ELSE applications.method
+                               END,
          updated_at          = NOW()
        RETURNING ${APPLICATION_COLUMNS}, (xmax = 0) AS created`,
       [
@@ -197,6 +234,7 @@ export async function submitApplication(
         emptyToNull(input.relevantExperience),
         emptyToNull(input.additionalInfo),
         emptyToNull(input.source),
+        input.method ?? null,
       ],
     );
 
@@ -210,14 +248,51 @@ export async function submitApplication(
     // leaves no gap in the series: the next allocation recomputes MAX + 1 from
     // what is actually stored, so the same number is handed out again.
 
+    /*
+      The AI interview row, before the candidate is ever sent anywhere.
+
+      Upserted, not inserted. interviews_application_ai_uidx is a UNIQUE index
+      on (application_id) WHERE kind = 'AI_SCREEN', so a candidate who comes
+      back through the apply flow a second time resumes one interview instead
+      of acquiring a second scored attempt with no way to say which result is
+      the real one. The ON CONFLICT names the index predicate because Postgres
+      will not infer a partial index without it.
+
+      The UPDATE branch touches launched_at and nothing else. Overwriting
+      status would reopen an interview that has already been scored, and
+      overwriting the score or the report would destroy a finished result
+      because somebody clicked the apply button again.
+    */
+    let interview: InterviewRow | undefined;
+    if (input.withAiScreen) {
+      const interviewRows = await t.query<InterviewRow>(
+        `INSERT INTO interviews (application_id, kind, status, launched_at)
+         VALUES ($1, 'AI_SCREEN', 'INVITED', NOW())
+         ON CONFLICT (application_id) WHERE kind = 'AI_SCREEN'
+         DO UPDATE SET launched_at = NOW()
+         RETURNING ${INTERVIEW_COLUMNS}`,
+        [application.id],
+      );
+      interview = interviewRows[0];
+      if (!interview) {
+        throw new Error("Upsert of interviews returned no row.");
+      }
+    }
+
     await insertActivity(t, {
       applicationId: application.id,
       // Null actor: the candidate did this, and candidates are not admin_users.
       actorId: null,
       kind: "APPLIED",
-      detail: created
-        ? `Applied to ${job.title}.`
-        : `Re-submitted application for ${job.title}.`,
+      // The timeline says which route was taken, because "applied" and "sat an
+      // AI interview" are different things to read six weeks later.
+      detail: input.withAiScreen
+        ? created
+          ? `Applied to ${job.title} and started an AI interview.`
+          : `Relaunched the AI interview for ${job.title}.`
+        : created
+          ? `Applied to ${job.title}.`
+          : `Re-submitted application for ${job.title}.`,
       toStatus: application.status,
     });
 
@@ -228,7 +303,7 @@ export async function submitApplication(
     // itself, using candidates.zoho_contact_id to decide create or update.
     await enqueueZohoSync("APPLICATION", application.id, "UPSERT", t);
 
-    return { application, candidate, created };
+    return { application, candidate, created, interview };
   });
 }
 
@@ -243,10 +318,22 @@ export interface ApplicationListItem extends ApplicationRow {
   job_reference: string;
   job_slug: string;
   assigned_recruiter_name: string | null;
+  /**
+   * The AI interview, flattened onto the row.
+   *
+   * NUMERIC, so a string — see the note at the top of lib/neon/types.ts. Null
+   * for a form applicant, and also for an AI applicant who was invited and
+   * never finished, which the queue renders differently from "never invited".
+   */
+  interview_score: string | null;
+  interview_status: InterviewRow["status"] | null;
+  interview_verdict: string | null;
 }
 
 export interface ListApplicationsFilters {
   status?: ApplicationStatus | "ALL";
+  /** A single method, or "ALL" / omitted for both. */
+  method?: ApplicationMethod | "ALL";
   jobId?: string;
   /**
    * Free text, matched against the candidate's name and email, the application
@@ -331,12 +418,13 @@ export async function listApplications(
 ): Promise<ApplicationListItem[]> {
   const q = filters.q?.trim();
   const status = filters.status && filters.status !== "ALL" ? filters.status : null;
+  const method = filters.method && filters.method !== "ALL" ? filters.method : null;
 
   return runner.query<ApplicationListItem>(
     `SELECT a.id, a.reference, a.job_id, a.candidate_id, a.status, a.resume_url,
             a.resume_filename, a.resume_size_bytes, a.relevant_experience,
             a.additional_info, a.source, a.assigned_recruiter_id, a.zoho_synced_at,
-            a.applied_at, a.updated_at,
+            a.applied_at, a.updated_at, a.method,
             c.email      AS candidate_email,
             c.first_name AS candidate_first_name,
             c.last_name  AS candidate_last_name,
@@ -344,11 +432,23 @@ export async function listApplications(
             j.reference  AS job_reference,
             j.slug       AS job_slug,
             r.full_name  AS assigned_recruiter_name,
+            i.score      AS interview_score,
+            i.status     AS interview_status,
+            i.verdict    AS interview_verdict,
             ${STAGE_RANK_SQL} AS stage_rank
        FROM applications a
        JOIN candidates c ON c.id = a.candidate_id
        JOIN jobs j       ON j.id = a.job_id
        LEFT JOIN admin_users r ON r.id = a.assigned_recruiter_id
+       /*
+         A JOIN, NOT A SUBSELECT PER ROW, and it cannot multiply the result:
+         interviews_application_ai_uidx is UNIQUE on (application_id) WHERE
+         kind = 'AI_SCREEN', so there is at most one matching row by
+         construction. That is what lets the AI score ride along on the read
+         that was already happening instead of costing a query per row, and it
+         is why the existing sorting and paging stay exactly as they were.
+       */
+       LEFT JOIN interviews i ON i.application_id = a.id AND i.kind = 'AI_SCREEN'
       WHERE ($1::text IS NULL OR a.status = $1)
         AND ($2::uuid IS NULL OR a.job_id = $2)
         AND ($3::uuid IS NULL OR a.assigned_recruiter_id = $3)
@@ -356,17 +456,45 @@ export async function listApplications(
              c.email ILIKE $4 OR c.first_name ILIKE $4 OR c.last_name ILIKE $4 OR
              (c.first_name || ' ' || c.last_name) ILIKE $4 OR
              a.reference ILIKE $4 OR j.title ILIKE $4 OR j.reference ILIKE $4)
+        AND ($5::text IS NULL OR a.method = $5)
       ORDER BY ${applicationOrderBy(filters.sort, filters.dir)}
-      LIMIT $5 OFFSET $6`,
+      LIMIT $6 OFFSET $7`,
     [
       status,
       filters.jobId ?? null,
       filters.assignedRecruiterId ?? null,
       q ? likePattern(q) : null,
+      method,
       clampLimit(filters.limit, 50),
       Math.max(0, filters.offset ?? 0),
     ],
   );
+}
+
+/**
+ * Counts per application method, for the queue's filter labels.
+ *
+ * Both keys are always present, including at zero: a dropdown that silently
+ * drops "AI Bot (0)" would make the filter look unavailable rather than empty.
+ */
+export async function countApplicationsByMethod(
+  runner: Queryable = db,
+): Promise<Record<ApplicationMethod, number>> {
+  const rows = await runner.query<{ method: ApplicationMethod; count: number }>(
+    "SELECT method, count(*)::int AS count FROM applications GROUP BY method",
+  );
+
+  const counts = { EASY_APPLY: 0, AI_INTERVIEW: 0 } satisfies Record<
+    ApplicationMethod,
+    number
+  >;
+  for (const row of rows) {
+    // Guarded rather than assigned blindly: `method` is TEXT with a CHECK, and
+    // widening that CHECK (lib/neon/types.ts says to expect it) must not add a
+    // key this object's type says cannot exist.
+    if (row.method in counts) counts[row.method] = row.count;
+  }
+  return counts;
 }
 
 export async function getApplicationById(
@@ -399,7 +527,6 @@ export interface ApplicationDetail {
   application: ApplicationRow;
   candidate: CandidateRow;
   job: JobRow;
-  notes: NoteWithAuthor[];
   activities: ActivityWithActor[];
   interviews: InterviewRow[];
 }
@@ -407,10 +534,10 @@ export interface ApplicationDetail {
 /**
  * Everything the application detail page renders.
  *
- * Five reads rather than one wide join: a join across notes, activities and
+ * Four reads rather than one wide join: a join across activities and
  * interviews would multiply rows together and have to be unpicked in
- * JavaScript. The four dependent reads run concurrently, so the latency is one
- * round trip for the application plus one for the rest.
+ * JavaScript. The three dependent reads run concurrently, so the latency is
+ * one round trip for the application plus one for the rest.
  */
 export async function getApplicationDetail(
   id: string,
@@ -421,10 +548,9 @@ export async function getApplicationDetail(
     return null;
   }
 
-  const [candidate, job, notes, activities, interviews] = await Promise.all([
+  const [candidate, job, activities, interviews] = await Promise.all([
     getCandidateById(application.candidate_id, runner),
     getJobById(application.job_id, runner),
-    listNotes(id, runner),
     listActivities(id, runner),
     listInterviews(id, runner),
   ]);
@@ -436,7 +562,7 @@ export async function getApplicationDetail(
     return null;
   }
 
-  return { application, candidate, job, notes, activities, interviews };
+  return { application, candidate, job, activities, interviews };
 }
 
 export async function listInterviews(
@@ -636,4 +762,49 @@ function clampLimit(limit: number | undefined, fallback: number): number {
     return fallback;
   }
   return Math.min(Math.floor(limit), 200);
+}
+
+/**
+ * Delete one application outright.
+ *
+ * WHAT GOES WITH IT. application_activities.application_id and
+ * interviews.application_id are both ON DELETE CASCADE, so the timeline and
+ * any AI interview record for this application are destroyed in the same
+ * statement. That is the correct shape: an activity trail about a row that no
+ * longer exists is not an audit trail, it is litter. It is also why this is
+ * irreversible and why the caller puts a second click in front of it.
+ *
+ * WHAT DOES NOT GO WITH IT. The résumé is a file in Vercel Blob, and Postgres
+ * knows nothing about it. The stored URL is returned so the caller can delete
+ * the blob too; without that, every deleted application leaves a candidate's CV
+ * sitting in the bucket with nothing pointing at it.
+ *
+ * THE CANDIDATE RECORD SURVIVES. A person can hold several applications and
+ * deleting one of them is not a statement about the person. Removing a
+ * candidate is a separate decision with a separate control.
+ *
+ * Returns null when there was no such row, so the caller can report a miss
+ * rather than claiming to have deleted something.
+ */
+export async function deleteApplication(
+  id: string,
+): Promise<{ reference: string; resumeUrl: string | null; candidateId: string } | null> {
+  if (!isUuid(id)) {
+    return null;
+  }
+
+  const rows = await db.query<{
+    reference: string;
+    resume_url: string | null;
+    candidate_id: string;
+  }>(
+    `DELETE FROM applications WHERE id = $1
+     RETURNING reference, resume_url, candidate_id`,
+    [id],
+  );
+
+  const row = rows[0];
+  return row
+    ? { reference: row.reference, resumeUrl: row.resume_url, candidateId: row.candidate_id }
+    : null;
 }

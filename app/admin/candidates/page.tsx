@@ -18,8 +18,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Avatar } from "@/components/admin/Avatar";
+import { NeonTableLink } from "@/components/admin/NeonConsoleLink";
 
-import { requireAdmin } from "@/lib/neon/auth";
+import { type AdminRole, requireAdmin } from "@/lib/neon/auth";
 import { listCandidates } from "@/lib/neon/candidates";
 import { NeonConfigError } from "@/lib/neon/client";
 
@@ -72,9 +73,14 @@ export default async function AdminCandidatesPage({ searchParams }: Props) {
   const q = (one(params.q) ?? "").slice(0, 200).trim();
 
   let rows: Awaited<ReturnType<typeof listCandidates>> | null = null;
+  // The role, kept because the Neon DB hatch at the foot of this page is for
+  // OWNER and ADMIN only. Null while the guard has not returned, which is the
+  // same state the page is in when it has no rows to show either.
+  let role: AdminRole | null = null;
   let notConfigured = false;
   try {
-    await requireAdmin({ returnTo: "/admin/candidates" });
+    const user = await requireAdmin({ returnTo: "/admin/candidates" });
+    role = user.role;
     rows = await listCandidates({ q: q || undefined, limit: PAGE_SIZE });
   } catch (error) {
     // Only "no connection string" is handled; a redirect or a real outage keeps
@@ -240,6 +246,12 @@ export default async function AdminCandidatesPage({ searchParams }: Props) {
           )}
         </section>
       )}
+
+      {/* Under the list, not in the toolbar: this is a developer hatch and must
+          not sit among the search controls as though it filtered anything.
+          Renders nothing for a RECRUITER, and nothing when the guard never
+          returned a role. */}
+      {role ? <NeonTableLink role={role} table="candidates" /> : null}
     </main>
   );
 }

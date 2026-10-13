@@ -53,6 +53,18 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
  * WITHDRAWN are counted as well but reported separately: folding closed
  * applications into these six would make the figures read as open work.
  */
+/**
+ * The width every pipeline stage gets before any applications are counted.
+ *
+ * Tuned, not arbitrary. At 2 the six stages start from a combined 12 units, so
+ * a desk holding a dozen applications splits roughly half the row by share and
+ * half evenly: the shape leans toward the truth without any stage collapsing.
+ * Lower and an empty stage becomes a sliver too narrow for its own label;
+ * higher and the whole thing flattens back into the six equal boxes this
+ * replaced.
+ */
+const FLOW_FLOOR = 2;
+
 const PIPELINE: readonly { status: ApplicationStatus; label: string }[] = [
   { status: "NEW", label: "New" },
   { status: "SCREENING", label: "Screening" },
@@ -681,18 +693,46 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
             {openApplications} {openApplications === 1 ? "application" : "applications"} in progress
           </p>
         </div>
+        {/*
+          A FUNNEL, SIZED BY WHAT IS IN IT.
+
+          This was six equal chevrons, which meant the shape said nothing: a
+          stage holding five and a stage holding zero drew the same box, and the
+          only real information was in the numerals. Width now carries the
+          count, the way a funnel chart does, so the silhouette is readable
+          before a single digit is.
+
+          THE FLOOR IS WHY THIS WORKS AT ALL. A share-of-total width alone would
+          give an empty stage zero pixels and an unclickable, unlabelled target,
+          and would make a stage holding one out of fifty a sliver too thin to
+          hit. Every stage keeps a floor and the remaining width is shared out by
+          count, so the ordering stays truthful while the control stays usable.
+          A stage you cannot click is worse than a chart that is slightly less
+          literal.
+
+          flex-grow is the mechanism rather than a percentage width, so the row
+          fills its container exactly at any size without the rounding drift
+          that six computed percentages produce.
+        */}
         <ol className="rov-flow">
-          {PIPELINE.map((stage) => (
-            <li key={stage.status} className={byStatus[stage.status] === 0 ? "is-zero" : ""}>
-              <Link
-                href={`/admin/applications?stage=${stage.status}`}
-                aria-label={`${byStatus[stage.status]} at ${stage.label}`}
+          {PIPELINE.map((stage) => {
+            const count = byStatus[stage.status];
+            return (
+              <li
+                key={stage.status}
+                className={count === 0 ? "is-zero" : ""}
+                style={{ flexGrow: FLOW_FLOOR + count }}
               >
-                <span className="rov-flow-n">{byStatus[stage.status]}</span>
-                <span className="rov-flow-l">{stage.label}</span>
-              </Link>
-            </li>
-          ))}
+                <Link
+                  href={`/admin/applications?stage=${stage.status}`}
+                  aria-label={`${count} at ${stage.label}`}
+                >
+                  <span className="rov-flow-n">{count}</span>
+                  <span className="rov-flow-l">{stage.label}</span>
+                </Link>
+              </li>
+            );
+          })}
         </ol>
       </section>
 

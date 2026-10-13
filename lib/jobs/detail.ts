@@ -20,7 +20,7 @@ import { findSkills } from "@/lib/recruiting/skill-taxonomy";
 export const CONSULTHIRE_BOT = {
   enabled: false,
   label: "AI interview",
-  comingSoonLabel: "AI interview — coming soon",
+  comingSoonLabel: "AI interview: coming soon",
   href: "https://consulthire.vercel.app/",
   note: "Opens ConsultHire, our AI interview assistant, in a new tab. It doesn't submit an application for this role.",
 } as const;

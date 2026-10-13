@@ -8,7 +8,7 @@ import { CONTACT } from "@/data/marketing";
 const INTERESTS = [
   "Engineering",
   "AI & Data",
-  "Oracle Cloud",
+  "Oracle",
   "Enterprise Transformation",
   "Managed Services",
   "Specialized talent",

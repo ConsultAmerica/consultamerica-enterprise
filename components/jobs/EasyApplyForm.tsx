@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import type { Job } from "@/lib/jobs/public-model";
+import { showWorkplaceType } from "@/lib/jobs/public-model";
 import {
   submitJobApplication,
   type SubmitJobApplicationInput,
@@ -238,7 +239,10 @@ export function EasyApplyForm({ job }: EasyApplyFormProps) {
             {job.location}
             <span aria-hidden> · </span>
             {job.employmentType}
-            {job.workplaceType ? (
+            {/* Dropped for a remote role whose location already says Remote,
+                so this line does not read "Remote (US) · Full Time · Remote".
+                See showWorkplaceType in lib/jobs/public-model.ts. */}
+            {showWorkplaceType(job.location, job.workplaceType) ? (
               <>
                 <span aria-hidden> · </span>
                 {job.workplaceType}
@@ -457,7 +461,7 @@ function JobSummaryCard({ job, sticky = false }: { job: Job; sticky?: boolean })
         <li>{job.company}</li>
         <li>{job.location}</li>
         <li>{job.employmentType}</li>
-        {job.workplaceType ? <li>{job.workplaceType}</li> : null}
+        {showWorkplaceType(job.location, job.workplaceType) ? <li>{job.workplaceType}</li> : null}
         {job.requisitionId ? <li>Job ID · {job.requisitionId}</li> : null}
       </ul>
       <Link href={`/jobs/${job.slug}`} className="apply-job-card-link">

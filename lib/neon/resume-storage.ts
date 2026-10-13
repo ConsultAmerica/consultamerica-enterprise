@@ -27,7 +27,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
-import { put } from "@vercel/blob";
+import { del, put } from "@vercel/blob";
 
 /**
  * 5MB. Comfortably above any real résumé and well under the Server Action body
@@ -226,4 +226,25 @@ export async function uploadResume(
   });
 
   return { url: blob.url, filename, size: bytes.byteLength };
+}
+
+/**
+ * Remove a résumé from blob storage.
+ *
+ * WHY THIS EXISTS. Deleting an application removes the row that points at the
+ * file, and nothing else. Without this the candidate's CV stays in the bucket
+ * with no record of whose it is or why it is there, which is a personal
+ * document nobody can find and nobody can justify keeping.
+ *
+ * TAKES THE STORED URL rather than a key, because the URL is what
+ * applications.resume_url holds and what the caller has in hand. @vercel/blob
+ * accepts the full URL for deletion.
+ *
+ * THROWS. The caller decides what a failure means: for a deletion the row is
+ * already gone by this point, so the right handling is to count it, say so and
+ * move on, not to pretend the deletion failed.
+ */
+export async function deleteResume(url: string): Promise<void> {
+  if (!url) return;
+  await del(url);
 }

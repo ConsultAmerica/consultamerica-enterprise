@@ -79,11 +79,38 @@ export const RATE_LIMIT_SCOPES = {
   "candidate-invite": { visitor: { windowSeconds: 60 * 60, limit: 10 }, global: { windowSeconds: 24 * 60 * 60, limit: 2000 } },
 } as const;
 
+/**
+ * Rate limit for the public assistant.
+ *
+ * WHY THIS ONE SCOPE IS ALLOWED TO DEGRADE. checkPublicRateLimit fails closed
+ * in production when its store is unreachable, and for an endpoint that spends
+ * money per request that is exactly right: an unmetered public AI endpoint is
+ * not acceptable.
+ *
+ * The assistant stopped being that endpoint. By default it answers
+ * deterministically from approved copy with no model call, so a flood of
+ * questions costs nothing beyond ordinary serverless time. Refusing to answer
+ * anybody in order to prevent spend that cannot happen is the wrong trade, and
+ * it is what took the assistant off the live site: the Supabase store the
+ * limiter wants was never migrated in production, so every visitor got "the
+ * assistant is temporarily unavailable".
+ *
+ * So: when a model is in play, keep failing closed. When it is not, fall back
+ * to the in-process limiter. That is weaker, because it counts per instance
+ * rather than globally, but it still bounds one visitor's requests and the
+ * thing it is protecting is no longer a bill.
+ */
 export async function checkAssistantRateLimit(
   ip: string,
   options: { store?: RateLimitStore; production?: boolean } = {},
 ): Promise<RateLimitDecision> {
-  return checkPublicRateLimit("assistant", ip, options);
+  const usesModel = process.env.ASSISTANT_MODE === "ai";
+  return checkPublicRateLimit("assistant", ip, {
+    ...options,
+    // `production` is what decides fail-closed, so saying "not production"
+    // here is how a deterministic assistant opts into the memory fallback.
+    production: options.production ?? (usesModel && process.env.NODE_ENV === "production"),
+  });
 }
 
 /** Per-visitor + global fixed windows for an anonymous public endpoint. */

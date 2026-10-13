@@ -4,6 +4,7 @@ import { JobRowActions } from "@/components/workspace/JobRowActions";
 import { JobsFilters } from "@/components/workspace/JobsFilters";
 import { fmtDate, humanize, oneParam } from "@/components/workspace/format";
 import { recruitingRepository } from "@/lib/recruiting";
+import { showWorkplaceType } from "@/lib/jobs/public-model";
 import { employmentTypeLabels, workplaceTypeLabels } from "@/types/organization";
 
 export const metadata = { title: "Jobs" };
@@ -143,8 +144,23 @@ export default async function JobsPage({ searchParams }: Props) {
                       <tr key={j.requisitionId}>
                         <td>
                           <Link href={`/app/recruiting/jobs/${j.requisitionId}`}>{j.title}</Link>
+                          {/* The arrangement is dropped when the Location
+                              column beside it already says Remote, so the row
+                              does not read Remote twice across two cells. See
+                              showWorkplaceType in lib/jobs/public-model.ts. */}
                           <div className="ws-muted">
-                            {j.requisitionNumber} · {employmentTypeLabels[j.employmentType] ?? j.employmentType} · {workplaceTypeLabels[j.workplaceType] ?? j.workplaceType}
+                            {[
+                              j.requisitionNumber,
+                              employmentTypeLabels[j.employmentType] ?? j.employmentType,
+                              ...(showWorkplaceType(
+                                j.locationName,
+                                workplaceTypeLabels[j.workplaceType] ?? j.workplaceType,
+                              )
+                                ? [workplaceTypeLabels[j.workplaceType] ?? j.workplaceType]
+                                : []),
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </div>
                         </td>
                         <td>{j.departmentName}</td>

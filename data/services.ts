@@ -316,7 +316,7 @@ export const SERVICES: readonly Service[] = [
     ],
   },
 
-  // -------------------------------------------------------------- Oracle Cloud
+  // --------------------------------------------------------------------- Oracle
   {
     slug: "oracle-erp",
     cap: 2,
@@ -431,6 +431,35 @@ export const SERVICES: readonly Service[] = [
       "Driver-based planning models",
       "Close task management with ownership and status",
       "Documented cycle timings and improvement backlog",
+    ],
+  },
+  {
+    slug: "oracle-ebs",
+    cap: 2,
+    title: "Oracle EBS",
+    dek: "E-Business Suite estates kept current, upgraded, or moved to Fusion Cloud, on a decision made with the numbers in front of you.",
+    image: "/img/hero_skyline.jpg",
+    covers: [
+      ["Financials", "General Ledger, Payables, Receivables, Assets and Cash Management across the 12.x footprint"],
+      ["Supply chain and manufacturing", "Inventory, Purchasing, Order Management, WIP and Advanced Supply Chain Planning"],
+      ["HRMS and Payroll", "Core HR, Payroll, Self-Service HR and Time and Labor"],
+      ["Technology stack", "Database and middleware currency, concurrent manager tuning, and the Forms and OAF custom estate"],
+      ["Upgrade and patching", "12.1 to 12.2 upgrades, online patching with ADOP, and the quarterly security updates"],
+      ["Path to Fusion Cloud", "Assessment, coexistence options and a phased migration where moving is the right answer"],
+    ],
+    what: "Organisations running E-Business Suite are rarely asking whether it works. They are asking what to do next: stay on 12.2 and keep it patched, finish a 12.1 upgrade, or move to Fusion Cloud, and in what order. We inventory the estate, cost each option against it, and then do the work, whichever way the decision goes.",
+    approach: [
+      ["Inventory the estate as it runs", "Modules actually in use, customisations actually invoked, integrations, patch level and database version. The documented estate and the running estate are rarely the same system, and the gap between them is where the cost hides."],
+      ["Cost the options side by side", "Stay and maintain, upgrade in place, or migrate. Each with the work, the risk and the running cost written down, so the choice is made on comparison rather than preference."],
+      ["Rehearse before production", "An upgrade runs on a cloned environment at production data volume until the timings and the failure points are known. A migration moves one business area at a time, with EBS still the system of record until the new one is trusted."],
+      ["Leave it maintainable", "Customisations reduced to the ones still earning their place, patching on a cadence the team can sustain, and the knowledge written down rather than held by one person."],
+    ],
+    deliverables: [
+      "Estate assessment covering modules, customisations, integrations and patch level",
+      "Costed comparison of stay, upgrade and migrate, with a recommendation",
+      "Upgraded or patched environments, rehearsed at production data volume",
+      "Customisation register with a retire, retain or rebuild decision on each",
+      "Roadmap with sequencing, cutover points and rollback positions",
     ],
   },
   {

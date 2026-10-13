@@ -67,6 +67,20 @@ const EXIT = (
   </svg>
 );
 
+/**
+ * Up to two initials from a display name.
+ *
+ * Falls back to one character, and to nothing at all for a blank name, rather
+ * than rendering a placeholder glyph: an empty circle is quieter than a "?"
+ * standing in for a person who does have a name somewhere.
+ */
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export function AdminUserMenu({ fullName, email, roleLabel }: Props) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -121,7 +135,20 @@ export function AdminUserMenu({ fullName, email, roleLabel }: Props) {
         aria-controls={open ? menuId : undefined}
         onClick={() => (open ? close(true) : setOpen(true))}
       >
-        <span className="nv-user-name">{fullName}</span>
+        {/*
+          Initials, so the account has a shape and not only a name. At the foot
+          of the rail this is the one row that is about the person using the
+          tool rather than the work in it, and a bare text button there reads
+          as something unfinished. Hidden from assistive technology because the
+          name beside it already says who this is.
+        */}
+        <span className="nv-user-ini" aria-hidden>
+          {initials(fullName)}
+        </span>
+        <span className="nv-user-id">
+          <span className="nv-user-name">{fullName}</span>
+          <span className="nv-user-role">{roleLabel}</span>
+        </span>
         <span className={`nv-user-caret${open ? " is-open" : ""}`}>{CHEVRON}</span>
       </button>
 

@@ -1,9 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
+import { consultHireConfig } from "@/lib/consulthire/client";
+import {
+  generateRoleInterview,
+  generateRoleInterviewsForPublishedJobs,
+} from "@/lib/consulthire/roles";
 import { requireAdmin, type AdminSessionUser } from "@/lib/neon/auth";
-import { NeonConfigError } from "@/lib/neon/client";
+import { isUuid, NeonConfigError } from "@/lib/neon/client";
 import {
   createJob,
   deleteJob,
@@ -301,6 +307,9 @@ export async function createJobAction(formData: FormData): Promise<JobActionResu
   try {
     const job = await createJob({ ...parsed.job, status }, auth.admin.id);
     revalidateJobPaths(job.id, job.slug);
+    // Create-and-publish is a publish. The hook belongs to the event, not to
+    // the button, so a job that goes live this way gets its AI interview too.
+    if (status === "PUBLISHED") scheduleInterviewGeneration(job.id);
     return { ok: true, id: job.id, slug: job.slug };
   } catch (error) {
     return failure("create", "new", error);
@@ -350,7 +359,9 @@ async function moveStatus(id: string, status: JobStatus, event: string): Promise
 }
 
 export async function publishJobAction(id: string): Promise<JobActionResult> {
-  return moveStatus(id, "PUBLISHED", "publish");
+  const result = await moveStatus(id, "PUBLISHED", "publish");
+  if (result.ok) scheduleInterviewGeneration(result.id);
+  return result;
 }
 
 export async function unpublishJobAction(id: string): Promise<JobActionResult> {
@@ -360,6 +371,157 @@ export async function unpublishJobAction(id: string): Promise<JobActionResult> {
 export async function archiveJobAction(id: string): Promise<JobActionResult> {
   return moveStatus(id, "ARCHIVED", "archive");
 }
+
+// ------------------------------------------------- ConsultHire AI interviews
+
+/**
+ * Kick off interview generation for a job that has just been published.
+ *
+ * AFTER THE RESPONSE, NOT INSIDE IT, and this is the whole design of the hook.
+ * Generating an interview plan is an LLM call at ConsultHire and client.ts
+ * allows it a sixty-second timeout. Awaiting that inside publishJobAction
+ * would mean a recruiter pressing Publish and watching a spinner for up to a
+ * minute before their job appears on the careers page, for a feature that is
+ * not what they asked for. after() runs the work on the same request's tail,
+ * once the response has gone, so publishing stays as fast as it was.
+ *
+ * NOTHING HERE CAN FAIL THE PUBLISH. The job is already published and already
+ * revalidated by the time this is scheduled. generateRoleInterview never
+ * throws and writes its own failure to consulthire_status, so the worst case is
+ * a job on the careers page with a FAILED pill in the admin list and a Generate
+ * action to retry it. after() itself is wrapped because it throws when called
+ * outside a request scope, and scheduling optional work is never worth turning
+ * a completed publish into an error message.
+ *
+ * THE VISIBLE CONSEQUENCE, so nobody treats it as a bug: the admin's own
+ * router.refresh() lands while generation is still in flight, so the row reads
+ * Pending. One more refresh shows Ready. That is honest, and it is why PENDING
+ * exists as a status at all.
+ */
+function scheduleInterviewGeneration(jobId: string): void {
+  // Asked before scheduling so a deployment without ConsultHire credentials
+  // does no work and logs nothing. Easy Apply only is a supported setup.
+  if (!consultHireConfig()) return;
+
+  try {
+    after(async () => {
+      await generateRoleInterview(jobId);
+      // Revalidated again from inside after(): the first pass ran before the
+      // status moved to READY, so without this the cached /admin/jobs render
+      // keeps the Pending pill until something else invalidates it.
+      revalidatePath("/admin/jobs");
+      revalidatePath(`/admin/jobs/${jobId}`);
+    });
+  } catch (error) {
+    logServerError("admin-jobs/publish", error, { jobId, stage: "schedule-interview" });
+  }
+}
+
+export type GenerateInterviewResult =
+  | { ok: true; message: string }
+  | { ok: false; error: string };
+
+const NO_CONSULTHIRE =
+  "AI interviews are not configured on this deployment, so there is nothing to generate. " +
+  "Set CONSULTHIRE_BASE_URL, CONSULTHIRE_API_KEY and CONSULTHIRE_WEBHOOK_SECRET.";
+
+/**
+ * Generate, or regenerate, one job's AI interview on demand.
+ *
+ * SYNCHRONOUS, unlike the publish hook, and for the opposite reason: the
+ * recruiter pressed a button whose only purpose is this, so waiting for it is
+ * what they are expecting and the result is what they want to be told. Hiding
+ * it behind after() would make the button report success before anything had
+ * happened and leave them refreshing to find out whether it worked.
+ *
+ * IDEMPOTENT. A job that already has a link is left alone and reported as
+ * already done, so pressing the item twice costs one LLM call. `force` is the
+ * deliberate "the description changed, rebuild it".
+ */
+export async function generateJobInterviewAction(
+  id: string,
+  options: { force?: boolean } = {},
+): Promise<GenerateInterviewResult> {
+  const auth = await authorize("generate-interview");
+  if (!auth.ok) return auth;
+  if (!isUuid(id)) return { ok: false, error: NO_ID };
+  if (!consultHireConfig()) return { ok: false, error: NO_CONSULTHIRE };
+
+  const result = await generateRoleInterview(id, { force: options.force });
+  revalidateJobPaths(id);
+
+  if (!result.ok) {
+    // The message came from ConsultHire by way of client.ts and was written
+    // for a recruiter, so it is shown verbatim. `retryable` decides whether to
+    // suggest trying again or to leave them looking at the real cause.
+    return {
+      ok: false,
+      error: result.retryable ? `${result.error} Please try again in a moment.` : result.error,
+    };
+  }
+
+  switch (result.outcome) {
+    case "generated":
+      return {
+        ok: true,
+        message: result.created
+          ? "AI interview generated. Candidates can now apply through it."
+          : "AI interview rebuilt from the current job description.",
+      };
+    case "unchanged":
+      return { ok: true, message: "This job already has an AI interview." };
+    case "skipped":
+      return result.reason === "not-configured"
+        ? { ok: false, error: NO_CONSULTHIRE }
+        : {
+            ok: false,
+            error:
+              "Only a published job can have an AI interview, because the link is offered on the " +
+              "public posting. Publish the job, then generate it.",
+          };
+  }
+}
+
+/**
+ * Generate for every published job that has no usable interview yet.
+ *
+ * WHY THIS SHAPE OF BULK ACTION RATHER THAN CHECKBOXES. Making the jobs table
+ * selectable would mean turning a server-rendered table into a client
+ * component, and the only thing anyone would ever select is "the ones that do
+ * not have an interview" — which the database can answer precisely and without
+ * the recruiter ticking twenty boxes to express it. The eligible set is defined
+ * once, in listJobsNeedingConsultHire, and both the count on the button and the
+ * set acted on read it, so the two cannot disagree.
+ *
+ * Capped per invocation. Each job is an LLM call at the far end, and a
+ * serverless function has a wall clock; a sweep that attempts two hundred jobs
+ * is a sweep that gets killed halfway with no report. Pressing it again picks
+ * up where it left off, because a generated job is no longer eligible.
+ */
+export async function generateJobInterviewsBulkAction(): Promise<GenerateInterviewResult> {
+  const auth = await authorize("generate-interviews-bulk");
+  if (!auth.ok) return auth;
+  if (!consultHireConfig()) return { ok: false, error: NO_CONSULTHIRE };
+
+  const summary = await generateRoleInterviewsForPublishedJobs(BULK_GENERATE_MAX);
+  revalidatePath("/admin/jobs");
+
+  if (summary.attempted === 0) {
+    return { ok: true, message: "Every published job already has an AI interview." };
+  }
+
+  const parts = [`${summary.generated} generated`];
+  if (summary.unchanged > 0) parts.push(`${summary.unchanged} already had one`);
+  if (summary.failed > 0) parts.push(`${summary.failed} failed`);
+
+  // Reported as a success even with failures, because the successes are real
+  // and the per-job reasons are on the rows. A bulk action that reports itself
+  // as failed because one of twenty did is a bulk action nobody trusts.
+  return { ok: true, message: `${parts.join(", ")}.` };
+}
+
+/** How many jobs one sweep will attempt. See the note above on why it is low. */
+const BULK_GENERATE_MAX = 10;
 
 /**
  * Hard delete, and only for a job nobody has applied to.
