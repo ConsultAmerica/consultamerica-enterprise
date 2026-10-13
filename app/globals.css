@@ -6512,3 +6512,237 @@ ul.adm-steps {
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.42);
 }
+
+/* =========================================================================
+   Admin polish pass.
+
+   The brief was "make it feel like Salesforce": that product's recruiting
+   screens read as considered rather than decorated, and the thing doing most
+   of the work is not colour, it is CONSISTENT FEEDBACK. Every surface answers
+   the pointer the same way, in the same direction, over the same duration, so
+   the whole screen behaves like one object rather than forty independent ones.
+
+   Three rules hold this together and nothing below breaks them:
+
+     direction   anything liftable rises 1px, never more, and never sideways
+     duration    0.16s in, slightly slower out, so a hover feels caught not snapped
+     colour      the brand blue (#1d6fe0) carries interaction, and nothing else
+                 earns the accent. Semantic colour (green, amber, red) stays
+                 reserved for state.
+
+   Appended at the end, prefixed where new and additive where it touches
+   existing classes, so the rules above this block keep working untouched.
+   ========================================================================= */
+
+:root {
+  /* One curve for every interaction on the admin, so nothing feels borrowed. */
+  --adm-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --adm-lift: 0 2px 4px -1px rgba(16, 30, 54, 0.08), 0 6px 16px -6px rgba(16, 30, 54, 0.14);
+  --adm-lift-lg: 0 4px 8px -2px rgba(16, 30, 54, 0.1), 0 14px 32px -10px rgba(16, 30, 54, 0.2);
+  --adm-ring: 0 0 0 3px rgba(29, 111, 224, 0.14);
+}
+
+/* ------------------------------------------------------------ the buttons */
+
+/* The secondary button, which is most of them. Rises, warms toward the brand
+   and gains a shadow; the border moves with it so the edge never looks like it
+   was left behind by the fill. */
+.ws-btn {
+  transition:
+    background 0.16s var(--adm-ease),
+    border-color 0.16s var(--adm-ease),
+    box-shadow 0.16s var(--adm-ease),
+    transform 0.16s var(--adm-ease),
+    color 0.16s var(--adm-ease);
+}
+
+/* :not(.primary) is load-bearing, not tidiness. The primary action is
+   `ws-btn primary`, a filled blue button, and recolouring its label to the
+   brand blue put blue text on a blue fill. Caught on screen, not in review. */
+.ws-btn:not(.primary):hover:not(:disabled) {
+  background: #fff;
+  border-color: #b9ccea;
+  color: var(--blue);
+  transform: translateY(-1px);
+  box-shadow: var(--adm-lift);
+}
+
+/* The filled primary. Keeps its white label, takes the brand gradient and a
+   shadow tinted with its own colour so the lift reads as the button glowing
+   rather than a grey drop shadow underneath it. */
+.ws-btn.primary:hover:not(:disabled) {
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px -1px rgba(29, 111, 224, 0.3),
+    0 10px 24px -8px rgba(29, 111, 224, 0.45);
+}
+
+/* Pressed goes the other way. A button that only ever rises never feels
+   clicked, it feels hovered twice. */
+.ws-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(16, 30, 54, 0.08);
+  transition-duration: 0.06s;
+}
+
+.ws-btn:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: var(--adm-ring);
+}
+
+/* The primary button carries the brand gradient on hover rather than a flat
+   darker blue. One gradient, used in one place, is a signature; used
+   everywhere it is wallpaper. */
+.adm-shell .btn-primary,
+.rov .btn-primary {
+  transition:
+    background 0.16s var(--adm-ease),
+    box-shadow 0.16s var(--adm-ease),
+    transform 0.16s var(--adm-ease);
+}
+
+.adm-shell .btn-primary:hover:not(:disabled),
+.rov .btn-primary:hover:not(:disabled) {
+  background: var(--grad);
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px -1px rgba(29, 111, 224, 0.3),
+    0 10px 24px -8px rgba(29, 111, 224, 0.45);
+}
+
+.adm-shell .btn-primary:active:not(:disabled),
+.rov .btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  transition-duration: 0.06s;
+}
+
+/* ---------------------------------------------------------------- the KPIs */
+
+/* Already lifts. What it gains here is the icon waking up: the chip fills with
+   brand tint and the glyph takes the accent, so the card reads as one object
+   responding rather than a box that moved. */
+.rov-kpi {
+  transition:
+    transform 0.18s var(--adm-ease),
+    box-shadow 0.18s var(--adm-ease),
+    border-color 0.18s var(--adm-ease);
+}
+
+.rov-kpi:hover {
+  box-shadow: var(--adm-lift-lg);
+}
+
+.rov-kpi-icon {
+  transition:
+    background 0.18s var(--adm-ease),
+    color 0.18s var(--adm-ease),
+    transform 0.18s var(--adm-ease);
+}
+
+.rov-kpi:hover .rov-kpi-icon {
+  background: rgba(29, 111, 224, 0.1);
+  color: var(--blue);
+  transform: scale(1.06);
+}
+
+/* The number leans very slightly toward the accent. Deliberately not a colour
+   change: a figure that changes colour on hover reads as a state change, and
+   nothing about the data changed because a pointer passed over it. */
+.rov-kpi-value {
+  transition: letter-spacing 0.18s var(--adm-ease);
+}
+
+.rov-kpi:hover .rov-kpi-value {
+  letter-spacing: -0.028em;
+}
+
+/* -------------------------------------------------------------- the tables */
+
+/* A row answers the pointer with a tinted fill and an accent edge, the same
+   device the sidebar uses for the current section. Rows do not lift: a table is
+   a surface and lifting one row out of it breaks the plane the eye is reading
+   down. */
+.ws-table tbody tr,
+.rov-table tbody tr {
+  transition: background 0.14s var(--adm-ease), box-shadow 0.14s var(--adm-ease);
+}
+
+.ws-table tbody tr:hover,
+.rov-table tbody tr:hover {
+  background: rgba(29, 111, 224, 0.035);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+/* A row already selected keeps its own stronger fill and does not fight the
+   hover. */
+.ws-table tbody tr.is-selected:hover {
+  background: rgba(29, 111, 224, 0.08);
+}
+
+/* Links inside a table cell pick up the accent on row hover, so the row reads
+   as one clickable thing rather than a strip with a hotspot in it. */
+.ws-table tbody tr:hover a,
+.rov-table tbody tr:hover a {
+  color: var(--blue);
+}
+
+/* ---------------------------------------------------------------- the cards */
+
+.rov-card,
+.ws-panel {
+  transition: box-shadow 0.2s var(--adm-ease), border-color 0.2s var(--adm-ease);
+}
+
+.rov-card:hover,
+.adm-shell .ws-panel:hover {
+  border-color: #dbe3ee;
+  box-shadow: var(--adm-lift);
+}
+
+/* --------------------------------------------------------------- the ground */
+
+/* A very slight wash behind the workspace, warmest at the top where the page
+   begins. Flat grey behind white cards makes the cards look printed on; a
+   gradient this shallow is not seen so much as felt, and it is what stops the
+   whole screen reading as a spreadsheet. */
+.adm-shell .ws-main {
+  background:
+    radial-gradient(1200px 400px at 10% -10%, rgba(29, 111, 224, 0.05), transparent 60%),
+    radial-gradient(900px 300px at 90% -5%, rgba(34, 199, 230, 0.045), transparent 55%);
+}
+
+/* Respect the system setting. Every transition above is decoration; none of it
+   carries meaning that is lost by removing it. */
+@media (prefers-reduced-motion: reduce) {
+  .ws-btn,
+  .ws-btn:hover,
+  .rov-kpi,
+  .rov-kpi:hover,
+  .rov-kpi-icon,
+  .rov-kpi-value,
+  .adm-shell .btn-primary,
+  .rov .btn-primary,
+  .ws-table tbody tr,
+  .rov-table tbody tr,
+  .rov-card,
+  .ws-panel {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* The greeting above the page title. Quiet and small: it sets the tone and
+   then gets out of the way, which is the opposite of what it would do at
+   heading size. Replaces the "Consult America / Recruitment" eyebrow, which
+   said something the sidebar already says twice. */
+.rov-greeting {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-3);
+}

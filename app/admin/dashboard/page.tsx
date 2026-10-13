@@ -54,6 +54,20 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
  * applications into these six would make the figures read as open work.
  */
 /**
+ * "Good morning" and friends, from the server's clock.
+ *
+ * Three bands rather than four. "Good night" is not a greeting anybody wants
+ * when they have just sat down to work at 11pm, and the boundary between
+ * evening and night is the one people disagree about most.
+ */
+function greeting(now: Date = new Date()): string {
+  const hour = now.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+/**
  * The width every pipeline stage gets before any applications are counted.
  *
  * Tuned, not arbitrary. At 2 the six stages start from a combined 12 units, so
@@ -569,7 +583,17 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
     <div className="rov">
       <div className="rov-head">
         <div>
-          <p className="ws-eyebrow">Consult America / Recruitment</p>
+          {/*
+            A greeting, which is the one line on this page that is about the
+            person rather than the pipeline. Salesforce opens the same way, and
+            it is doing more than being friendly: it marks the top of the page
+            as a place you arrived at rather than a report you were handed.
+
+            Computed on the server from the request's own clock, so it cannot
+            produce a hydration mismatch the way a browser-side new Date()
+            would when the server and the reader are in different hours.
+          */}
+          <p className="rov-greeting">{greeting()} </p>
           <h1>Recruitment Overview</h1>
           <p>
             Manage job openings, review applications, and track candidates throughout the hiring
