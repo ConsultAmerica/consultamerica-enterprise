@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { INDUSTRY_PAGES } from "@/data/industries";
 import { CONTACT } from "@/data/marketing";
 
 export function MarketingFooter() {
@@ -17,11 +18,11 @@ export function MarketingFooter() {
           </div>
           <div className="foot-col">
             <h4>Industries</h4>
-            <Link href="/#industries">Financial Services</Link>
-            <Link href="/#industries">Supply Chain</Link>
-            <Link href="/#industries">Manufacturing</Link>
-            <Link href="/#industries">Public Sector</Link>
-            <Link href="/#industries">Retail</Link>
+            {INDUSTRY_PAGES.map((i) => (
+              <Link key={i.slug} href={`/industries/${i.slug}`}>
+                {i.name}
+              </Link>
+            ))}
           </div>
           <div className="foot-col">
             <h4>Company</h4>

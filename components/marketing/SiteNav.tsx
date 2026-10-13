@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { PRIMARY_NAV, isNavItemActive, navHref } from "@/components/marketing/nav-config";
 import { CAPS, CAP_SERVICES, INDUSTRIES, PROD } from "@/data/marketing";
+import { industryHref } from "@/data/industries";
 import { serviceHref } from "@/data/services";
 
 /**
@@ -41,7 +42,7 @@ function childrenFor(label: string): MobileChild[] {
     });
   }
   if (label === "Industries") {
-    return INDUSTRIES.map(([name]) => ({ label: name, href: "/#industries" }));
+    return INDUSTRIES.map(([name]) => ({ label: name, href: industryHref(name) }));
   }
   if (label === "Products") {
     return PROD.map(([name, , href]) => ({ label: name, href, external: true }));

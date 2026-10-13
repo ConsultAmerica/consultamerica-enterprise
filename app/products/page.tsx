@@ -7,6 +7,7 @@ import { PROD } from "@/data/marketing";
 
 export const metadata: Metadata = {
   title: "Products",
+  alternates: { canonical: "/products" },
   description:
     "Software Consult America has designed, built and shipped: AI hiring, document intelligence, healthcare guidance, commerce and booking platforms.",
 };

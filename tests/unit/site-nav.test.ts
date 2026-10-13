@@ -39,11 +39,11 @@ describe("shared marketing navigation", () => {
   });
 
   it("uses in-page anchors only where the destination really is a section", () => {
-    // Industries is still a homepage section and nothing else, so it keeps the
-    // anchor: on the homepage it scrolls, elsewhere it links back.
+    // Industries keeps its homepage anchor: on the homepage it scrolls to the
+    // section, everywhere else it opens the /industries hub.
     const industries = PRIMARY_NAV.find((i) => i.label === "Industries")!;
     expect(navHref(industries, true)).toBe("#industries");
-    expect(navHref(industries, false)).toBe("/#industries");
+    expect(navHref(industries, false)).toBe("/industries");
 
     /*
       Capabilities and Products are pages now and must NOT scroll, on the

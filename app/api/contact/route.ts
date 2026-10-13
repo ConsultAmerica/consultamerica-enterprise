@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { enquirySource } from "@/data/industries";
 import { CONTACT } from "@/data/marketing";
 import { renderEnquiryEmail } from "@/lib/email/enquiry-template";
 import { verifyTurnstile } from "@/lib/security/turnstile";
@@ -13,6 +14,7 @@ type Enquiry = {
   phone?: string;
   interest: string;
   message: string;
+  source?: string;
 };
 
 function clean(v: unknown, max: number) {
@@ -35,6 +37,8 @@ export async function POST(req: Request) {
     phone: clean(raw.phone, 60),
     interest: clean(raw.interest, 80),
     message: clean(raw.message, 5000),
+    // Resolved against the known industry pages, never echoed from the client.
+    source: enquirySource(raw.sourcePath),
   };
 
   if (!enquiry.name || !enquiry.email || !enquiry.company || !enquiry.message) {

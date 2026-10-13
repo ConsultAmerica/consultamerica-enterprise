@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     // bare title: the root layout template appends "· Consult America"
     title: service.title,
     description: service.dek,
+    alternates: { canonical: `/services/${service.slug}` },
     openGraph: { title: service.title, description: service.dek, images: [service.image] },
   };
 }

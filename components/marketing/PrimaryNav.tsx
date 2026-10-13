@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD } from "@/data/marketing";
+import { industryHref } from "@/data/industries";
 import { serviceHref } from "@/data/services";
 
 /**
@@ -180,7 +181,7 @@ export function NavMegaPanel({ mega, base = "" }: { mega: keyof typeof MEGA_IDS;
     INDUSTRIES[i][0],
     INDUSTRIES[i][1],
     IND_ICONS[i],
-    a("#industries"),
+    industryHref(INDUSTRIES[i][0]),
   ];
   const pi = (i: number): [string, string, string, string] => [PROD[i][0], PROD[i][1], PROD[i][3], PROD[i][2]];
 
@@ -194,11 +195,11 @@ export function NavMegaPanel({ mega, base = "" }: { mega: keyof typeof MEGA_IDS;
           ["Commerce", [ii(4)]],
         ]}
         feature={{
-          img: "/img/finance.jpg",
-          label: "Client impact",
-          title: "Proof in production",
-          desc: "Outcomes delivered across regulated, high-stakes industries.",
-          href: a("#why"),
+          img: "/img/industries/supply-chain.jpg",
+          label: "Industries",
+          title: "All industries",
+          desc: "Five sectors, each with its challenges, solutions and how we deliver.",
+          href: "/industries",
         }}
       />
     );

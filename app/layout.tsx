@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { SITE_URL } from "@/lib/site";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Resolves relative Open Graph images and canonical links to absolute URLs.
+  // Canonicals are set per page, never here: a layout canonical would be
+  // inherited by every page that did not override it.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Consult America — Engineering, AI & enterprise transformation",
     template: "%s · Consult America",

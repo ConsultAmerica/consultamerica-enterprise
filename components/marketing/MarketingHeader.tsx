@@ -172,7 +172,7 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
         ) : null}
       </header>
       <AssistantPalette open={askOpen} onClose={closeAsk} context={assistantContext} />
-      <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} />
+      <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} sourcePath={pathname ?? undefined} />
     </>
   );
 }

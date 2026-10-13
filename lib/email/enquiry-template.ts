@@ -19,7 +19,11 @@ export type Enquiry = {
   phone?: string;
   interest: string;
   message: string;
+  /** Where the form was opened, e.g. "Retail industry page". Server-resolved. */
+  source?: string;
 };
+
+const DEFAULT_SOURCE = "Talk to an expert form";
 
 // Palette and the small render helpers below are exported so every
 // transactional email (see lib/email/application-emails.ts) is built from the
@@ -218,7 +222,7 @@ export function renderEnquiryEmail(
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
               ${row(field("Name", esc(e.name)), field("Email", link(`mailto:${escUrl(e.email)}`, e.email)))}
               ${row(field("Company", esc(e.company)), field("Phone", phoneHtml))}
-              ${row(field("Interest", `<span style="display:inline-block;background:${TINT};border:1px solid ${LINE};border-radius:6px;padding:4px 10px;font-size:14px;color:${INK};">${esc(e.interest)}</span>`), field("Source", `<span style="font-weight:500;color:${INK_2};">Talk to an expert form</span>`))}
+              ${row(field("Interest", `<span style="display:inline-block;background:${TINT};border:1px solid ${LINE};border-radius:6px;padding:4px 10px;font-size:14px;color:${INK};">${esc(e.interest)}</span>`), field("Source", `<span style="font-weight:500;color:${INK_2};">${esc(e.source || DEFAULT_SOURCE)}</span>`))}
             </table>
             <div style="border-top:1px solid ${LINE};"></div>
           </td>
@@ -275,7 +279,7 @@ ${briefBlock}
     `Company:  ${e.company}`,
     `Phone:    ${e.phone || "Not provided"}`,
     `Interest: ${e.interest}`,
-    "Source:   Talk to an expert form",
+    `Source:   ${e.source || DEFAULT_SOURCE}`,
     "----------------------------------------",
     "",
     "THEIR MESSAGE",

@@ -151,7 +151,7 @@ export function getCompanyInformation(topic: CompanyTopic): KnowledgeAnswer {
       return {
         topic,
         facts: INDUSTRIES.map(([name, headline, body]) => `${name}: ${headline}. ${body}`),
-        links: [{ label: "Industries", href: "/#industries" }],
+        links: [{ label: "Industries", href: "/industries" }],
       };
     case "contact":
       return {

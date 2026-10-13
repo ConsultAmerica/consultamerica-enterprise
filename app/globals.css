@@ -5578,3 +5578,1005 @@ ul.adm-steps {
     transition: none;
   }
 }
+
+/* ============================================================================
+   INDUSTRIES
+   (homepage #industries cards, app/industries/[slug]/page.tsx)
+   ============================================================================
+   The homepage section used to be a hover list beside one photo, with no
+   destination behind any industry. Each industry now has a page, and the
+   section is a grid of cards that link to them. The pages reuse the service
+   pages' vocabulary (.svc-faq, .svc-more, .svc-deliver) so the two read as
+   one site.
+   ========================================================================== */
+
+/* ------------------------------------------------------------ the card */
+
+.ind-cards,
+.indp-others {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+
+/* Two wide cards over three: the two regulated sectors lead, as they do in
+   the Industries mega panel. */
+.ind-cards {
+  grid-template-columns: repeat(6, 1fr);
+}
+.ind-cards > li {
+  grid-column: span 2;
+}
+.ind-cards > li:nth-child(-n + 2) {
+  grid-column: span 3;
+}
+
+.indp-others {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.ind-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  min-height: 340px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--navy-2);
+  color: #fff;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.3, 1),
+    border-color 0.25s;
+}
+.ind-card-lg {
+  min-height: 420px;
+}
+
+.ind-card-media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.ind-card-media img {
+  object-fit: cover;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+/* Heavy at the foot, where the text sits, so the copy holds contrast on any
+   photo; light at the top so the photo still reads. */
+.ind-card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 12, 24, 0.1) 0%,
+    rgba(7, 12, 24, 0.5) 30%,
+    rgba(7, 12, 24, 0.86) 55%,
+    rgba(7, 12, 24, 0.95) 100%
+  );
+}
+
+.ind-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 26px 24px;
+}
+.ind-card-lg .ind-card-body {
+  padding: 32px 32px 28px;
+}
+
+.ind-card-group {
+  font-family: "Geist Mono", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.ind-card h3 {
+  font-size: clamp(22px, 2.2vw, 26px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.ind-card-lg h3 {
+  font-size: clamp(26px, 2.8vw, 34px);
+}
+
+/* The heading link covers the card, so the whole surface is clickable while
+   the link's accessible name stays the industry name alone. */
+.ind-card-link {
+  color: inherit;
+}
+.ind-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+.ind-card-link:focus-visible {
+  outline: none;
+}
+.ind-card-link:focus-visible::after {
+  outline: 2px solid var(--cyan);
+  outline-offset: -2px;
+}
+
+.ind-card p {
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.ind-card-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.ind-card-go svg {
+  color: var(--cyan);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.ind-card:hover,
+.ind-card:focus-within {
+  border-color: rgba(34, 199, 230, 0.45);
+  box-shadow: 0 28px 60px -34px rgba(7, 12, 24, 0.75);
+  transform: translateY(-3px);
+}
+.ind-card:hover .ind-card-media img,
+.ind-card:focus-within .ind-card-media img {
+  transform: scale(1.05);
+}
+.ind-card:hover .ind-card-go svg,
+.ind-card:focus-within .ind-card-go svg {
+  transform: translateX(4px);
+}
+
+/* ------------------------------------------------------------- the hero */
+
+.indp-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--navy);
+  color: #fff;
+  padding: 150px 0 0;
+}
+.indp-hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.indp-hero-media img {
+  object-fit: cover;
+}
+/* Left-weighted, so the copy column always sits on near-navy while the photo
+   stays visible on the right. */
+.indp-hero-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(7, 12, 24, 0.94) 0%, rgba(7, 12, 24, 0.82) 42%, rgba(7, 12, 24, 0.38) 100%),
+    linear-gradient(0deg, rgba(7, 12, 24, 0.9) 0%, rgba(7, 12, 24, 0) 38%);
+}
+.indp-hero .art-crumbs {
+  color: rgba(255, 255, 255, 0.6);
+}
+.indp-hero .art-crumbs a {
+  color: rgba(255, 255, 255, 0.75);
+}
+.indp-hero .art-crumbs a:hover {
+  color: var(--cyan);
+}
+.indp-hero-eyebrow {
+  color: var(--cyan);
+}
+.indp-hero-eyebrow::before {
+  background: var(--cyan);
+}
+.indp-hero h1 {
+  max-width: 17ch;
+  margin-top: 20px;
+  font-size: clamp(36px, 5.4vw, 66px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.03;
+}
+.indp-hero-dek {
+  max-width: 58ch;
+  margin-top: 22px;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+}
+.indp-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+/* The five themes along the foot of the hero. */
+.indp-themes {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  margin: 72px 0 0;
+  padding: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+.indp-themes li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px 20px 30px 0;
+  font-size: 14.5px;
+  font-weight: 550;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.9);
+}
+.indp-themes li + li {
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+.indp-themes span {
+  font-family: "Geist Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--cyan);
+}
+
+/* ---------------------------------------------------------- the sections */
+
+.indp-num {
+  font-family: "Geist Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--blue);
+}
+
+/* Challenges: the heading column beside a 2x2 of numbered items. */
+.indp-split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 64px;
+  align-items: start;
+}
+.indp-split .sec-head {
+  margin-bottom: 0;
+  position: sticky;
+  top: 120px;
+}
+.indp-split .sec-head h2 {
+  font-size: clamp(30px, 3.8vw, 46px);
+}
+.indp-split .sec-head p {
+  font-size: 17px;
+  line-height: 1.7;
+}
+.indp-challenges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.indp-challenges li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 24px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--blue);
+  border-radius: 4px 4px 14px 14px;
+  background: #fff;
+}
+.indp-challenges h3,
+.indp-solutions h3,
+.indp-cases h3,
+.indp-steps h3 {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.018em;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.indp-challenges p,
+.indp-solutions > li > p,
+.indp-cases p,
+.indp-steps p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+/* How we help: dark band, heading and lead side by side, three points. */
+.indp-help {
+  position: relative;
+  overflow: hidden;
+}
+.indp-help::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(820px 420px at 85% 0%, rgba(34, 199, 230, 0.12), transparent 62%),
+    radial-gradient(700px 420px at 0% 100%, rgba(29, 111, 224, 0.16), transparent 62%);
+}
+.indp-help .wrap {
+  position: relative;
+}
+.indp-help-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 56px;
+  align-items: end;
+}
+.indp-help-head h2 {
+  margin-top: 18px;
+  font-size: clamp(30px, 4vw, 50px);
+  font-weight: 600;
+}
+.indp-help-head p {
+  font-size: 18px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.75);
+}
+.indp-help-points {
+  list-style: none;
+  margin: 64px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+.indp-help-points li {
+  padding: 30px 32px 6px 0;
+}
+.indp-help-points li + li {
+  padding-left: 32px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+.indp-help-points h3 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.indp-help-points h3::before {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 2px;
+  margin-bottom: 18px;
+  background: var(--grad);
+}
+.indp-help-points p {
+  margin-top: 10px;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Solution areas: three over two. */
+.indp-solutions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 18px;
+}
+.indp-solutions > li {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px 26px 26px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.25s;
+}
+.indp-solutions > li:nth-child(n + 4) {
+  grid-column: span 3;
+}
+.indp-solutions > li:hover {
+  border-color: rgba(29, 111, 224, 0.3);
+  box-shadow: 0 18px 40px -28px rgba(10, 19, 34, 0.4);
+}
+.indp-solutions h3 {
+  font-size: 20px;
+}
+.indp-solutions .svc-deliver {
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  gap: 10px;
+}
+.indp-solutions .svc-deliver li {
+  font-size: 14px;
+}
+
+/* Capabilities: five families side by side. */
+.indp-caps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+.indp-caps > li {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+.indp-cap-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #eaf2fe;
+  color: var(--blue);
+}
+.indp-caps h3 {
+  margin-top: 18px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.indp-caps > li > p {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.indp-caps ul {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.indp-caps ul li {
+  position: relative;
+  padding-left: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.indp-caps ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--blue);
+  opacity: 0.55;
+}
+
+/* Use cases. */
+.indp-cases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.indp-cases li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px 28px 26px;
+  border-radius: 16px;
+  border-left: 3px solid var(--cyan);
+  background: var(--tint);
+}
+.indp-case-tag {
+  font-family: "Geist Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+/* Delivery approach: four steps on a rail. */
+.indp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+}
+.indp-steps li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.indp-steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 21px;
+  left: 54px;
+  right: -16px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(29, 111, 224, 0.45), rgba(29, 111, 224, 0.08));
+}
+.indp-step-n {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--blue);
+  background: #fff;
+  font-family: "Geist Mono", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.indp-svc-cap {
+  font-family: "Geist Mono", monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+/* ------------------------------------------------------------ the squeeze */
+
+@media (max-width: 1180px) {
+  .indp-caps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .indp-others {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .ind-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ind-cards > li,
+  .ind-cards > li:nth-child(-n + 2) {
+    grid-column: span 1;
+  }
+  .ind-cards > li:last-child {
+    grid-column: span 2;
+  }
+  .ind-card-lg {
+    min-height: 380px;
+  }
+
+  .indp-hero {
+    padding-top: 124px;
+  }
+  .indp-themes {
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 52px;
+  }
+  .indp-themes li,
+  .indp-themes li + li {
+    padding: 16px 16px 16px 0;
+    border-left: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .indp-themes li:last-child {
+    border-bottom: 0;
+    padding-bottom: 28px;
+  }
+
+  .indp-split,
+  .indp-help-head {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .indp-split .sec-head {
+    position: static;
+  }
+  .indp-help-points {
+    grid-template-columns: 1fr;
+    margin-top: 40px;
+  }
+  .indp-help-points li,
+  .indp-help-points li + li {
+    padding: 26px 0;
+    border-left: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .indp-help-points li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .indp-solutions {
+    grid-template-columns: 1fr 1fr;
+  }
+  .indp-solutions > li,
+  .indp-solutions > li:nth-child(n + 4) {
+    grid-column: span 1;
+  }
+  .indp-solutions > li:last-child {
+    grid-column: span 2;
+  }
+
+  .indp-caps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* The rail only reads left to right; stacked, the numbers carry the order. */
+  .indp-steps {
+    grid-template-columns: 1fr 1fr;
+    gap: 34px 28px;
+  }
+  .indp-steps li::after {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .ind-cards,
+  .indp-others {
+    grid-template-columns: 1fr;
+  }
+  .ind-cards > li:last-child {
+    grid-column: span 1;
+  }
+  .ind-card,
+  .ind-card-lg {
+    min-height: 300px;
+  }
+  .ind-card-body,
+  .ind-card-lg .ind-card-body {
+    padding: 22px 20px 20px;
+  }
+
+  .indp-hero {
+    padding-top: 112px;
+  }
+  .indp-hero-cta .btn {
+    width: 100%;
+  }
+  .indp-themes {
+    grid-template-columns: 1fr;
+  }
+
+  .indp-challenges,
+  .indp-solutions,
+  .indp-cases,
+  .indp-steps,
+  .indp-caps {
+    grid-template-columns: 1fr;
+  }
+  .indp-solutions > li:last-child {
+    grid-column: span 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ind-card,
+  .ind-card-media img,
+  .ind-card-go svg,
+  .indp-solutions > li {
+    transition: none;
+  }
+  .ind-card:hover,
+  .ind-card:focus-within,
+  .ind-card:hover .ind-card-media img,
+  .ind-card:focus-within .ind-card-media img {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------- solution "next step" link */
+
+.indp-sol-link {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--tint);
+  transition: background 0.18s;
+}
+.indp-sol-link-k {
+  font-family: "Geist Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.indp-sol-link-v {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 650;
+  color: var(--blue);
+}
+.indp-sol-link-v svg {
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.indp-sol-link:hover {
+  background: #e3ecfb;
+}
+.indp-sol-link:hover .indp-sol-link-v svg {
+  transform: translateX(3px);
+}
+.indp-sol-link:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------- proof and insights */
+
+.indp-proof {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.indp-proof + .indp-proof {
+  margin-top: 18px;
+}
+.indp-case-study {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+.indp-case-study h3 {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.indp-case-study p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.indp-insight {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+.indp-insight-media {
+  position: relative;
+  min-height: 170px;
+  background: var(--navy-2);
+}
+.indp-insight-media img {
+  object-fit: cover;
+}
+.indp-insight-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px 24px;
+}
+.indp-insight-body b {
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.indp-insight-body > span:last-child {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.indp-insight:hover {
+  border-color: rgba(29, 111, 224, 0.42);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px -26px rgba(10, 19, 34, 0.4);
+}
+.indp-insight:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+/* ----------------------------------------------------------- the hub page */
+
+.indh-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--navy);
+  color: #fff;
+  padding: 150px 0 64px;
+}
+.indh-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* The card band below continues on plain navy, so the glow is kept off the
+     bottom edge; otherwise the join shows as a hard line. */
+  background:
+    radial-gradient(900px 480px at 82% 0%, rgba(34, 199, 230, 0.13), transparent 60%),
+    radial-gradient(760px 420px at 8% 30%, rgba(29, 111, 224, 0.14), transparent 62%);
+}
+.indh-hero .wrap {
+  position: relative;
+  z-index: 1;
+}
+.indh-hero .art-crumbs {
+  color: rgba(255, 255, 255, 0.6);
+}
+.indh-hero .art-crumbs a {
+  color: rgba(255, 255, 255, 0.75);
+}
+.indh-hero .art-crumbs a:hover {
+  color: var(--cyan);
+}
+.indh-hero h1 {
+  max-width: 18ch;
+  margin-top: 20px;
+  font-size: clamp(36px, 5.4vw, 64px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+}
+.indh-hero h1 .g {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.indh-dek {
+  max-width: 60ch;
+  margin-top: 22px;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.78);
+}
+.indh-grid-band {
+  padding-top: 8px;
+}
+
+.indh-matrix {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+.indh-matrix article {
+  padding: 24px 20px 8px 0;
+}
+.indh-matrix article + article {
+  padding-left: 20px;
+  border-left: 1px solid var(--line);
+}
+.indh-matrix h3 {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.indh-matrix h3 a {
+  color: var(--ink);
+  transition: color 0.16s;
+}
+.indh-matrix h3 a:hover {
+  color: var(--blue);
+}
+.indh-matrix ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.indh-matrix li {
+  position: relative;
+  padding-left: 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.indh-matrix li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--blue);
+  opacity: 0.55;
+}
+
+@media (max-width: 1180px) {
+  .indh-matrix {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+  }
+  .indh-matrix article,
+  .indh-matrix article + article {
+    padding: 22px 20px 22px 0;
+    border-left: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 980px) {
+  .indp-proof {
+    grid-template-columns: 1fr;
+  }
+  .indh-hero {
+    padding-top: 124px;
+  }
+}
+
+@media (max-width: 680px) {
+  .indp-insight {
+    grid-template-columns: 1fr;
+  }
+  .indp-insight-media {
+    min-height: 160px;
+  }
+  .indh-hero {
+    padding: 112px 0 48px;
+  }
+  .indh-matrix {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indp-sol-link,
+  .indp-sol-link-v svg,
+  .indp-insight {
+    transition: none;
+  }
+  .indp-insight:hover {
+    transform: none;
+  }
+}
