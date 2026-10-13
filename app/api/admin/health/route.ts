@@ -114,6 +114,31 @@ export async function GET(request: Request): Promise<Response> {
       */
       blobToken: blobStorageConfigured(),
       /*
+        WHICH VARIABLES THE RUNNING FUNCTION CAN ACTUALLY SEE. Names and a
+        boolean only, never a value.
+
+        Added because BLOB_READ_WRITE_TOKEN reported absent while the Vercel
+        project held a valid 62-character token targeted at production, the
+        store was connected, and reading it dynamically changed nothing. At
+        that point the question stopped being "is this one variable set" and
+        became "which of them reach the runtime at all", and that cannot be
+        answered one variable per deploy.
+
+        Delete this field once the cause is found. A permanent inventory of
+        configured integrations is more than a health check needs to say.
+      */
+      envVisible: Object.fromEntries(
+        [
+          "DATABASE_URL",
+          "BLOB_READ_WRITE_TOKEN",
+          "RESEND_API_KEY",
+          "CONTACT_FROM",
+          "RECRUITING_TO",
+          "CRON_SECRET",
+          "NEXT_PUBLIC_SITE_URL",
+        ].map((name) => [name, Boolean(process.env[name])]),
+      ),
+      /*
         The same variable read the way it used to be, as a static member
         access. Kept for one release as evidence: if these two disagree, the
         bundler inlined the static one at build time and the runtime value was
