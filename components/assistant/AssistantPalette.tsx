@@ -9,7 +9,8 @@ import { ExpertForm } from "@/components/marketing/ExpertForm";
 /**
  * Whether the Ask AI assistant is offered anywhere on the site.
  *
- * OFF, by request. Every entry point reads this one value: the two buttons in
+ * ON. Switched off earlier and restored by request. Every entry point reads
+ * this one value: the two buttons in
  * MarketingHeader (desktop nav and mobile menu), the two on the homepage, and
  * the Ask AI item in the floating contact button. With it off, none of them
  * render and the palette is never mounted, so no assistant request can be made
@@ -24,7 +25,7 @@ import { ExpertForm } from "@/components/marketing/ExpertForm";
  * is not a security control, and the route has its own rate limiting; turning
  * off the UI is a product decision, not a lockdown.
  */
-export const ASSISTANT_ENABLED = false;
+export const ASSISTANT_ENABLED = true;
 
 export type AssistantPageContext =
   | { page: "home" | "about" | "careers" | "jobs" }
