@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NeonConfigError, connectionStringStatus, query } from "@/lib/neon/client";
 import { logServerError } from "@/lib/observability/logger";
+import { blobStorageConfigured } from "@/lib/storage/blob-token";
 
 // node:crypto for the constant-time secret comparison, and the Neon driver for
 // the probe. Neither exists on the edge runtime.
@@ -111,7 +112,14 @@ export async function GET(request: Request): Promise<Response> {
         function sees. A boolean here answers that in one request instead of a
         guess, and it is exactly the question the error asks.
       */
-      blobToken: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      blobToken: blobStorageConfigured(),
+      /*
+        The same variable read the way it used to be, as a static member
+        access. Kept for one release as evidence: if these two disagree, the
+        bundler inlined the static one at build time and the runtime value was
+        never the problem. Presence only, never the value.
+      */
+      blobTokenStaticRead: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
       latencyMs,
       checkedAt: new Date().toISOString(),
     });

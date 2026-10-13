@@ -29,6 +29,8 @@ import { randomUUID } from "node:crypto";
 
 import { del, put } from "@vercel/blob";
 
+import { blobStorageConfigured } from "@/lib/storage/blob-token";
+
 /**
  * 5MB. Comfortably above any real résumé and well under the Server Action body
  * limit configured in next.config.ts (12mb), so a file that passes this check
@@ -197,7 +199,7 @@ export async function uploadResume(
 
   // Validation runs first and unconditionally: a bad file is rejected the same
   // way locally as in production, rather than only once a token exists.
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!blobStorageConfigured()) {
     console.warn("[resume-storage]", {
       event: "blob-not-configured",
       detail: "BLOB_READ_WRITE_TOKEN is not set; application filed without a résumé URL.",

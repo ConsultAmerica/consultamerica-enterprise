@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+import { blobStorageConfigured } from "@/lib/storage/blob-token";
 import { issueSignedToken, presignUrl } from "@vercel/blob";
 
 import { type AdminSessionUser, getSessionUser } from "@/lib/neon/auth";
@@ -132,7 +134,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   // Without a token there is nothing to sign against, which is the local-dev
   // case. Say so plainly rather than redirecting to a URL that will 403.
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!blobStorageConfigured()) {
     return NextResponse.json(
       { error: "Resume storage is not configured in this environment (BLOB_READ_WRITE_TOKEN)." },
       { status: 503 },
