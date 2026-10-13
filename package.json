@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:show": "node --env-file=.env.local scripts/show-db.mjs",
-    "seed:jobs": "npx --yes tsx@4 --tsconfig tsconfig.json scripts/seed-jobs.mts"
+    "seed:jobs": "npx --yes tsx@4 --tsconfig tsconfig.json scripts/seed-jobs.mts",
+    "seed:hagerstown": "npx --yes tsx@4 --tsconfig tsconfig.json scripts/seed-hagerstown-roles.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.0",

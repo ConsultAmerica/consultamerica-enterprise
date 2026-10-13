@@ -45,12 +45,27 @@ export const PORTAL_CATEGORIES = [
   // Whole words only: "ai" must not match "maintain", "Airflow" or "detail".
   { id: "ai-ml", label: "AI / Machine Learning", test: /\bai\b|artificial intelligence|machine learning|\bllms?\b|\bgen ?ai\b|generative/i },
   { id: "oracle", label: "Oracle / ERP", test: /\boracle\b|\bfusion\b|\berp\b/i },
-  { id: "software", label: "Software Engineering", test: /software|full stack|frontend|backend|\bengineer(?:ing)?\b/i },
+  /*
+     NAMES A SOFTWARE ROLE, NOT ANY ROLE CONTAINING "ENGINEER". The bare
+     \bengineer\b used to be in here, which meant Data Engineer, Automation
+     Test Engineer and every other engineer landed in Software Engineering as
+     well as their real category. A filter that returns most of the board is
+     not a filter, and a candidate clicking "Software Engineering" to find
+     developer jobs should not get the data and QA postings too. */
+  { id: "software", label: "Software Engineering", test: /software (?:developer|engineer)|full ?stack|front ?end|back ?end|web developer|application developer|\bsde\b/i },
   { id: "data", label: "Data & Analytics", test: /\bdata\b|analytics|warehouse/i },
-  { id: "cloud", label: "Cloud / DevOps", test: /cloud|devops|kubernetes|platform engineer/i },
+  /*
+     A CLOUD ROLE, NOT A PRODUCT WITH "CLOUD" IN ITS NAME. Bare /cloud/ put
+     "Oracle SCM Cloud Consultant" and "Oracle Fusion Cloud ERP" under
+     Cloud / DevOps, which is an infrastructure category and not where an ERP
+     consultant belongs. Oracle names half its suite "Cloud". */
+  { id: "cloud", label: "Cloud / DevOps", test: /cloud (?:engineer|architect|platform|infrastructure|ops)|devops|kubernetes|site reliability|\bsre\b|platform engineer/i },
   { id: "security", label: "Cybersecurity", test: /cyber|security engineer/i },
   { id: "pm", label: "Project / Program Management", test: /project|program manager|pmo/i },
-  { id: "ba", label: "Business Analysis", test: /business analyst|business analysis/i },
+  /* Systems analyst sits here too: the work is requirements, process and
+     specification, which is what this category means, and it otherwise had
+     nowhere to go. */
+  { id: "ba", label: "Business Analysis", test: /business analyst|business analysis|systems analyst/i },
   { id: "qa", label: "QA / Testing", test: /\bqa\b|test engineer|test automation|\btesting\b|quality assurance/i },
   { id: "consulting", label: "Consulting", test: /\bconsultant\b|\bconsulting\b/i },
   { id: "crm", label: "CRM", test: /\bcrm\b|clientflow/i },

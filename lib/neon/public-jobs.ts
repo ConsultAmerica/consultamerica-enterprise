@@ -124,7 +124,21 @@ export function toPublicJob(row: JobRow, now: Date = new Date()): Job {
   const summary = summarise(row.description);
   // Same text the Supabase-backed mapping classified on (title, department,
   // summary), so categories and skills stay comparable across both sources.
-  const classifiable = `${row.title} ${row.department} ${summary}`;
+  /*
+    TITLE AND DEPARTMENT ONLY, NOT THE DESCRIPTION.
+
+    The summary used to be in here and it classified jobs by what they
+    MENTION rather than what they ARE. "Computer Systems Analyst" came out as
+    CRM and Operations, because its preferred qualifications name ERP and CRM
+    systems and its opening line says "business operations". "Software
+    Developer" came out as Business Analysis, because it says you will work
+    with business analysts.
+
+    A job description necessarily names the tools nearby, the people you sit
+    with and the systems you touch. The title is the only part that states
+    what the role is.
+  */
+  const classifiable = `${row.title} ${row.department}`;
 
   return {
     id: row.id,
