@@ -8,6 +8,7 @@ import { serviceHref } from "@/data/services";
 
 export const metadata: Metadata = {
   title: "Capabilities",
+  alternates: { canonical: "/capabilities" },
   description:
     "Engineering, AI and data, Oracle, enterprise transformation and managed services — and every service line underneath them.",
 };

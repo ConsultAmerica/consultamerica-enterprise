@@ -182,7 +182,7 @@ export function MarketingHeader({ solid = true, assistantContext = { page: "abou
       {ASSISTANT_ENABLED ? (
         <AssistantPalette open={askOpen} onClose={closeAsk} context={assistantContext} />
       ) : null}
-      <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} />
+      <ExpertForm open={expertOpen} onClose={() => setExpertOpen(false)} sourcePath={pathname ?? undefined} />
     </>
   );
 }

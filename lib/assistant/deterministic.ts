@@ -16,6 +16,7 @@
  * gap and handing over what IS known, never by filling it in.
  */
 
+import { industryHref } from "@/data/industries";
 import { INDUSTRIES } from "@/data/marketing";
 import { SERVICES } from "@/data/services";
 import type {
@@ -500,7 +501,7 @@ function answerIndustry(
       ]),
       `${headline}: ${lowerFirst(body)}`,
     ),
-    [{ label: "Industries", href: "/#industries" }, TALK_TO_EXPERT],
+    [{ label: name, href: industryHref(name) }, TALK_TO_EXPERT],
   );
 }
 
