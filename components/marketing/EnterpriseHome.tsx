@@ -321,7 +321,7 @@ export function EnterpriseHome() {
             ["Commerce", [ii(4)]],
           ]}
           feature={{
-            img: "/img/industries/supply-chain.jpg",
+            img: "/img/industries/supply-chain-tile.jpg",
             label: "Industries",
             title: "All industries",
             desc: "Five sectors, each with its challenges, solutions and how we deliver.",

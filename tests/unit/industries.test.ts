@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -75,6 +75,17 @@ describe("industry pages", () => {
       for (const c of industry.caseStudies) {
         expect(c.approvedBy.trim(), c.title).not.toBe("");
         expect(c.outcomes.length, c.title).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("ships every image the nav panels and homepage reference", () => {
+    // The mega panels set these as CSS backgrounds, so nothing else would
+    // notice a missing file: the tile would just render blank on every page.
+    for (const file of ["components/marketing/PrimaryNav.tsx", "components/marketing/EnterpriseHome.tsx"]) {
+      const source = readFileSync(path.join(process.cwd(), file), "utf8");
+      for (const [, src] of source.matchAll(/["'](\/img\/[^"'?]+\.(?:jpe?g|png|svg|webp))/g)) {
+        expect(existsSync(path.join(process.cwd(), "public", src)), `${file}: ${src}`).toBe(true);
       }
     }
   });

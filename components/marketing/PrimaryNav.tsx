@@ -195,7 +195,7 @@ export function NavMegaPanel({ mega, base = "" }: { mega: keyof typeof MEGA_IDS;
           ["Commerce", [ii(4)]],
         ]}
         feature={{
-          img: "/img/industries/supply-chain.jpg",
+          img: "/img/industries/supply-chain-tile.jpg",
           label: "Industries",
           title: "All industries",
           desc: "Five sectors, each with its challenges, solutions and how we deliver.",
