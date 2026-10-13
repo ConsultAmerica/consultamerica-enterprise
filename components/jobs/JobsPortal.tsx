@@ -389,13 +389,19 @@ export function JobsPortal({
           ) : (
             jobs.map((job) => {
               const active = selectedJob?.id === job.id;
-              const category = job.categories[0];
               const body = (
                 <>
-                  {job.isNew || category ? (
+                  {/*
+                    NEW only. The category chip used to sit here, above the
+                    title, and it was the first thing read on every card: a
+                    taxonomy label competing with the job's own name. The
+                    category is still how the left rail filters, which is where
+                    a category belongs, as a way to narrow a list rather than a
+                    label stuck on each result.
+                  */}
+                  {job.isNew ? (
                     <div className="jc-top">
-                      {job.isNew ? <span className="new">NEW</span> : null}
-                      {category ? <span className="jc-cat">{category.label}</span> : null}
+                      <span className="new">NEW</span>
                     </div>
                   ) : null}
                   <h3>{job.title}</h3>

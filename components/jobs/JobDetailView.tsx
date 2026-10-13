@@ -287,11 +287,12 @@ export function JobDetailView({ job, compact = false, related = [], panelExtra }
           <li key={label}>{label}</li>
         ))}
         <li>{job.employmentType}</li>
-        {job.categories.slice(0, 2).map((category) => (
-          <li key={category.id} className="jd-tag-cat">
-            {category.label}
-          </li>
-        ))}
+        {/*
+          Categories removed from this row. It describes the role in facts a
+          candidate is deciding on, location, arrangement, employment type, and
+          a taxonomy label is not one of those: it is how the portal files the
+          job, not something the reader needs told twice next to the title.
+        */}
       </ul>
     </header>
   );

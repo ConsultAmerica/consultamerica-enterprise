@@ -725,10 +725,14 @@ export function EnterpriseHome() {
               <TalentPoint>Embedded squads or direct-hire placement</TalentPoint>
               <TalentPoint>Vetted for the modern enterprise stack</TalentPoint>
             </ul>
+            {/*
+              "Hire through Consult America" removed by request. Join our team
+              is now the only action here, and it keeps its own styling rather
+              than inheriting the primary slot: this section is about the
+              talent practice, and the one thing a reader should be able to do
+              from it is look at the open roles.
+            */}
             <div className="talent-actions">
-              <a href="#contact" className="btn btn-dark">
-                Hire through Consult America {ARROW_BTN}
-              </a>
               <Link href="/careers" className="btn btn-outline" style={{ background: "#fff", borderColor: "var(--line)", color: "var(--ink)" }}>
                 Join our team
               </Link>
