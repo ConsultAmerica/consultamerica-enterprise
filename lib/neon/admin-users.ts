@@ -50,9 +50,24 @@ import { UNIQUE_VIOLATION, isPgError, isUuid, query } from "@/lib/neon/client";
  */
 export const BCRYPT_COST = 12;
 
-/** Matches the brief's reset-form rule. Enforced here too, so no caller can
- *  write a short password by skipping the form. */
-export const MIN_PASSWORD_LENGTH = 12;
+/**
+ * Minimum admin password length.
+ *
+ * Enforced here rather than only on the form, so no caller can write a short
+ * password by skipping the UI: setPassword throws WeakPasswordError, and the
+ * reset page, the reset action and the on-screen copy all read this constant
+ * rather than repeating the number.
+ *
+ * Lowered from 12 to 10 by request. It is a real relaxation and worth being
+ * honest about: every character removed divides the search space, so 10 is
+ * weaker than 12 against an attacker who has the hashes. Two things carry the
+ * difference. bcrypt at cost 12 makes each guess cost roughly 300ms, which is
+ * what turns an offline list into an impractical one, and sign-in is rate
+ * limited. It also now matches MIN_PASSWORD_LENGTH in
+ * lib/candidate-portal/activation.ts, which was already 10, so the product
+ * stops asking two groups of people for two different rules.
+ */
+export const MIN_PASSWORD_LENGTH = 10;
 
 /**
  * A real bcrypt hash of a random throwaway string that was never recorded. It

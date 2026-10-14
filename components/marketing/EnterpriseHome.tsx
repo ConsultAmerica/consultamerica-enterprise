@@ -12,6 +12,7 @@ import {
 
 import {
   CAPS,
+  capabilityAnchor,
   CLIENTS,
   COUNTERS,
   ECO,
@@ -581,22 +582,32 @@ export function EnterpriseHome() {
               ))}
             </div>
             <div className="cap-list" id="capList">
+              {/*
+                A LINK, NOT A BUTTON. These used to be buttons whose only job
+                was swapping the image beside them, so a visitor who read a
+                capability, decided it was the one they wanted, and clicked it
+                got nothing at all. Hover and focus still drive the image; the
+                click now goes where the click was always going to be aimed.
+
+                Each lands on that capability's own section of /capabilities
+                rather than the top of the page, so the thing they clicked is
+                the thing they see.
+              */}
               {CAPS.map(([title, desc], i) => (
-                <button
+                <Link
                   key={title}
-                  type="button"
+                  href={`/capabilities#${capabilityAnchor(title)}`}
                   className={`cap-row${i === capSel ? " active" : ""}`}
                   data-i={i}
                   onMouseEnter={() => setCapSel(i)}
                   onFocus={() => setCapSel(i)}
-                  onClick={() => setCapSel(i)}
                 >
                   <div className="st">
                     <h3>{title}</h3>
                     <span className="nub">0{i + 1}</span>
                   </div>
                   <div className="sd">{desc}</div>
-                </button>
+                </Link>
               ))}
             </div>
           </div>

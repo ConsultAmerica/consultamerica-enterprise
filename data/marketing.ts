@@ -95,14 +95,26 @@ export const ECO = [
   ["Security & governance", "Controls · auditability"],
 ] as const;
 
-// Real, published contact details, taken from consultamerica.net. hr@ is the
-// address the company publishes itself — do not swap in a guessed inbox.
+// Real, published contact details. Every address here is one the company
+// actually operates: never substitute a guessed inbox, and never invent a
+// pattern like info@ or hello@ because it looks tidy.
+//
+// All on consultamerica.com, which is the domain the site runs on. The general
+// address used to be hr@consultamerica.net, a department inbox on the other
+// domain, which meant a visitor with a general enquiry wrote to HR.
 export const CONTACT = {
   country: "United States",
-  email: "hr@consultamerica.net",
-  // Where "Talk to an expert" submissions land. Separate from `email` (which is
-  // the general/careers address) because enquiries go to a different inbox.
-  // CONTACT_TO in the environment still overrides this at send time.
+  // The general address, used by the "General contact" item in the floating
+  // contact button and by the footer. Was hr@consultamerica.net: a department
+  // inbox on the .net domain, offered to anyone with a general enquiry. It is
+  // now contact@ on .com, which is the domain the site actually runs on and
+  // the one every other address in this block uses.
+  email: "contact@consultamerica.com",
+  // Where "Talk to an expert" submissions land. The same address as `email`
+  // today, kept as a separate field because the two are different questions:
+  // one is "who do we publish" and the other is "where does the form deliver",
+  // and routing enquiries elsewhere later should not mean editing every
+  // mailto on the site. CONTACT_TO still overrides this at send time.
   enquiries: "contact@consultamerica.com",
   // Where job applications land. On the .com domain, so it shares the Zoho
   // mailbox family with contact@ rather than sitting in the Microsoft 365
@@ -184,3 +196,20 @@ export const IND_ICONS = [
   "/img/sectors/publicsector.png",
   "/img/sectors/retail.png",
 ];
+
+/**
+ * The anchor a capability section uses on /capabilities, and the target the
+ * home page's capability rail links to.
+ *
+ * Derived from the title rather than stored beside it. CAPS is the single
+ * source for these five names, and a parallel list of slugs is the kind of
+ * thing that drifts the first time a name changes: "Oracle Cloud" became
+ * "Oracle" once already.
+ */
+export function capabilityAnchor(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}

@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
-import { CAPS, CAP_ICONS, CAP_SERVICES } from "@/data/marketing";
+import { CAPS, CAP_ICONS, CAP_SERVICES, capabilityAnchor } from "@/data/marketing";
 import { serviceHref } from "@/data/services";
 
 export const metadata: Metadata = {
@@ -78,7 +78,18 @@ export default function CapabilitiesPage() {
         {CAPS.map(([title, blurb], i) => {
           const services = CAP_SERVICES[i] ?? [];
           return (
-            <section className={`band${i % 2 === 1 ? " tintbg" : ""}`} key={title}>
+            /*
+              An id per capability, so the home page's capability rail can link
+              straight to the one a visitor clicked rather than dropping them at
+              the top of a five-section page to find it again. Derived from the
+              title rather than stored separately: CAPS is the single source for
+              these names and a hand-maintained slug list would drift from it.
+            */
+            <section
+              className={`band${i % 2 === 1 ? " tintbg" : ""}`}
+              key={title}
+              id={capabilityAnchor(title)}
+            >
               <div className="wrap">
                 <div className="cap-area">
                   <div className="cap-area-head">
