@@ -217,7 +217,17 @@ export function AssistantPalette({ open, onClose, context }: AssistantPalettePro
                 {turn.content}
               </div>
             ) : (
-              <AnswerBlock key={index} reply={turn.data} onNavigate={onClose} onTalkToExpert={talkToExpert} />
+              <AnswerBlock
+                key={index}
+                reply={turn.data}
+                onNavigate={onClose}
+                onTalkToExpert={talkToExpert}
+                /* Only the newest answer types. Replaying the animation on
+                   every earlier answer each time the list re-renders would
+                   make the panel look like it is thinking again about things
+                   it already said. */
+                animate={index === turns.length - 1}
+              />
             ),
           )}
           {pending ? <div className="cmdk-answer cmdk-pending">Looking that up…</div> : null}
@@ -247,13 +257,122 @@ export function AssistantPalette({ open, onClose, context }: AssistantPalettePro
   );
 }
 
-function AnswerBlock({ reply, onNavigate, onTalkToExpert }: { reply: Reply; onNavigate: () => void; onTalkToExpert: () => void }) {
+/**
+ * Reveals an answer a word at a time.
+ *
+ * WORD BY WORD, NOT CHARACTER BY CHARACTER. A per-character typewriter is the
+ * obvious implementation and the wrong one to read: at any speed fast enough
+ * not to be irritating the text jitters, and the eye cannot settle because the
+ * word it is trying to read keeps changing shape. Revealing whole words lets
+ * the reader actually read while it types, which is the point, and the line
+ * never reflows mid-word.
+ *
+ * THE DELAY IS NOT CONSTANT. A flat interval reads mechanically. A short pause
+ * after a comma and a longer one after a full stop is how the sentence sounds
+ * in your head, and it costs one lookup per word.
+ *
+ * ACCESSIBILITY IS WHY THE CALLER SPLITS THE TEXT IN TWO. An aria-live region
+ * holding animated text re-announces on every single tick, which is unusable.
+ * The caller renders the full answer once in a visually hidden live region and
+ * marks the animated copy aria-hidden, so a screen reader hears the answer
+ * properly and a sighted reader watches it arrive.
+ *
+ * RESPECTS prefers-reduced-motion by returning the whole string immediately.
+ * Someone who has asked their system for less movement is not asking for a
+ * slower version of the movement.
+ */
+function useTypewriter(text: string, enabled: boolean) {
+  const [shown, setShown] = useState(enabled ? "" : text);
+  const [done, setDone] = useState(!enabled);
+
+  useEffect(() => {
+    if (!enabled) {
+      setShown(text);
+      setDone(true);
+      return;
+    }
+
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setShown(text);
+      setDone(true);
+      return;
+    }
+
+    // Split on spaces but keep them, so rebuilding the prefix is a join and the
+    // spacing of the original is preserved exactly.
+    const parts = text.split(/(\s+)/);
+    let i = 0;
+    let timer: number;
+
+    const step = () => {
+      i += 1;
+      setShown(parts.slice(0, i).join(""));
+      if (i >= parts.length) {
+        setDone(true);
+        return;
+      }
+      const word = parts[i - 1] ?? "";
+      const pause = /[.!?]$/.test(word) ? 170 : /[,;:]$/.test(word) ? 90 : 26;
+      timer = window.setTimeout(step, pause);
+    };
+
+    timer = window.setTimeout(step, 90);
+    return () => window.clearTimeout(timer);
+  }, [text, enabled]);
+
+  /** Lets a reader who does not want to wait end it with one click. */
+  const finish = () => {
+    setShown(text);
+    setDone(true);
+  };
+
+  return { shown, done, finish };
+}
+
+function AnswerBlock({
+  reply,
+  onNavigate,
+  onTalkToExpert,
+  animate = true,
+}: {
+  reply: Reply;
+  onNavigate: () => void;
+  onTalkToExpert: () => void;
+  /** Off for every turn except the newest: older answers are already read. */
+  animate?: boolean;
+}) {
   const jobs = reply.jobs ?? [];
   const links = reply.links ?? [];
   const grounding = (reply.grounding ?? []).map((g) => GROUNDING_LABEL[g]).filter(Boolean);
+  const { shown, done, finish } = useTypewriter(reply.reply, animate);
+
   return (
     <div className="cmdk-answer">
-      <p className="cmdk-reply">{reply.reply}</p>
+      {/*
+        The answer in full, for assistive technology only, announced once. The
+        visible copy below is aria-hidden so a screen reader is not read the
+        same sentence growing one word at a time.
+      */}
+      <p className="sr-only">{reply.reply}</p>
+      <p
+        className={`cmdk-reply${done ? "" : " is-typing"}`}
+        aria-hidden
+        onClick={done ? undefined : finish}
+        title={done ? undefined : "Click to show the full answer"}
+      >
+        {shown}
+      </p>
+      {/*
+        Everything below waits for the sentence to finish. Jobs and links
+        appearing while the answer is still arriving makes the panel jump under
+        the reader's eye, which is the thing that makes a typewriter feel cheap
+        rather than considered.
+      */}
+      {!done ? null : (
+      <>
       {jobs.length ? (
         <ul className="cmdk-jobs">
           {jobs.map((job) => (
@@ -303,6 +422,8 @@ function AnswerBlock({ reply, onNavigate, onTalkToExpert }: { reply: Reply; onNa
         </div>
       ) : null}
       {grounding.length ? <p className="cmdk-grounding">Based on {grounding.join(" and ")}.</p> : null}
+      </>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { CAPABILITIES, PHASES, WHY } from "@/components/marketing/company-copy";
+import { CONTACT } from "@/data/marketing";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 
@@ -151,7 +152,7 @@ export default function AboutPage() {
               legacy systems to AI in production — and the team to get you there.
             </p>
             <div className="cta-actions">
-              <a href="mailto:info@consultamerica.com" className="btn btn-primary">
+              <a href={`mailto:${CONTACT.email}`} className="btn btn-primary">
                 Talk to an expert
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M5 12h14M13 6l6 6-6 6" />

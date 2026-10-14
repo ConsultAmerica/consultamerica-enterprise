@@ -7757,3 +7757,40 @@ ul.adm-steps {
   letter-spacing: 0.01em;
   color: var(--ink-3);
 }
+
+/* The assistant's answer while it is still arriving.
+
+   A caret, and nothing else. No fade on each word, no slide: the text is
+   already moving, and a second animation on top of it is what turns a
+   typewriter from calm into busy. The caret is the one thing that says "still
+   going" without competing with the words. */
+.cmdk-reply.is-typing::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: currentColor;
+  opacity: 0.7;
+  animation: cmdk-caret 1s steps(1, end) infinite;
+}
+
+@keyframes cmdk-caret {
+  0%, 50% { opacity: 0.7; }
+  51%, 100% { opacity: 0; }
+}
+
+/* It can be ended early with a click, so it should look clickable. */
+.cmdk-reply.is-typing {
+  cursor: pointer;
+}
+
+/* The caret is decoration and carries nothing a reader needs. Someone who has
+   asked for less movement gets the answer with no blinking at all. */
+@media (prefers-reduced-motion: reduce) {
+  .cmdk-reply.is-typing::after {
+    animation: none;
+    opacity: 0.7;
+  }
+}

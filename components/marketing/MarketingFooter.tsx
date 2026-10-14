@@ -95,7 +95,7 @@ export function MarketingFooter() {
                 <circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none" />
               </svg>
             </a>
-            <a href="mailto:info@consultamerica.com" aria-label="Email">
+            <a href={`mailto:${CONTACT.email}`} aria-label="Email">
               <svg
                 width="19"
                 height="19"
