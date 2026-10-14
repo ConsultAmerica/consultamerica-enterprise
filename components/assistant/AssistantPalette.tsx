@@ -53,21 +53,37 @@ type Reply = {
 
 type Turn = { role: "user"; content: string } | { role: "assistant"; content: string; data: Reply };
 
-const SUGGESTIONS: Record<"home" | "careers" | "job", string[]> = {
+/**
+ * Starter prompts, as chips rather than rows.
+ *
+ * SHORT ON PURPOSE. These used to be full questions, five of them, each in its
+ * own row with an icon and a chevron: a list to read before you could type.
+ * A chip is scanned, not read, so the label has to work at two or three words
+ * and the question it actually asks is the `ask` string. "Offices" is instantly
+ * understood; "Where are your offices?" has to be read to the end.
+ *
+ * FOUR, NOT FIVE. Four chips wrap into two tidy rows at this width and leave
+ * the input as the obvious thing to use. Five made the panel a menu.
+ */
+const SUGGESTIONS: Record<"home" | "careers" | "job", { label: string; ask: string }[]> = {
   home: [
-    "What does Consult America do?",
-    "Do you work with Oracle Cloud?",
-    "Where are your offices?",
-    "What jobs are open?",
-    "Can I book a call with an expert?",
+    { label: "What you do", ask: "What does Consult America do?" },
+    { label: "Oracle work", ask: "Do you work with Oracle Cloud?" },
+    { label: "Open roles", ask: "What jobs are open?" },
+    { label: "Talk to an expert", ask: "Can I book a call with an expert?" },
   ],
   careers: [
-    "What jobs are open?",
-    "Do you have remote roles?",
-    "How does your hiring process work?",
-    "How do I apply?",
+    { label: "Open roles", ask: "What jobs are open?" },
+    { label: "Remote work", ask: "Do you have remote roles?" },
+    { label: "Hiring process", ask: "How does your hiring process work?" },
+    { label: "How to apply", ask: "How do I apply?" },
   ],
-  job: ["What skills does this role require?", "Is this position hybrid?", "Where is this role located?", "How do I apply?"],
+  job: [
+    { label: "Skills needed", ask: "What skills does this role require?" },
+    { label: "Hybrid?", ask: "Is this position hybrid?" },
+    { label: "Location", ask: "Where is this role located?" },
+    { label: "How to apply", ask: "How do I apply?" },
+  ],
 };
 
 const GROUNDING_LABEL: Record<string, string> = {
@@ -233,16 +249,37 @@ export function AssistantPalette({ open, onClose, context }: AssistantPalettePro
           {pending ? <div className="cmdk-answer cmdk-pending">Looking that up…</div> : null}
 
           {!pending ? (
-            <>
-              <div className="cmdk-label">{turns.length ? "Keep exploring" : "Suggested"}</div>
-              {suggestions.map((q) => (
-                <button key={q} type="button" className="cmdk-item" onClick={() => void ask(q)}>
-                  <span className="ico">{SEARCH_ICO}</span>
-                  {q}
-                  <span className="arr">{SARR}</span>
-                </button>
-              ))}
-            </>
+            <div className="cmdk-chips">
+              {/*
+                Chips, not rows. Five full questions each in their own row, with
+                a magnifier and a chevron on every one, made this read as search
+                results: a list to work through before you could type. The
+                chevrons said nothing the clickable row did not already say, and
+                the same icon five times is repetition carrying no information.
+
+                The group is labelled for assistive technology rather than with
+                a "SUGGESTED" heading on screen. A section header is for a page
+                with several sections, and this has one.
+              */}
+              <span className="sr-only" id="cmdk-chips-label">
+                {turns.length ? "More questions you can ask" : "Questions you can ask"}
+              </span>
+              <div className="cmdk-chip-row" role="group" aria-labelledby="cmdk-chips-label">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.ask}
+                    type="button"
+                    className="cmdk-chip"
+                    onClick={() => void ask(s.ask)}
+                    /* The chip is short so it can be scanned; the title carries
+                       the question it will actually send. */
+                    title={s.ask}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : null}
         </div>
 

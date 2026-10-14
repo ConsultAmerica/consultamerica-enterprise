@@ -7794,3 +7794,110 @@ ul.adm-steps {
     opacity: 0.7;
   }
 }
+
+/* =========================================================================
+   Ask AI palette, rebuilt.
+
+   The problem was that it looked like a search palette and behaved like a
+   conversation. Five full questions, each in its own row with a magnifier and
+   a chevron, read as search results you had to work through before you could
+   type. The chevrons repeated what a clickable row already says, and the same
+   icon five times is repetition carrying no information.
+
+   What changed: the starter prompts are short chips, scanned rather than read;
+   the input is the obvious thing to use; the panel is quieter at rest.
+   ========================================================================= */
+
+.cmdk-chips {
+  padding: 14px 12px 6px;
+}
+
+.cmdk-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* A chip is a suggestion, not a command. Transparent at rest with a hairline
+   border, so four of them read as one quiet group rather than four buttons
+   competing with the input above. */
+.cmdk-chip {
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--adm-ease, ease),
+    border-color 0.15s var(--adm-ease, ease),
+    color 0.15s var(--adm-ease, ease);
+}
+
+.cmdk-chip:hover {
+  background: rgba(34, 199, 230, 0.1);
+  border-color: rgba(34, 199, 230, 0.4);
+  color: #fff;
+}
+
+.cmdk-chip:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* The input, given the room it should have had. It is the thing the panel is
+   for, and it was previously the same weight as five rows beneath it. */
+.cmdk-input-row {
+  padding: 20px 18px;
+}
+
+.cmdk-input-row input {
+  font-size: 17px;
+}
+
+/* The Esc chip recedes until it is wanted. It is an exit, not an action, and
+   at full contrast it competed with the placeholder for the eye. */
+.cmdk-input-row kbd,
+.cmdk-esc {
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.cmdk-panel:hover .cmdk-input-row kbd,
+.cmdk-panel:hover .cmdk-esc {
+  opacity: 1;
+}
+
+/* One line, left aligned. The footer used to carry a disclaimer on the left and
+   a monospace brand mark on the right, which is two things asking to be read at
+   the bottom of a panel nobody came to read the bottom of. */
+.cmdk-foot .mono {
+  display: none;
+}
+
+.cmdk-foot {
+  justify-content: flex-start;
+  font-size: 11px;
+}
+
+/* An answer should look like someone said it. The reply used to sit flush with
+   everything else, so a conversation read as a document. */
+.cmdk-answer {
+  padding: 4px 12px 10px;
+}
+
+.cmdk-user {
+  margin: 10px 12px 2px;
+  padding: 9px 13px;
+  border-radius: 12px 12px 4px 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-size: 14.5px;
+  align-self: flex-end;
+  max-width: 85%;
+  margin-left: auto;
+}
