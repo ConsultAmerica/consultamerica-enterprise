@@ -6352,10 +6352,31 @@ ul.adm-steps {
   justify-content: space-between;
 }
 
-/* The menu opens upward, because the trigger is at the bottom of the screen. */
+/* The menu opens UPWARD AND TO THE RIGHT, because the trigger sits at the
+   bottom of a narrow left rail.
+
+   .nv-menu is right-anchored and 252px wide, which was correct when it hung off
+   the right end of a top bar. Inherited unchanged into a 236px rail it ran off
+   the left edge of the screen and clipped the account name, the email address
+   and the Access level row. Anchoring left and allowing it to exceed the rail's
+   width lets it open over the page instead of off it. */
 .sb-foot .nv-menu {
   top: auto;
   bottom: calc(100% + 8px);
+  left: 0;
+  right: auto;
+  width: max(252px, 100%);
+}
+
+/* It grows rightwards over the content, so it opens from the bottom-left
+   corner rather than sliding down from above. */
+.sb-foot .nv-menu {
+  animation: sb-menu-open 0.15s var(--ws-ease, ease) both;
+}
+
+@keyframes sb-menu-open {
+  from { opacity: 0; transform: translateY(5px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ----------------------------------------------------------- the workspace */

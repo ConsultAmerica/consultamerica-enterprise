@@ -683,9 +683,13 @@ export function EnterpriseHome() {
               <div className="l">monitored, in managed service</div>
             </div>
           </div>
-          <a href="#" className="arrowlink rm" style={{ color: "#fff" }}>
-            Read the scenario {ARR_ICON}
-          </a>
+          {/*
+            REMOVED: "Read the scenario", which pointed at href="#" and did
+            nothing. There is no scenario page to send anyone to, and a link
+            that reloads the page is worse than no link: it reads as broken
+            rather than as absent. The figures above already carry the story
+            this section is telling.
+          */}
         </div>
       </section>
 

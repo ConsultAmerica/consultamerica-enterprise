@@ -68,7 +68,6 @@ export default async function AdminLoginPage({ searchParams }: Props) {
         <div className="wrap login-page">
           <p className="apply-eyebrow">Consult America</p>
           <h1>Recruitment admin</h1>
-          <p className="login-lead">Sign in with your Consult America admin account.</p>
           <div className="apply-panel">
             <form action={signIn} className="login-form" noValidate>
               {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
