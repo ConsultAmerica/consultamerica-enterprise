@@ -64,8 +64,8 @@ export const INDUSTRIES = [
 
 export const PROD = [
   ["ConsultHire", "AI interview hiring", "https://consulthire.vercel.app/", "/img/products/consulthire.svg"],
-  ["Data Agent", "Contract intelligence", "https://data-agent-ca.vercel.app/", "/img/products/data-agent.png"],
-  ["MediGuide AI", "Healthcare AI", "https://mediguide-ai-woad.vercel.app/", "/img/products/mediguide.png"],
+  ["Data Agent", "Contract intelligence", "https://data-agent-ca.vercel.app/", "/img/products/data-agent.svg"],
+  ["MediGuide AI", "Healthcare AI", "https://mediguide-ai-woad.vercel.app/", "/img/products/mediguide.svg"],
   ["ImportNest", "AI shopping", "https://importnest.com/", "/img/products/importnest.png"],
   ["SmartWrite AI", "Writing assistant", "https://smartwrite-tau.vercel.app/", "/img/products/smartwrite.png"],
   ["JobLens", "Resume & jobs", "https://joblens-lime-three.vercel.app/", "/img/products/joblens.png"],

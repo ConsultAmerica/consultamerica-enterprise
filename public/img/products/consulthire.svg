@@ -1,13 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="ConsultHire">
-  <defs>
-    <linearGradient id="ch-c" x1="14" y1="12" x2="50" y2="51" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#5AA2F7"/>
-      <stop offset="1" stop-color="#1D6FE0"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="#101B33"/>
-  <!-- squared C bracket, opening to the right -->
-  <path d="M14 12h36v9H25v22h25v9H14Z" fill="url(#ch-c)"/>
-  <!-- H seated in the C's counter -->
-  <path d="M29 21h6v8h7v-8h6v21h-6v-8h-7v8h-6Z" fill="#fff"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0f1a35"/><g transform="translate(14 13) scale(.1607)"><path fill="#93c5fd" d="M0 88 64 56v154L0 242z"/><path fill="#3b82f6" d="M64 132 160 84v56L64 188z"/><path fill="#1d4ed8" d="M160 32 224 0v154l-64 32z"/></g></svg>
