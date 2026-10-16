@@ -79,6 +79,17 @@ export const PROD = [
   // EnterpriseHome), so inserting mid-array silently repoints every column.
 ] as const;
 
+/**
+ * Products that are built but not yet launched: shown in the Products menu
+ * with their logo and a disabled "Coming soon" state, never as a link. When
+ * one launches, move it into PROD with its URL.
+ */
+export const PROD_SOON = [
+  ["DialogHarbrix", "AI engagement agent", "/img/products/dialogharbrix.png"],
+  ["PayerRuleAtlas", "Benefit configuration QA", "/img/products/payer-rule-atlas.svg"],
+  ["FundsBaba", "Small-business funding", "/img/products/fundsbaba.svg"],
+] as const;
+
 export const COUNTERS = [
   ["6", "–10 wks", "to first production workload"],
   ["40", "%", "faster financial close, representative"],

@@ -29,7 +29,7 @@ import { INSIGHTS } from "@/data/insights";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { CONTACT_CTA, PRIMARY_NAV, navHref, type MegaKey } from "@/components/marketing/nav-config";
 import { MobileNavLinks, useMobileMenuEscape } from "@/components/marketing/SiteNav";
-import { CapabilitiesMegaPanel } from "@/components/marketing/PrimaryNav";
+import { CapabilitiesMegaPanel, ComingSoon } from "@/components/marketing/PrimaryNav";
 
 const MENU_TOGGLE_ID = "navToggle";
 
@@ -164,9 +164,12 @@ function MegaFeature({
 function MegaPanel({
   groups,
   feature,
+  tail,
 }: {
   groups: [string, [string, string, string, string][]][];
   feature: { img: string; label: string; title: string; desc: string; href: string };
+  /** Rendered under the feature card, e.g. <ComingSoon />. */
+  tail?: ReactNode;
 }) {
   return (
     <div className="mega-inner">
@@ -178,7 +181,14 @@ function MegaPanel({
           ))}
         </div>
       ))}
-      <MegaFeature {...feature} />
+      {tail ? (
+        <div className="mega-side">
+          <MegaFeature {...feature} />
+          {tail}
+        </div>
+      ) : (
+        <MegaFeature {...feature} />
+      )}
     </div>
   );
 }
@@ -340,6 +350,7 @@ export function EnterpriseHome() {
             ["Commerce & retail", [pi(6), pi(10), pi(3), pi(7), pi(9)]],
             ["Platforms", [pi(0), pi(8), pi(11)]],
           ]}
+          tail={<ComingSoon />}
           feature={{
             img: "/img/ai.jpg",
             label: "Built by Consult America",

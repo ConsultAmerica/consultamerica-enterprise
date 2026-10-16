@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
-import { CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD } from "@/data/marketing";
+import { CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD, PROD_SOON } from "@/data/marketing";
 import { industryHref } from "@/data/industries";
 import { serviceHref } from "@/data/services";
 
@@ -64,6 +64,31 @@ export function MegaItem({ title, desc, icon, href }: { title: string; desc: str
   );
 }
 
+/**
+ * Built-but-unlaunched products, for the bottom of a Products column. Each is
+ * a disabled row, not a link: there is nowhere to send anyone yet.
+ */
+export function ComingSoon() {
+  return (
+    <div className="mega-soon">
+      <div className="mega-h">Coming soon</div>
+      {PROD_SOON.map(([title, desc, icon]) => (
+        <span className="mitem soon" key={title} aria-disabled="true">
+          <span className="mi mi-img">
+            <img src={icon} alt="" width={36} height={36} />
+          </span>
+          <span className="mtx">
+            <span className="mt">
+              {title} <span className="soon-pill">Coming soon</span>
+            </span>
+            <span className="md">{desc}</span>
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function MegaFeature({ img, label, title, desc, href }: { img: string; label: string; title: string; desc: string; href: string }) {
   return (
     <a className="mega-feature" href={href}>
@@ -82,9 +107,12 @@ export function MegaFeature({ img, label, title, desc, href }: { img: string; la
 export function MegaPanel({
   groups,
   feature,
+  tail,
 }: {
   groups: [string, [string, string, string, string][]][];
   feature: { img: string; label: string; title: string; desc: string; href: string };
+  /** Rendered under the feature card, e.g. <ComingSoon />. */
+  tail?: ReactNode;
 }) {
   return (
     <div className="mega-inner">
@@ -96,7 +124,14 @@ export function MegaPanel({
           ))}
         </div>
       ))}
-      <MegaFeature {...feature} />
+      {tail ? (
+        <div className="mega-side">
+          <MegaFeature {...feature} />
+          {tail}
+        </div>
+      ) : (
+        <MegaFeature {...feature} />
+      )}
     </div>
   );
 }
@@ -211,6 +246,7 @@ export function NavMegaPanel({ mega, base = "" }: { mega: keyof typeof MEGA_IDS;
         ["Commerce & retail", [pi(6), pi(10), pi(3), pi(7), pi(9)]],
         ["Platforms", [pi(0), pi(8), pi(11)]],
       ]}
+      tail={<ComingSoon />}
       feature={{
         img: "/img/ai.jpg",
         label: "Built by Consult America",

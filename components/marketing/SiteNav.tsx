@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { useState } from "react";
 
 import { PRIMARY_NAV, isNavItemActive, navHref } from "@/components/marketing/nav-config";
-import { CAPS, CAP_SERVICES, INDUSTRIES, PROD } from "@/data/marketing";
+import { CAPS, CAP_SERVICES, INDUSTRIES, PROD, PROD_SOON } from "@/data/marketing";
 import { industryHref } from "@/data/industries";
 import { serviceHref } from "@/data/services";
 
@@ -26,7 +26,7 @@ import { serviceHref } from "@/data/services";
  * returns undefined when none exists yet; those entries are dropped rather
  * than linked to nowhere.
  */
-type MobileChild = { label: string; href: string; external?: boolean };
+type MobileChild = { label: string; href: string; external?: boolean; soon?: boolean };
 
 function childrenFor(label: string): MobileChild[] {
   if (label === "Capabilities") {
@@ -45,7 +45,10 @@ function childrenFor(label: string): MobileChild[] {
     return INDUSTRIES.map(([name]) => ({ label: name, href: industryHref(name) }));
   }
   if (label === "Products") {
-    return PROD.map(([name, , href]) => ({ label: name, href, external: true }));
+    return [
+      ...PROD.map(([name, , href]) => ({ label: name, href, external: true })),
+      ...PROD_SOON.map(([name]) => ({ label: name, href: "", soon: true })),
+    ];
   }
   return [];
 }
@@ -111,7 +114,11 @@ export function MobileNavLinks({ onHome, onNavigate }: { onHome: boolean; onNavi
                   All {item.label}
                 </Link>
                 {children.map((child) =>
-                  child.external ? (
+                  child.soon ? (
+                    <span key={child.label} className="mnav-soon" aria-disabled="true">
+                      {child.label} <span className="soon-pill">Coming soon</span>
+                    </span>
+                  ) : child.external ? (
                     <a
                       key={child.label + child.href}
                       href={child.href}
