@@ -12,7 +12,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
-import { AUTH_NOTICES, isAuthNotice } from "@/lib/neon/auth";
+import { redirect } from "next/navigation";
+
+import { AUTH_NOTICES, DEFAULT_ADMIN_LANDING, isAuthNotice, signedInAdmin } from "@/lib/neon/auth";
 
 import { requestPasswordReset } from "./actions";
 
@@ -27,6 +29,11 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export default async function AdminForgotPasswordPage({ searchParams }: Props) {
   const params = await searchParams;
+
+  // Already signed in: the admin layout would wrap this page in its rail, and
+  // the page's own marketing header would land on top of it. There is nothing
+  // to sign in to, so go where the admin was heading.
+  if (await signedInAdmin()) redirect(DEFAULT_ADMIN_LANDING);
   const noticeKey = one(params.notice);
   const notice = isAuthNotice(noticeKey) ? AUTH_NOTICES[noticeKey] : null;
   // Once the confirmation is showing there is nothing useful left to do on

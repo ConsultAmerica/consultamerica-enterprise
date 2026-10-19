@@ -572,3 +572,19 @@ export async function clientIp(): Promise<string> {
 export async function clientUserAgent(): Promise<string | null> {
   return (await headers()).get("user-agent");
 }
+
+/**
+ * The signed-in admin, for pages that should not be shown to one (sign in,
+ * forgot password). Mirrors the admin layout's rule: an account that must
+ * change its password is not "signed in" for this purpose. Any failure,
+ * including an unconfigured or unreachable database, answers null so the
+ * sign-in page still renders.
+ */
+export async function signedInAdmin() {
+  try {
+    const user = await getSessionUser();
+    return user && !user.mustChangePassword ? user : null;
+  } catch {
+    return null;
+  }
+}

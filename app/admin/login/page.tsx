@@ -28,7 +28,9 @@ import Link from "next/link";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
-import { noticeFor, sanitizeAdminReturnTo } from "@/lib/neon/auth";
+import { redirect } from "next/navigation";
+
+import { DEFAULT_ADMIN_LANDING, noticeFor, sanitizeAdminReturnTo, signedInAdmin } from "@/lib/neon/auth";
 
 import { signIn } from "./actions";
 
@@ -60,6 +62,11 @@ export default async function AdminLoginPage({ searchParams }: Props) {
   // Echoed back so a wrong password does not cost the user their email. React
   // escapes it; the length cap stops an oversized URL being reflected.
   const email = (one(params.email) ?? "").slice(0, 254);
+
+  // Already signed in: the admin layout would wrap this page in its rail, and
+  // the page's own marketing header would land on top of it. There is nothing
+  // to sign in to, so go where the admin was heading.
+  if (await signedInAdmin()) redirect(returnTo ?? DEFAULT_ADMIN_LANDING);
 
   return (
     <>
