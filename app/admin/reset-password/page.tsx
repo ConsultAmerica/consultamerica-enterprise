@@ -19,7 +19,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { MIN_PASSWORD_LENGTH } from "@/lib/neon/admin-users";
 import { AUTH_NOTICES, getSessionUser, isAuthNotice, isPasswordResetTokenUsable } from "@/lib/neon/auth";
 
@@ -55,8 +54,8 @@ export default async function AdminResetPasswordPage({ searchParams }: Props) {
 
   return (
     <>
-      <MarketingHeader />
-      <main className="jobs-shell">
+      {/* Staff sign-in shows only the form: no public site navigation. */}
+      <main className="jobs-shell adm-auth">
         <div className="wrap login-page">
           <p className="apply-eyebrow">Consult America</p>
           <h1>Choose a new password</h1>

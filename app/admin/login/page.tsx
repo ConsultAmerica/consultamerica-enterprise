@@ -27,7 +27,6 @@ import Link from "next/link";
 
 import { SubmitButton } from "@/components/admin/SubmitButton";
 
-import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { redirect } from "next/navigation";
 
 import { DEFAULT_ADMIN_LANDING, noticeFor, sanitizeAdminReturnTo, signedInAdmin } from "@/lib/neon/auth";
@@ -70,8 +69,8 @@ export default async function AdminLoginPage({ searchParams }: Props) {
 
   return (
     <>
-      <MarketingHeader />
-      <main className="jobs-shell">
+      {/* Staff sign-in shows only the form: no public site navigation. */}
+      <main className="jobs-shell adm-auth">
         <div className="wrap login-page">
           <p className="apply-eyebrow">Consult America</p>
           <h1>Recruitment admin</h1>

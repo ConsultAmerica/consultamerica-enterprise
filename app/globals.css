@@ -7901,3 +7901,20 @@ ul.adm-steps {
   max-width: 85%;
   margin-left: auto;
 }
+
+
+/* ---------------------------------------------------------------------------
+   Brand lockup on the dark surfaces.
+
+   The standard lockup is navy on transparent, which disappears on the admin
+   rail and the workspace bar. Both use the reversed file, where the navy is
+   white and the red is lifted a little so it does not go muddy against navy.
+   Neither sets the company name in text beside it: the lockup already says it,
+   and only the product qualifier is left. */
+.sb-brand .sb-lockup { height: 30px; width: auto; object-fit: contain; display: block; }
+.ws-brand .ws-lockup { height: 26px; width: auto; object-fit: contain; display: block; }
+
+/* Admin sign-in, forgot and reset password: no site navigation above, so the
+   form sits centred in the viewport instead of clearing a fixed header. */
+.adm-auth { display: grid; place-items: center; }
+.adm-auth .login-page { width: 100%; padding-top: 64px; padding-bottom: 64px; }

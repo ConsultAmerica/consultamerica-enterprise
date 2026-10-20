@@ -11,7 +11,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import { redirect } from "next/navigation";
 
 import { AUTH_NOTICES, DEFAULT_ADMIN_LANDING, isAuthNotice, signedInAdmin } from "@/lib/neon/auth";
@@ -42,8 +41,8 @@ export default async function AdminForgotPasswordPage({ searchParams }: Props) {
 
   return (
     <>
-      <MarketingHeader />
-      <main className="jobs-shell">
+      {/* Staff sign-in shows only the form: no public site navigation. */}
+      <main className="jobs-shell adm-auth">
         <div className="wrap login-page">
           <p className="apply-eyebrow">Consult America</p>
           <h1>Reset your password</h1>
