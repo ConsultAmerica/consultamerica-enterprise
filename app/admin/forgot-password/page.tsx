@@ -8,6 +8,7 @@
  * The confirmation is shown for every well-formed address, whether or not it
  * belongs to an account — see app/admin/forgot-password/actions.ts.
  */
+import { AuthBrand } from "@/components/admin/AuthBrand";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -44,7 +45,7 @@ export default async function AdminForgotPasswordPage({ searchParams }: Props) {
       {/* Staff sign-in shows only the form: no public site navigation. */}
       <main className="jobs-shell adm-auth">
         <div className="wrap login-page">
-          <p className="apply-eyebrow">Consult America</p>
+          <AuthBrand />
           <h1>Reset your password</h1>
           <p className="login-lead">
             {sent

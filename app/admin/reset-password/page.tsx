@@ -15,6 +15,7 @@
  * requireAdmin() sends anyone with must_change_password here, so calling it
  * from this page would redirect to itself forever.
  */
+import { AuthBrand } from "@/components/admin/AuthBrand";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -57,7 +58,7 @@ export default async function AdminResetPasswordPage({ searchParams }: Props) {
       {/* Staff sign-in shows only the form: no public site navigation. */}
       <main className="jobs-shell adm-auth">
         <div className="wrap login-page">
-          <p className="apply-eyebrow">Consult America</p>
+          <AuthBrand />
           <h1>Choose a new password</h1>
           <p className="login-lead">
             {!canSubmit

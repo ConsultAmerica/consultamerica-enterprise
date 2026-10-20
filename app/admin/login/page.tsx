@@ -22,6 +22,7 @@
  * the same page as app/login/page.tsx wearing a different label, not a second
  * design language.
  */
+import { AuthBrand } from "@/components/admin/AuthBrand";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -72,7 +73,7 @@ export default async function AdminLoginPage({ searchParams }: Props) {
       {/* Staff sign-in shows only the form: no public site navigation. */}
       <main className="jobs-shell adm-auth">
         <div className="wrap login-page">
-          <p className="apply-eyebrow">Consult America</p>
+          <AuthBrand />
           <h1>Recruitment admin</h1>
           <div className="apply-panel">
             <form action={signIn} className="login-form" noValidate>
