@@ -93,7 +93,11 @@ header.nav.scrolled .nav-inner{border-color:var(--line);box-shadow:0 12px 36px -
 /* 10px, not 11px: at 11px "Building Innovative Future" measures 192px against
    a 187px wordmark, so it overhangs "Consult America". 10px lands at 175px. */
 .brand .btag{font-size:10px;font-weight:600;color:var(--blue);letter-spacing:.1em;white-space:nowrap;margin-top:3px;text-transform:uppercase;padding-left:6px}
-@media(max-width:600px){.brand{gap:8px}.brand .mark{height:44px}.brand .bw{font-size:19px}.brand .btag{font-size:8.5px;letter-spacing:.05em}}
+/* Phone: the bar is the only chrome on screen, so the brand stays big enough
+   to read at arm's length without pinch-zooming. */
+@media(max-width:600px){header.nav{padding:10px 10px 0}header.nav>.wrap{padding-left:12px;padding-right:12px}header.nav .nav-inner{height:78px}.brand{gap:10px}.brand .mark{height:56px}.brand .bw{font-size:23px}.brand .btag{font-size:10px;letter-spacing:.06em;padding-left:4px}header.nav .nav-toggle{width:50px;height:50px}header.nav .nav-toggle svg{width:24px;height:24px}.hero .hero-inner{padding-top:122px}}
+/* narrow phones (iPhone SE, 360px Androids) */
+@media(max-width:374px){.brand{gap:8px}.brand .mark{height:48px}.brand .bw{font-size:20px}.brand .btag{font-size:8.5px;letter-spacing:.04em}}
 /* links sit directly in the one bar now — no separate capsule */
 .nav-mid{position:relative;z-index:1;display:flex;gap:2px}
 .nav-item{position:relative;z-index:1}
