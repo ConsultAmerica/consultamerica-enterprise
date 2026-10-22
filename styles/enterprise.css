@@ -921,10 +921,12 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 
 .life-steps{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
 .life-steps li{display:flex;flex-direction:column;gap:12px}
-.life-step-n{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;
-  background:rgba(29,111,224,.1);color:var(--blue);font-weight:650;font-size:14.5px}
+.life-step-n{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;flex:none;
+  background:rgba(29,111,224,.1);border:1px solid rgba(29,111,224,.22);color:var(--blue);font-weight:650;font-size:16px;line-height:1;font-variant-numeric:tabular-nums}
 .life-steps b{display:block;font-size:16px;font-weight:650;letter-spacing:-.018em;color:var(--ink)}
-.life-steps span{display:block;font-size:14px;line-height:1.55;color:var(--ink-2);margin-top:5px}
+/* descriptions only: a bare ".life-steps span" also caught .life-step-n,
+   turned it into a block and pushed its number into the corner */
+.life-steps li>div>span{display:block;font-size:14px;line-height:1.55;color:var(--ink-2);margin-top:5px}
 
 .life-where{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:start}
 .life-where h2{font-size:clamp(26px,3.2vw,36px);font-weight:650;letter-spacing:-.028em;color:var(--ink);margin-top:16px}
