@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { INDUSTRY_PAGES } from "@/data/industries";
-import { CONTACT } from "@/data/marketing";
+import { CAPABILITY_STATEMENT, CONTACT } from "@/data/marketing";
 
 export function MarketingFooter() {
   return (
@@ -15,6 +15,9 @@ export function MarketingFooter() {
             <Link href="/#capabilities">Oracle</Link>
             <Link href="/#capabilities">Enterprise Transformation</Link>
             <Link href="/#capabilities">Managed Services</Link>
+            <a href={CAPABILITY_STATEMENT} target="_blank" rel="noopener">
+              Capability Statement (PDF)
+            </a>
           </div>
           <div className="foot-col">
             <h4>Industries</h4>

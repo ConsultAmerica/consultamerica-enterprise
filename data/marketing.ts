@@ -1,3 +1,8 @@
+/** The one-page capability statement PDF, linked from /capabilities, the
+ * Capabilities mega panel and the footer. Opened in a tab, never forced to
+ * download. */
+export const CAPABILITY_STATEMENT = "/docs/consult-america-capability-statement-2026.pdf";
+
 export const CAPS = [
   ["Engineering", "Senior engineers who ship production systems, cloud-native builds, integrations, and the platforms your business runs on.", "/img/dev.jpg"],
   ["AI & Data", "Forecasting, assistants, and automation, operationalized with the data foundations and guardrails to run in production.", "/img/ai.jpg"],

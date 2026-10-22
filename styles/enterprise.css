@@ -983,3 +983,24 @@ footer::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;backgrou
 .mobile-menu .mnav-soon{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 4px;font-size:15px;color:rgba(255,255,255,.42);cursor:default}
 .mobile-menu .mnav-soon .soon-pill{background:transparent;border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.55)}
 .adm-auth-brand{display:inline-flex;align-items:center;gap:12px;margin-bottom:28px}
+
+/* ============ CAPABILITY STATEMENT (/capabilities) ============ */
+.capstmt{display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:56px;align-items:center}
+.capstmt-preview{display:block;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#fff;
+  box-shadow:0 24px 60px -30px rgba(10,19,34,.45);transform:rotate(-1.5deg);transition:transform .3s,box-shadow .3s}
+.capstmt-preview:hover{transform:rotate(0) translateY(-4px);box-shadow:0 30px 70px -30px rgba(10,19,34,.55)}
+.capstmt-preview img{display:block;width:100%;height:auto}
+.capstmt-body h2{font-size:clamp(28px,3.4vw,42px);line-height:1.08;letter-spacing:-.03em;margin:14px 0 14px;color:var(--ink)}
+.capstmt-body>p{font-size:17px;line-height:1.6;color:var(--ink-2);max-width:560px}
+.capstmt-facts{display:grid;grid-template-columns:repeat(4,auto);justify-content:start;gap:12px 36px;margin:26px 0 30px}
+.capstmt-facts dt{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.capstmt-facts dd{margin:4px 0 0;font-size:22px;font-weight:650;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.capstmt .cta-actions{display:flex;align-items:center;flex-wrap:wrap;gap:14px 18px;justify-content:flex-start}
+.capstmt-meta{font-size:13px;color:var(--ink-2)}
+/* the PDF thumbnail in the Capabilities mega panel: show the top of the page */
+.mf-img[style*="capability-statement"]{background-position:center top}
+@media(max-width:860px){
+  .capstmt{grid-template-columns:1fr;gap:32px}
+  .capstmt-preview{max-width:260px;transform:none}
+  .capstmt-facts{grid-template-columns:repeat(2,auto)}
+}

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 
-import { CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD, PROD_SOON } from "@/data/marketing";
+import { CAPABILITY_STATEMENT, CAP_ICONS, CAP_SERVICES, CAPS, IND_ICONS, INDUSTRIES, PROD, PROD_SOON } from "@/data/marketing";
 import { industryHref } from "@/data/industries";
 import { serviceHref } from "@/data/services";
 
@@ -89,9 +89,24 @@ export function ComingSoon() {
   );
 }
 
-export function MegaFeature({ img, label, title, desc, href }: { img: string; label: string; title: string; desc: string; href: string }) {
+export function MegaFeature({
+  img,
+  label,
+  title,
+  desc,
+  href,
+  newTab = false,
+}: {
+  img: string;
+  label: string;
+  title: string;
+  desc: string;
+  href: string;
+  /** For documents such as the capability statement PDF. */
+  newTab?: boolean;
+}) {
   return (
-    <a className="mega-feature" href={href}>
+    <a className="mega-feature" href={href} {...(newTab ? { target: "_blank", rel: "noopener" } : {})}>
       <span className="mf-img" style={{ backgroundImage: `url('${img}')` }} />
       <span className="mf-body">
         <span className="mf-label">{label}</span>
@@ -195,12 +210,15 @@ export function CapabilitiesMegaPanel({ base = "" }: { base?: "" | "/" }) {
         </ul>
       </div>
 
+      {/* The capability statement is what procurement teams come to this
+          menu for, so it takes the feature slot. */}
       <MegaFeature
-        img="/img/meeting.jpg"
-        label="How we work"
-        title="Design, build, run"
-        desc="One team from assessment through production and managed operations."
-        href={`${base}#why`}
+        img="/docs/capability-statement-preview.jpg"
+        label="Capability statement 2026"
+        title="View the PDF"
+        desc="Competencies, past performance, NAICS codes, CAGE 58US4."
+        href={CAPABILITY_STATEMENT}
+        newTab
       />
     </div>
   );

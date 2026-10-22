@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
-import { CAPS, CAP_ICONS, CAP_SERVICES, capabilityAnchor } from "@/data/marketing";
+import { CAPABILITY_STATEMENT, CAPS, CAP_ICONS, CAP_SERVICES, capabilityAnchor } from "@/data/marketing";
 import { serviceHref } from "@/data/services";
 
 export const metadata: Metadata = {
@@ -72,6 +72,56 @@ export default function CapabilitiesPage() {
               Engineering, AI and data, Oracle, enterprise transformation and managed
               services. Each one has a page for every service line underneath it.
             </p>
+          </div>
+        </section>
+
+        {/* Capability statement. Contracting officers and procurement teams
+            look for this one document, so it sits above the service lines.
+            The link opens the PDF in a browser tab rather than downloading it
+            (no `download` attribute); saving it is still one click from there. */}
+        <section className="band tintbg" id="capability-statement">
+          <div className="wrap">
+            <div className="capstmt">
+              <a className="capstmt-preview" href={CAPABILITY_STATEMENT} target="_blank" rel="noopener">
+                <img
+                  src="/docs/capability-statement-preview.jpg"
+                  alt="First page of the Consult America 2026 capability statement"
+                  loading="lazy"
+                />
+              </a>
+              <div className="capstmt-body">
+                <span className="eyebrow">Capability statement 2026</span>
+                <h2>Everything a contracting officer asks for, on one page.</h2>
+                <p>
+                  Core competencies, past performance across NIH, DOI, VA, SSA and NOAA, our federal
+                  and commercial clients, NAICS codes and company data.
+                </p>
+                <dl className="capstmt-facts">
+                  <div>
+                    <dt>Repeat revenue</dt>
+                    <dd>90%</dd>
+                  </div>
+                  <div>
+                    <dt>Federal clients</dt>
+                    <dd>11</dd>
+                  </div>
+                  <div>
+                    <dt>CAGE code</dt>
+                    <dd>58US4</dd>
+                  </div>
+                  <div>
+                    <dt>DUNS</dt>
+                    <dd>109504907</dd>
+                  </div>
+                </dl>
+                <div className="cta-actions">
+                  <a href={CAPABILITY_STATEMENT} target="_blank" rel="noopener" className="btn btn-primary">
+                    View capability statement {ARROW}
+                  </a>
+                  <span className="capstmt-meta">PDF, 1 page, opens in a new tab</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
